@@ -1,0 +1,16 @@
+# 未着手項目ログ（内部運用。GitHub には置かない）
+.todo/
+
+# Claude Code のローカル設定（権限・SessionStart フック。共有しない）
+.claude/settings.local.json
+
+# Visual Studio / .NET のビルド生成物
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+
+# Inno Setup の出力（インストーラは Release で配布する）
+Output/
