@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>step1：メモ帳の機能洗い出し | memopad 備忘録</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="../index.html">memopad 備忘録</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="./index.html">step1 機能洗い出し</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>step1：メモ帳の機能洗い出し</h1>
+  <p class="lead">memopad.exe が「メモ帳の機能はそのまま」を満たすために、本家メモ帳に何があるのかを先に全部並べる。調査日：2026-09-06</p>
+
+  <div class="toc">
+    <strong>目次</strong>
+    <ol>
+      <li><a href="#target">調査対象と調べ方</a></li>
+      <li><a href="#layout">画面の構成</a></li>
+      <li><a href="#menus">メニュー一覧</a></li>
+      <li><a href="#find">検索・置換・行に移動・右クリック</a></li>
+      <li><a href="#settings">設定ページ</a></li>
+      <li><a href="#markdown">マークダウン機能</a></li>
+      <li><a href="#files">ファイルの保存・タブ・セッション</a></li>
+      <li><a href="#ai">AI 機能（Copilot）</a></li>
+      <li><a href="#shortcuts">ショートカット一覧</a></li>
+      <li><a href="#scope">memopad で再現する範囲（仕分け）</a></li>
+    </ol>
+  </div>
+
+  <h2 id="target">1. 調査対象と調べ方</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>内容</th></tr>
+    <tr><td>OS</td><td>Windows 11 Pro（ビルド 26200）</td></tr>
+    <tr><td>メモ帳</td><td>Windows メモ帳（Microsoft Store 版 <code>Microsoft.WindowsNotepad</code>）バージョン <strong>11.2607.14.0</strong></td></tr>
+    <tr><td><code>C:\Windows\notepad.exe</code></td><td>約 360 KB のランチャー。実行すると Store 版メモ帳が起動する。Windows 10 までの「クラシック メモ帳」はこの環境には存在しない</td></tr>
+    <tr><td>調べ方</td><td>PowerShell から UI Automation でメニュー項目・設定項目・ダイアログの部品を列挙し、あわせて撮影スクリプトでスクリーンショットを自動生成した</td></tr>
+  </table>
+  </div>
+  <div class="note">
+    スクリーンショットは <code>docs/tools/capture-notepad.ps1</code> で一括生成している。メモ帳を起動し直し、メニュー展開や検索バーの表示をキー操作で再現しながら撮影するので、メモ帳が更新されたら再実行すれば画像を揃え直せる。
+  </div>
+  <div class="warn">
+    Store 版メモ帳は自動更新される。この一覧は 2026-09-06 時点のバージョン 11.2607.14.0 のもので、それ以降に増えた機能は含んでいない。
+  </div>
+
+  <h2 id="layout">2. 画面の構成</h2>
+  <figure>
+    <img src="../img/step1/01_main.png" alt="メモ帳のメイン画面。上からタブ、メニューバーと書式ツールバー、テキスト領域、ステータスバー" width="1000" height="720">
+    <figcaption>図 2-1：メイン画面（ダーク テーマ。設定でライト／ダーク／システム設定を選べる）</figcaption>
+  </figure>
+  <div class="table-wrap">
+  <table>
+    <tr><th>領域</th><th>内容</th></tr>
+    <tr><td>タブ バー</td><td>複数ファイルをタブで開く。タブにはファイル名と閉じるボタン、右端に「＋」（新しいタブ）。未保存の変更があるタブは●印、タイトルバーは先頭に <code>*</code> が付く</td></tr>
+    <tr><td>メニューバー</td><td>「ファイル」「編集」「表示」の 3 つ。<kbd>Alt</kbd> を押すとアクセスキーが表示される</td></tr>
+    <tr><td>書式ツールバー</td><td>見出し／リスト／太字／斜体／取り消し線／リンク／その他（表・書式設定のクリア）。マークダウン タブでのみ有効になる（テキスト タブでは無効表示）</td></tr>
+    <tr><td>右上のボタン</td><td>手書きツール（Copilot による記述・リライト・要約）、新着情報、ユーザー アバター（Microsoft アカウント）、設定（歯車）</td></tr>
+    <tr><td>テキスト領域</td><td>本文。右クリックでコンテキスト メニュー</td></tr>
+    <tr><td>ステータスバー</td><td>左から「行, 列」「文字数」「テキスト／マークダウン（現在のモード）」「ズーム %」「改行コード（Windows (CRLF) など）」「エンコード（UTF-8 など）」。表示メニューで非表示にできる</td></tr>
+  </table>
+  </div>
+
+  <h2 id="menus">3. メニュー一覧</h2>
+  <p>UI Automation で列挙した項目とショートカットをそのまま載せる。括弧内はアクセスキー（<kbd>Alt</kbd> のあとに押す文字）。</p>
+
+  <h3>3.1 ファイル</h3>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step1/02_menu_file.png" alt="ファイル メニューを開いたところ" loading="lazy">
+      <figcaption>図 3-1：ファイル メニュー</figcaption>
+    </figure>
+    <div class="table-wrap">
+    <table>
+      <tr><th>項目</th><th>ショートカット</th><th>メモ</th></tr>
+      <tr><td>新しいタブ (N)</td><td><kbd>Ctrl</kbd>+<kbd>N</kbd></td><td>空のタブを追加</td></tr>
+      <tr><td>新しいウィンドウ (W)</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd></td><td>別ウィンドウを開く</td></tr>
+      <tr><td>[新しいマークダウン] タブ (M)</td><td>—</td><td>マークダウン モードのタブを追加</td></tr>
+      <tr><td>開く (O)</td><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>ファイルを開くダイアログ</td></tr>
+      <tr><td>新着順 (R)</td><td>—</td><td>最近使ったファイルのサブメニュー（最大 10 件＋「一覧を消去する」）</td></tr>
+      <tr><td>保存 (S)</td><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td></td></tr>
+      <tr><td>名前を付けて保存 (A)</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></td><td>エンコードを選べる（7 節）</td></tr>
+      <tr><td>すべて保存 (L)</td><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd></td><td>全タブを保存</td></tr>
+      <tr><td>ページ設定 (U)</td><td>—</td><td>用紙・余白・ヘッダー／フッターの共通ダイアログ</td></tr>
+      <tr><td>印刷 (P)</td><td><kbd>Ctrl</kbd>+<kbd>P</kbd></td><td>印刷ダイアログ</td></tr>
+      <tr><td>タブを閉じる (C)</td><td><kbd>Ctrl</kbd>+<kbd>W</kbd></td><td>未保存なら「保存／保存しない／キャンセル」を確認</td></tr>
+      <tr><td>ウィンドウを閉じる (E)</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd></td><td></td></tr>
+      <tr><td>終了 (X)</td><td>—</td><td></td></tr>
+    </table>
+    </div>
+  </div>
+
+  <h3>3.2 編集</h3>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step1/03_menu_edit.png" alt="編集メニューを開いたところ" loading="lazy">
+      <figcaption>図 3-2：編集メニュー</figcaption>
+    </figure>
+    <div class="table-wrap">
+    <table>
+      <tr><th>項目</th><th>ショートカット</th><th>メモ</th></tr>
+      <tr><td>元に戻す (U)</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>やり直しは <kbd>Ctrl</kbd>+<kbd>Y</kbd>（メニューには無い）</td></tr>
+      <tr><td>切り取り (T)</td><td><kbd>Ctrl</kbd>+<kbd>X</kbd></td><td></td></tr>
+      <tr><td>コピー (C)</td><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td></td></tr>
+      <tr><td>貼り付け (P)</td><td><kbd>Ctrl</kbd>+<kbd>V</kbd></td><td></td></tr>
+      <tr><td>削除 (L)</td><td><kbd>Del</kbd></td><td></td></tr>
+      <tr><td>書式設定のクリア (M)</td><td>—</td><td>マークダウンの装飾を外す（ツールバーでは <kbd>Ctrl</kbd>+<kbd>Space</kbd>）</td></tr>
+      <tr><td>Bing で定義 (E)</td><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>選択語を Bing で検索</td></tr>
+      <tr><td>検索する (F)</td><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>右上に検索バーが出る（4 節）</td></tr>
+      <tr><td>次を検索 (N)</td><td><kbd>F3</kbd></td><td></td></tr>
+      <tr><td>前を検索 (V)</td><td><kbd>Shift</kbd>+<kbd>F3</kbd></td><td></td></tr>
+      <tr><td>置換 (R)</td><td><kbd>Ctrl</kbd>+<kbd>H</kbd></td><td>検索バーに置換欄が加わる</td></tr>
+      <tr><td>移動先 (G)</td><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td><td>「行に移動」ダイアログ</td></tr>
+      <tr><td>すべて選択 (A)</td><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td></td></tr>
+      <tr><td>日付と時刻 (D)</td><td><kbd>F5</kbd></td><td>カーソル位置に現在日時を挿入</td></tr>
+      <tr><td>フォント (O)</td><td>—</td><td>設定ページのフォント欄へ移動する</td></tr>
+    </table>
+    </div>
+  </div>
+
+  <h3>3.3 表示</h3>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step1/04_menu_view.png" alt="表示メニューを開いたところ" loading="lazy">
+      <figcaption>図 3-3：表示メニュー</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step1/05_menu_view_zoom.png" alt="表示メニューのズーム サブメニュー" loading="lazy">
+      <figcaption>図 3-4：ズーム サブメニュー</figcaption>
+    </figure>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>ショートカット</th><th>メモ</th></tr>
+    <tr><td>ズーム (Z) ＞ 拡大</td><td><kbd>Ctrl</kbd>+<kbd>+</kbd></td><td rowspan="3">ステータスバーに倍率（%）が出る</td></tr>
+    <tr><td>ズーム ＞ 縮小</td><td><kbd>Ctrl</kbd>+<kbd>-</kbd></td></tr>
+    <tr><td>ズーム ＞ 既定の倍率に戻す</td><td><kbd>Ctrl</kbd>+<kbd>0</kbd></td></tr>
+    <tr><td>ステータス バー (S)</td><td>—</td><td>表示／非表示の切り替え</td></tr>
+    <tr><td>右端での折り返し (W)</td><td>—</td><td>ウィンドウ幅で折り返す。既定値は設定ページで決める</td></tr>
+    <tr><td>マークダウン (V) ＞ 書式付き (S)／構文 (M)</td><td>—</td><td>現在のタブを装飾表示（書式付き）と Markdown そのまま（構文）で切り替える（6 節）</td></tr>
+  </table>
+  </div>
+
+  <h2 id="find">4. 検索・置換・行に移動・右クリック</h2>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step1/06_find.png" alt="検索バー" loading="lazy">
+      <figcaption>図 4-1：検索バー（Ctrl+F）。右上に重なって表示される</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step1/07_find_options.png" alt="検索バーのオプション メニュー" loading="lazy">
+      <figcaption>図 4-2：検索オプション「大文字と小文字を区別する」「折り返す」</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step1/08_replace.png" alt="置換バー" loading="lazy">
+      <figcaption>図 4-3：置換バー（Ctrl+H）。「置換」「すべて置換」が加わる</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step1/09_goto.png" alt="行に移動ダイアログ" loading="lazy">
+      <figcaption>図 4-4：行に移動（Ctrl+G）。行番号を入力して移動</figcaption>
+    </figure>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <tr><th>機能</th><th>部品</th></tr>
+    <tr><td>検索バー</td><td>検索語の入力欄、下へ検索、上へ検索、その他のオプション（大文字と小文字を区別する／折り返す）、置換オプションを開く、閉じる</td></tr>
+    <tr><td>置換バー</td><td>検索バー＋置換語の入力欄、置換、すべて置換</td></tr>
+    <tr><td>行に移動</td><td>行番号の入力欄、「以下に移動します:」ボタン、キャンセル</td></tr>
+    <tr><td>右クリック メニュー</td><td>元に戻す、切り取り／コピー／貼り付け（選択時）、テーブルの挿入、Bing で定義、記述、リライト、カスタム リライト、要約、スペル チェック、表示と Unicode</td></tr>
+  </table>
+  </div>
+  <figure>
+    <img src="../img/step1/10_context_menu.png" alt="テキスト領域の右クリック メニュー" loading="lazy">
+    <figcaption>図 4-5：右クリック メニュー。編集項目のほかに Copilot 系（記述・リライト・要約）が並ぶ</figcaption>
+  </figure>
+
+  <h2 id="settings">5. 設定ページ</h2>
+  <p>右上の歯車で開く。クラシック メモ帳で「書式」メニューにあったフォントや右端で折り返す設定は、ここに移っている。</p>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step1/11_settings.png" alt="設定ページ" loading="lazy">
+      <figcaption>図 5-1：設定ページ</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step1/12_settings_theme.png" alt="設定ページでアプリのテーマを展開したところ" loading="lazy">
+      <figcaption>図 5-2：「アプリのテーマ」を展開（ライト／ダーク／システム設定）</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step1/13_settings_font.png" alt="設定ページのフォント欄。ファミリ・スタイル・サイズとプレビュー" loading="lazy">
+      <figcaption>図 5-3：「フォント」を展開（ファミリ／スタイル／サイズとプレビュー文）</figcaption>
+    </figure>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <tr><th>分類</th><th>設定</th><th>選択肢・内容</th></tr>
+    <tr><td>外観</td><td>アプリのテーマ</td><td>ライト／ダーク／システム設定を使用する</td></tr>
+    <tr><td rowspan="4">テキストの書式設定</td><td>フォント ＞ ファミリ</td><td>インストール済みフォントから選択（入力補完あり）</td></tr>
+    <tr><td>フォント ＞ スタイル</td><td>標準／斜体／太字／太字 斜体 など（フォントに依存）</td></tr>
+    <tr><td>フォント ＞ サイズ</td><td>8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72（直接入力も可）。プレビュー文「海の波の音が私の心を落ち着かせます。」</td></tr>
+    <tr><td>文字列の折り返し／書式設定</td><td>折り返しの既定値の ON/OFF、マークダウン書式設定機能の ON/OFF</td></tr>
+    <tr><td rowspan="3">起動時の設定</td><td>ファイルを開く方法</td><td>新しいタブで開く／新しいウィンドウで開く</td></tr>
+    <tr><td>メモ帳の起動時</td><td>前のセッションを続行／新しいセッションを開始し未保存の変更を破棄</td></tr>
+    <tr><td>最近使ったファイル</td><td>ON/OFF</td></tr>
+    <tr><td rowspan="2">スペル チェック</td><td>スペル チェック</td><td>全体の ON/OFF と拡張子別（.txt、.md/.markdown、.srt/.ass、.lrc、.lic）の ON/OFF</td></tr>
+    <tr><td>自動修正</td><td>ON/OFF（入力ミスを自動修正）</td></tr>
+    <tr><td>高度な機能</td><td>手書きツール</td><td>Copilot 機能の ON/OFF</td></tr>
+    <tr><td>このアプリについて</td><td>バージョン表示</td><td>ライセンス条項・サービス規約・プライバシー・サードパーティ ソフトウェアへのリンク、フィードバックの送信、ヘルプ</td></tr>
+  </table>
+  </div>
+  <div class="note">
+    <strong>memopad の出発点：</strong>本家には「背景色」「文字色」の設定が無く、テーマ（ライト／ダーク）でしか見た目を変えられない。ここに標準色 16 色＋カラーピッカーの設定を足すのが本プロジェクトの目的。
+  </div>
+
+  <h2 id="markdown">6. マークダウン機能</h2>
+  <p>「[新しいマークダウン] タブ」で開いた直後は Markdown をそのまま書く「マークダウン構文」表示になっている（ステータスバーの「テキスト」が「マークダウン構文」に変わる）。表示 ＞ マークダウン ＞ 書式付き に切り替えると装飾表示になり、書式ツールバーが使えるようになる。</p>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step1/14_markdown_source.png" alt="マークダウン タブの構文表示。# や ** がそのまま見えている" loading="lazy">
+      <figcaption>図 6-1：マークダウン構文表示。書式ツールバーは表示されない</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step1/15_markdown_formatted.png" alt="マークダウン タブに見出し・太字・リストを入力したところ" loading="lazy">
+      <figcaption>図 6-2：表示 ＞ マークダウン ＞ 書式付き に切り替えたところ。見出し・太字・斜体・リストが装飾され、書式ツールバーが有効になる</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step1/16_markdown_heading.png" alt="見出しドロップダウン" loading="lazy">
+      <figcaption>図 6-3：見出しの種類（タイトル／サブタイトル／見出し／小見出し／セクション／サブセクション／本文）</figcaption>
+    </figure>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <tr><th>ツールバー</th><th>内容</th><th>ショートカット</th></tr>
+    <tr><td>見出し</td><td>タイトル、サブタイトル、見出し、小見出し、セクション、サブセクション、本文</td><td>—</td></tr>
+    <tr><td>リスト</td><td>箇条書き、番号付きリスト、インデントを増やす／減らす</td><td>—</td></tr>
+    <tr><td>太字／斜体／取り消し線／リンク</td><td>選択範囲の装飾</td><td><kbd>Ctrl</kbd>+<kbd>B</kbd>／<kbd>Ctrl</kbd>+<kbd>I</kbd>／<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>／<kbd>Ctrl</kbd>+<kbd>K</kbd></td></tr>
+    <tr><td>その他のオプション</td><td>表の挿入、書式設定のクリア</td><td>クリアは <kbd>Ctrl</kbd>+<kbd>Space</kbd></td></tr>
+    <tr><td>表示 ＞ マークダウン</td><td>「書式付き」（装飾表示）と「構文」（Markdown のまま）の切り替え</td><td>—</td></tr>
+  </table>
+  </div>
+
+  <h2 id="files">7. ファイルの保存・タブ・セッション</h2>
+  <figure>
+    <img src="../img/step1/17_saveas_encoding.png" alt="名前を付けて保存ダイアログでエンコードの一覧を開いたところ" loading="lazy">
+    <figcaption>図 7-1：名前を付けて保存。「エンコード」で文字コードを選べる</figcaption>
+  </figure>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>内容</th></tr>
+    <tr><td>エンコード</td><td>ANSI、UTF-16 LE、UTF-16 BE、UTF-8、UTF-8 (BOM 付き)。開いたファイルのエンコードはステータスバーに表示され、保存時に選び直せる</td></tr>
+    <tr><td>改行コード</td><td>Windows (CRLF)／Unix (LF)／Macintosh (CR) を判別してステータスバーに表示する</td></tr>
+    <tr><td>ファイルの種類</td><td>テキスト文書 (*.txt)／すべてのファイル</td></tr>
+    <tr><td>未保存タブを閉じる</td><td>「保存」「保存しない」「キャンセル」の確認が出る</td></tr>
+    <tr><td>セッションの復元</td><td>未保存のタブも含めて次回起動時に復元する（設定「メモ帳の起動時」で無効化できる）</td></tr>
+    <tr><td>最近使ったファイル</td><td>ファイル メニューの「新着順」に最大 10 件</td></tr>
+    <tr><td>複数ファイル</td><td>タブで開く。ドラッグで並べ替え、別ウィンドウへ切り離しができる</td></tr>
+  </table>
+  </div>
+
+  <h2 id="ai">8. AI 機能（Copilot）</h2>
+  <p>右上の「手書きツール」と右クリック メニューから使う。Microsoft アカウントでのサインインとクレジットが必要で、環境によってはローカル AI モデルのダウンロードを求められる。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>ショートカット</th></tr>
+    <tr><td>記述（プロンプトから文章を生成）</td><td><kbd>Ctrl</kbd>+<kbd>Q</kbd></td></tr>
+    <tr><td>リライト／カスタム リライト</td><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td></tr>
+    <tr><td>要約</td><td><kbd>Ctrl</kbd>+<kbd>M</kbd></td></tr>
+    <tr><td>短くする／長くする／スタイルの変更／書式設定の変更</td><td>—</td></tr>
+    <tr><td>Bing で定義</td><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td></tr>
+  </table>
+  </div>
+
+  <h2 id="shortcuts">9. ショートカット一覧</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>キー</th><th>機能</th><th>キー</th><th>機能</th></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>N</kbd></td><td>新しいタブ</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>元に戻す／やり直し</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd></td><td>新しいウィンドウ</td><td><kbd>Ctrl</kbd>+<kbd>X</kbd> / <kbd>C</kbd> / <kbd>V</kbd></td><td>切り取り／コピー／貼り付け</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>開く</td><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>すべて選択</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>保存</td><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>検索</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></td><td>名前を付けて保存</td><td><kbd>F3</kbd> / <kbd>Shift</kbd>+<kbd>F3</kbd></td><td>次を検索／前を検索</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd></td><td>すべて保存</td><td><kbd>Ctrl</kbd>+<kbd>H</kbd></td><td>置換</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>P</kbd></td><td>印刷</td><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td><td>行に移動</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>W</kbd></td><td>タブを閉じる</td><td><kbd>F5</kbd></td><td>日付と時刻</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>W</kbd></td><td>ウィンドウを閉じる</td><td><kbd>Ctrl</kbd>+<kbd>+</kbd> / <kbd>-</kbd> / <kbd>0</kbd></td><td>拡大／縮小／既定の倍率</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>I</kbd> / <kbd>K</kbd></td><td>太字／斜体／リンク（マークダウン）</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd></td><td>取り消し線（マークダウン）</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>書式設定のクリア</td><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Bing で定義</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Q</kbd> / <kbd>D</kbd> / <kbd>M</kbd></td><td>記述／リライト／要約（Copilot）</td><td><kbd>Alt</kbd></td><td>メニューのアクセスキー表示</td></tr>
+  </table>
+  </div>
+
+  <h2 id="scope">10. memopad で再現する範囲（仕分け）</h2>
+  <p>「メモ帳の機能はそのまま」を、<strong>テキスト エディタとして日常的に使う機能はすべて再現する</strong>と解釈し、Microsoft アカウントやクラウド前提の機能は対象外にする。仕分けは step2 の着手前にユーザーと確認する。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>区分</th><th>機能</th><th>方針</th></tr>
+    <tr><td><span class="tag must">必須</span></td><td>ファイル：新規／開く／保存／名前を付けて保存／印刷／ページ設定／最近使ったファイル</td><td>エンコード（ANSI、UTF-8、UTF-8 BOM、UTF-16 LE/BE）と改行コードの判別・表示も含める</td></tr>
+    <tr><td><span class="tag must">必須</span></td><td>編集：元に戻す／やり直し／切り取り／コピー／貼り付け／削除／すべて選択／日付と時刻</td><td></td></tr>
+    <tr><td><span class="tag must">必須</span></td><td>検索／置換（大文字小文字の区別・折り返し・上下方向）／行に移動</td><td>本家と同じショートカットを割り当てる</td></tr>
+    <tr><td><span class="tag must">必須</span></td><td>表示：ズーム（Ctrl+±、Ctrl+0）／ステータスバー／右端で折り返す</td><td>ステータスバーの項目（行・列、文字数、ズーム、改行コード、エンコード）も同じ並びにする</td></tr>
+    <tr><td><span class="tag must">必須</span></td><td>設定：フォント（ファミリ／スタイル／サイズ）、折り返しの既定値、テーマ</td><td>テーマは少なくともライト／ダーク</td></tr>
+    <tr><td><span class="tag must">必須（追加機能）</span></td><td><strong>背景色・文字色の変更</strong></td><td>標準色 16 色のパレット＋カラーピッカー。設定は次回起動時も保持する</td></tr>
+    <tr><td><span class="tag must">必須</span></td><td>インストーラ</td><td>Inno Setup。アンインストールも含む</td></tr>
+    <tr><td><span class="tag maybe">検討</span></td><td>タブ（複数ファイル）／セッション復元／未保存の確認ダイアログ</td><td>実装コストが大きい。まずは 1 ウィンドウ 1 ファイルで作り、要望があれば追加する案</td></tr>
+    <tr><td><span class="tag maybe">検討</span></td><td>マークダウン モード（書式ツールバー、装飾表示）</td><td>「メモ帳をシンプルなエディタとして使う」用途からは外れるため、後回しの案</td></tr>
+    <tr><td><span class="tag maybe">検討</span></td><td>スペル チェック／自動修正</td><td>日本語入力では効果が薄い。対象外の案</td></tr>
+    <tr><td><span class="tag skip">対象外</span></td><td>Copilot（記述・リライト・要約）、Bing で定義、ユーザー アバター、新着情報</td><td>Microsoft アカウントやオンライン サービスに依存するため作らない</td></tr>
+  </table>
+  </div>
+  <div class="note">
+    <strong>実装への影響：</strong>背景色と文字色を変えるだけなら Windows Forms の <code>TextBox</code> でも可能だが、ズームやマークダウン装飾まで視野に入れるなら <code>RichTextBox</code> か WPF の方が扱いやすい。UI フレームワークの選定は、上の仕分けが確定してから決める。
+  </div>
+</main>
+<footer class="site">
+  <div class="inner">memopad 備忘録 — スクリーンショットは自分の環境で撮影したもの。Windows およびメモ帳は Microsoft の製品です。</div>
+</footer>
+</body>
+</html>

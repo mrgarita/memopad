@@ -1,0 +1,178 @@
+/* memopad 備忘録サイト共通スタイル */
+:root {
+  --bg: #fafaf7;
+  --fg: #1f2328;
+  --muted: #59636e;
+  --line: #d9d9d2;
+  --accent: #0b5cad;
+  --accent-bg: #e8f1fb;
+  --code-bg: #f0f0ec;
+  --warn-bg: #fff6e0;
+  --warn-line: #e6b94d;
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Yu Gothic UI", "Meiryo", "Segoe UI", "Hiragino Sans", sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+}
+header.site {
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+header.site .inner, main, footer.site .inner {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+header.site .inner {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+header.site .brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+header.site nav a {
+  color: var(--accent);
+  text-decoration: none;
+  margin-right: 14px;
+}
+header.site nav a:hover { text-decoration: underline; }
+main { padding-top: 28px; padding-bottom: 60px; }
+h1 { font-size: 1.9rem; line-height: 1.35; margin: 0 0 8px; }
+h2 {
+  font-size: 1.35rem;
+  margin: 48px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--accent);
+}
+h3 { font-size: 1.1rem; margin: 28px 0 8px; }
+p.lead { color: var(--muted); margin-top: 0; }
+a { color: var(--accent); }
+code, kbd {
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  font-size: 0.92em;
+  background: var(--code-bg);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+kbd {
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  background: #fff;
+  white-space: nowrap;
+}
+pre {
+  background: var(--code-bg);
+  padding: 12px 14px;
+  border-radius: 6px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+pre code { background: none; padding: 0; }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0 20px;
+  font-size: 0.95rem;
+}
+.table-wrap { overflow-x: auto; }
+th, td {
+  border: 1px solid var(--line);
+  padding: 7px 10px;
+  vertical-align: top;
+  text-align: left;
+}
+th { background: var(--accent-bg); white-space: nowrap; }
+td.center, th.center { text-align: center; }
+figure {
+  margin: 20px 0 28px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid var(--line);
+}
+figcaption {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+.grid2 figure { margin: 0; }
+.note {
+  background: var(--accent-bg);
+  border-left: 4px solid var(--accent);
+  padding: 10px 14px;
+  margin: 16px 0;
+  border-radius: 0 6px 6px 0;
+}
+.warn {
+  background: var(--warn-bg);
+  border-left: 4px solid var(--warn-line);
+  padding: 10px 14px;
+  margin: 16px 0;
+  border-radius: 0 6px 6px 0;
+}
+.toc {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin: 20px 0 8px;
+}
+.toc ol { margin: 6px 0; padding-left: 22px; }
+.tag {
+  display: inline-block;
+  font-size: 0.8rem;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tag.must { background: #e6f4ea; border-color: #7cc48a; color: #1d5e2a; }
+.tag.maybe { background: #fff6e0; border-color: #e6b94d; color: #6b4d00; }
+.tag.skip { background: #f2f2f2; border-color: #c9c9c9; color: #666; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 20px 0; }
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+.card h3 { margin: 0 0 6px; }
+.card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.card .status { font-size: 0.85rem; margin-top: 8px; }
+footer.site {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 18px 0 30px;
+}
+@media (max-width: 600px) {
+  body { font-size: 15px; }
+  h1 { font-size: 1.5rem; }
+}

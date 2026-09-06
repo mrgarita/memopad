@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>memopad 備忘録</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./index.html">memopad 備忘録</a>
+    <nav>
+      <a href="./step1/index.html">step1 機能洗い出し</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>memopad.exe 制作の備忘録</h1>
+  <p class="lead">Windows 標準の「メモ帳」の機能はそのままに、背景色・文字色・フォントを自由に変えられるエディタを作るプロジェクトの記録。</p>
+
+  <h2>プロジェクトの目的</h2>
+  <p>シンプルなエディタとしてメモ帳を使う機会は多いが、<strong>背景色と文字色を自由に設定できない</strong>点に不満がある（フォントはメモ帳でも変更できる）。そこで、メモ帳の使い勝手を保ったまま次の機能を加えた <code>memopad.exe</code> を制作する。</p>
+  <ul>
+    <li>背景色・文字色の変更（標準色 16 色＋カラーピッカーで簡単に変更できること）</li>
+    <li>インストーラ形式で配布できること</li>
+  </ul>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>内容</th></tr>
+    <tr><td>制作環境（予定）</td><td>Visual Studio 2022（C#）、Inno Setup（インストーラ）</td></tr>
+    <tr><td>調査対象のメモ帳</td><td>Windows 11 Pro 上の Windows メモ帳（Store 版）11.2607.14.0</td></tr>
+    <tr><td>完了の定義</td><td>step3 のフィードバックが 0 件になった時点を v1.0 とする</td></tr>
+  </table>
+  </div>
+
+  <h2>進行 step と備忘録</h2>
+  <div class="cards">
+    <div class="card">
+      <h3><a href="./step1/index.html">step1：メモ帳の機能洗い出し</a></h3>
+      <p>本家メモ帳のメニュー・設定・ショートカット・ダイアログを UI Automation で列挙し、スクリーンショット付きで整理。memopad で再現する範囲を仕分けする。</p>
+      <div class="status"><span class="tag must">公開中</span> 2026-09-06</div>
+    </div>
+    <div class="card">
+      <h3>step2：memopad.exe の作成</h3>
+      <p>step1 の一覧に基づいて C# で実装し、背景色・文字色の変更機能とインストーラを加える。</p>
+      <div class="status"><span class="tag skip">準備中</span></div>
+    </div>
+    <div class="card">
+      <h3>step3：完成品のフィードバック</h3>
+      <p>実際に使って気づいた点を記録し、対応していく。フィードバックが 0 件になったら v1.0。</p>
+      <div class="status"><span class="tag skip">準備中</span></div>
+    </div>
+  </div>
+
+  <h2>更新履歴</h2>
+  <ul>
+    <li>2026-09-06：サイト開設。step1（メモ帳の機能洗い出し）を公開。</li>
+  </ul>
+</main>
+<footer class="site">
+  <div class="inner">memopad 備忘録 — スクリーンショットは自分の環境で撮影したもの。Windows およびメモ帳は Microsoft の製品です。</div>
+</footer>
+</body>
+</html>
