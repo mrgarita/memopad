@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>step2：memopad.exe の作成 | memopad 備忘録</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="../index.html">memopad 備忘録</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../step1/index.html">step1 機能洗い出し</a>
+      <a href="./index.html">step2 memopad.exe の作成</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>step2：memopad.exe の作成</h1>
+  <p class="lead">step1 で確定した仕分けに沿って、C#／WPF で memopad.exe を実装し、インストーラまで作る。着手日：2026-09-06</p>
+
+  <div class="toc">
+    <strong>目次</strong>
+    <ol>
+      <li><a href="#stack">技術選定（WPF を選んだ理由）</a></li>
+      <li><a href="#structure">プロジェクト構成</a></li>
+      <li><a href="#screens">画面と機能</a></li>
+      <li><a href="#colors">背景色・文字色（本題の追加機能）</a></li>
+      <li><a href="#files">ファイルの読み書き（エンコードと改行コード）</a></li>
+      <li><a href="#build">ビルドと実行</a></li>
+      <li><a href="#installer">インストーラ（Inno Setup）</a></li>
+      <li><a href="#diff">本家メモ帳との違い</a></li>
+      <li><a href="#notes">つまずいた点のメモ</a></li>
+    </ol>
+  </div>
+
+  <h2 id="stack">1. 技術選定（WPF を選んだ理由）</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>候補</th><th>評価</th></tr>
+    <tr><td><strong>WPF（採用）</strong></td><td>フォント・色・ズームをプロパティで直接扱える。タブや検索バーなどのレイアウトを XAML で組みやすい。.NET 9 の Fluent テーマを使うとライト／ダーク テーマがメニューやダイアログまで自動で切り替わる</td></tr>
+    <tr><td>Windows Forms</td><td>背景色と文字色を変えるだけなら最短。ただし TextBox のズームやタブ付きの画面をきれいに作るのに手間がかかり、ダーク テーマは自前で描くことになる</td></tr>
+    <tr><td>WinUI 3</td><td>本家メモ帳と同じ基盤で見た目は最も近い。反面、配布に Windows App SDK ランタイムが要り、ツールチェーンも重い</td></tr>
+  </table>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>内容</th></tr>
+    <tr><td>言語／フレームワーク</td><td>C# 13、.NET 9、WPF（<code>net9.0-windows</code>）</td></tr>
+    <tr><td>テーマ</td><td>.NET 9 WPF の Fluent テーマ（<code>Application.ThemeMode</code>）。ライト／ダーク／システム設定</td></tr>
+    <tr><td>カラーピッカー</td><td>Windows 標準の「色の設定」ダイアログ（Windows Forms の <code>ColorDialog</code>）を WPF から呼ぶ</td></tr>
+    <tr><td>ANSI の読み書き</td><td>NuGet の <code>System.Text.Encoding.CodePages</code> で Shift_JIS（cp932）を有効化</td></tr>
+    <tr><td>設定の保存先</td><td><code>%APPDATA%\memopad\settings.json</code></td></tr>
+    <tr><td>インストーラ</td><td>Inno Setup 6。.NET ランタイム同梱（self-contained）で配布</td></tr>
+    <tr><td>開発環境</td><td>Visual Studio 2022 が無い端末でも <code>dotnet</code> CLI だけでビルドできる構成にした（<code>memopad.sln</code> があるので Visual Studio でも開ける）</td></tr>
+  </table>
+  </div>
+
+  <h2 id="structure">2. プロジェクト構成</h2>
+  <pre><code>memopad.sln
+src/memopad/
+  App.xaml(.cs)            起動処理：設定の読み込み、テーマ適用、引数のファイルを開く
+  MainWindow.xaml(.cs)     メニュー、タブ ストリップ、検索／置換バー、ステータスバー
+  Commands.cs              メニューとショートカットの定義（キー割り当てはメモ帳に合わせる）
+  Models/Document.cs       タブ 1 つ分の文書（パス、エンコード、改行コード、変更フラグ）
+  Views/EditorView.xaml    本文の TextBox。タブごとに持つので元に戻す履歴もタブ単位
+  Views/DocumentTab.cs     Document と EditorView の組
+  Dialogs/                 保存確認、行に移動、フォント、ページ設定、色の設定、バージョン情報
+  Services/TextFileService.cs   エンコード判定と改行コードの正規化
+  Services/AppSettings.cs       設定（JSON で保存）
+  Services/ThemeService.cs      テーマの適用と既定色
+  Services/PrintService.cs      印刷（ヘッダー／フッター付き）
+  Services/ColorUtil.cs         標準 16 色の定義と色の文字列変換
+  memopad.ico              アプリ アイコン（docs/tools/make-icon.ps1 で生成）
+installer/
+  memopad.iss              Inno Setup の定義
+  build-installer.ps1      発行＋インストーラ作成
+docs/tools/
+  capture-memopad.ps1      動作確認を兼ねたスクリーンショット自動撮影</code></pre>
+  <div class="note">
+    <strong>タブの作り：</strong>WPF の TabControl はタブを切り替えると中身を作り直すため、元に戻す履歴やカーソル位置が失われる。そこでタブの見出しは横並びの ListBox で作り、本文は <code>DocumentTab</code> が持つ EditorView（TextBox）をそのまま差し替える方式にした。タブごとに TextBox が生きているので、履歴も選択範囲もタブ単位で残る。
+  </div>
+
+  <h2 id="screens">3. 画面と機能</h2>
+  <figure>
+    <img src="../img/step2/01_main.png" alt="memopad のメイン画面。メニュー、タブ、本文、ステータスバー" width="1000" height="720">
+    <figcaption>図 3-1：メイン画面（ライト テーマ）。メニュー・タブ・本文・ステータスバーの並びは本家に合わせた</figcaption>
+  </figure>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step2/02_menu_file.png" alt="ファイル メニュー" loading="lazy">
+      <figcaption>図 3-2：ファイル メニュー。項目とショートカットは step1 の一覧どおり</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/03_menu_edit.png" alt="編集メニュー" loading="lazy">
+      <figcaption>図 3-3：編集メニュー。やり直し（Ctrl+Y）はメニューにも載せた</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/06_find.png" alt="検索バー" loading="lazy">
+      <figcaption>図 3-4：検索バー（Ctrl+F）。次へ／前へ、大文字小文字の区別、折り返し</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/07_replace.png" alt="置換バー" loading="lazy">
+      <figcaption>図 3-5：置換バー（Ctrl+H）。置換／すべて置換は元に戻す 1 回で戻せる</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/08_goto.png" alt="行に移動ダイアログ" loading="lazy">
+      <figcaption>図 3-6：行に移動（Ctrl+G）。折り返しの見た目ではなく改行で数えた行番号</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/09_font_dialog.png" alt="フォント ダイアログ" loading="lazy">
+      <figcaption>図 3-7：フォント。ファミリは日本語名で表示し、絞り込み欄で探せる。サイズは本家と同じ 16 段階＋直接入力</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/13_tabs_unsaved.png" alt="2 つのタブ。未保存のタブに●印" loading="lazy">
+      <figcaption>図 3-8：タブ。未保存のタブは●、タイトルバーは * が付く。Ctrl+Tab で切り替え、中クリックで閉じる</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/14_save_changes.png" alt="未保存の確認ダイアログ" loading="lazy">
+      <figcaption>図 3-9：未保存のまま閉じたときの確認。保存／保存しない／キャンセルの 3 択</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/15_page_setup.png" alt="ページ設定ダイアログ" loading="lazy">
+      <figcaption>図 3-10：ページ設定。向き・余白（mm）・ヘッダー／フッター（&amp;f &amp;p &amp;d &amp;t）</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/16_about.png" alt="バージョン情報" loading="lazy">
+      <figcaption>図 3-11：memopad について。バージョンと設定ファイルの場所</figcaption>
+    </figure>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <tr><th>分類</th><th>実装した機能</th></tr>
+    <tr><td>ファイル</td><td>新しいタブ、新しいウィンドウ、開く（複数選択可）、最近使ったファイル（10 件）、保存、名前を付けて保存、すべて保存、ページ設定、印刷、タブを閉じる、ウィンドウを閉じる、終了。ドラッグ＆ドロップでも開ける</td></tr>
+    <tr><td>編集</td><td>元に戻す、やり直し、切り取り、コピー、貼り付け、削除、検索、次を検索、前を検索、置換、行へ移動、すべて選択、日付と時刻（F5）</td></tr>
+    <tr><td>表示</td><td>ズーム（Ctrl+±、Ctrl+0、Ctrl+ホイール。10〜500%）、ステータスバー、右端で折り返す</td></tr>
+    <tr><td>書式（追加）</td><td>フォント、背景色、文字色、既定の色に戻す、テーマ（ライト／ダーク／システム）</td></tr>
+    <tr><td>ステータスバー</td><td>行・列、文字数（改行 1 つ＝1 文字、本家と同じ数え方）、ズーム、改行コード、エンコード。改行コードとエンコードはクリックで切り替えられる</td></tr>
+    <tr><td>タブ</td><td>複数ファイル、未保存●印、Ctrl+Tab／Ctrl+Shift+Tab、中クリックで閉じる、最後のタブを閉じるとウィンドウを閉じる</td></tr>
+  </table>
+  </div>
+
+  <h2 id="colors">4. 背景色・文字色（本題の追加機能）</h2>
+  <p>書式メニューの「背景色」「文字色」に標準 16 色を色見本付きで並べ、その下に「その他の色...」を置いた。16 色は Windows の基本 16 色（黒・茶・緑・オリーブ・紺・紫・青緑・銀・灰・赤・黄緑・黄・青・赤紫・水色・白）。</p>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step2/05_menu_format_background.png" alt="書式メニューの背景色サブメニュー。16 色が色見本付きで並ぶ" loading="lazy">
+      <figcaption>図 4-1：背景色のサブメニュー。色見本と名前、16 進の値を並べた</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/10_colors_navy_yellow.png" alt="背景色を紺、文字色を黄にした画面" loading="lazy">
+      <figcaption>図 4-2：背景色を紺、文字色を黄にしたところ。設定は次回起動時も保持される</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/11_color_picker.png" alt="Windows 標準の色の設定ダイアログ" loading="lazy">
+      <figcaption>図 4-3：「その他の色...」で開くカラーピッカー。Windows 標準の「色の設定」で、作成した色も保持する</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/12_dark_theme.png" alt="ダーク テーマの画面" loading="lazy">
+      <figcaption>図 4-4：テーマをダークにしたところ。色を指定していないときはテーマの既定色（ダークは #272727 と明るい灰色）</figcaption>
+    </figure>
+  </div>
+  <div class="note">
+    <strong>実装のポイント：</strong>Fluent テーマの TextBox はフォーカス時に背景色を上書きする作りなので、本文の TextBox だけはテンプレートを素の Border＋ScrollViewer に差し替えた（<code>Views/EditorView.xaml</code>）。これでユーザーが選んだ背景色・文字色がどの状態でも崩れない。キャレットの色は文字色に合わせ、選択範囲は文字色の半透明にして、どんな配色でも見えるようにしている。
+  </div>
+
+  <h2 id="files">5. ファイルの読み書き（エンコードと改行コード）</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>処理</th><th>やり方</th></tr>
+    <tr><td>エンコードの判定</td><td>BOM があれば UTF-8 (BOM 付き)／UTF-16 LE／UTF-16 BE。無ければ UTF-8 として厳密にデコードしてみて、失敗したら ANSI（Shift_JIS）とみなす</td></tr>
+    <tr><td>改行コードの判定</td><td>最初に現れる改行を見る（CRLF／LF／CR）。改行が無ければ CRLF</td></tr>
+    <tr><td>内部表現</td><td>読み込み時に改行を CRLF に揃えて TextBox に入れる。保存時に元の改行コードへ戻す。そのため LF のファイルを開いて編集しても LF のまま保存される</td></tr>
+    <tr><td>保存時のエンコード選択</td><td>WPF の共通ダイアログには本家のような「エンコード」欄を足せないので、「ファイルの種類」の一覧に UTF-8／UTF-8 (BOM 付き)／ANSI／UTF-16 LE／UTF-16 BE を並べて選ばせる。ステータスバーのエンコード表示をクリックしても切り替えられる</td></tr>
+    <tr><td>同じファイルを 2 度開く</td><td>既に開いているタブへ移動する（本家と同じ）</td></tr>
+    <tr><td>空の「タイトルなし」があるとき</td><td>ファイルを開くとそのタブを使い回す（本家と同じ）</td></tr>
+  </table>
+  </div>
+
+  <h2 id="build">6. ビルドと実行</h2>
+  <pre><code># ビルド（Debug）
+dotnet build src\memopad\memopad.csproj
+
+# 実行
+src\memopad\bin\Debug\net9.0-windows\memopad.exe [開くファイル...]
+
+# スクリーンショットの再生成（動作確認を兼ねる。実行中はマウス／キーボードに触らない）
+.\docs\tools\capture-memopad.ps1</code></pre>
+  <p>必要なのは .NET 9 SDK だけ。Visual Studio 2022 で開く場合は <code>memopad.sln</code> を使う。</p>
+
+  <h2 id="installer">7. インストーラ（Inno Setup）</h2>
+  <pre><code># Inno Setup 6 の導入（初回のみ）
+winget install JRSoftware.InnoSetup
+
+# 発行（.NET ランタイム同梱）→ インストーラ作成
+.\installer\build-installer.ps1
+# → installer\output\memopad-setup-&lt;version&gt;.exe</code></pre>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>内容</th></tr>
+    <tr><td>配布形式</td><td>self-contained（win-x64）。インストール先の PC に .NET を入れる必要が無い</td></tr>
+    <tr><td>インストール先</td><td>既定はユーザー単位（管理者権限不要）。ダイアログで全ユーザー向けも選べる</td></tr>
+    <tr><td>スタート メニュー</td><td>memopad と「memopad をアンインストール」</td></tr>
+    <tr><td>デスクトップ ショートカット</td><td>任意（既定はオフ）</td></tr>
+    <tr><td>関連付け</td><td>「プログラムから開く」の候補に memopad を追加する（.txt の既定アプリは変えない）</td></tr>
+    <tr><td>アンインストール</td><td>設定とアプリ一覧から。<code>%APPDATA%\memopad</code> の設定ファイルは残す</td></tr>
+  </table>
+  </div>
+
+  <h2 id="diff">8. 本家メモ帳との違い</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>本家メモ帳（11.2607）</th><th>memopad</th></tr>
+    <tr><td>背景色・文字色</td><td>テーマ（ライト／ダーク）のみ</td><td><strong>標準 16 色＋カラーピッカーで自由に設定</strong></td></tr>
+    <tr><td>フォント設定</td><td>設定ページ</td><td>書式メニューのダイアログ（旧メモ帳の「書式 ＞ フォント」に近い）</td></tr>
+    <tr><td>保存時のエンコード</td><td>ダイアログ内のエンコード欄</td><td>「ファイルの種類」で選ぶ／ステータスバーをクリック</td></tr>
+    <tr><td>セッション復元</td><td>あり</td><td>なし（仕分けで対象外）。起動時は常に空のタブ</td></tr>
+    <tr><td>マークダウン、スペル チェック、Copilot</td><td>あり</td><td>なし（仕分けで対象外）</td></tr>
+    <tr><td>ページ設定</td><td>Windows 共通ダイアログ</td><td>自前のダイアログ（向き・余白 mm・ヘッダー／フッター）</td></tr>
+    <tr><td>設定の場所</td><td>アプリ内の設定ページ</td><td><code>%APPDATA%\memopad\settings.json</code>（JSON なので手で編集もできる）</td></tr>
+  </table>
+  </div>
+
+  <h2 id="notes">9. つまずいた点のメモ</h2>
+  <ul>
+    <li><strong>Windows Forms と WPF の型名が衝突する。</strong><code>UseWindowsForms</code> を有効にすると暗黙の using で <code>Color</code> や <code>TextBox</code> が二重定義になる。csproj で <code>&lt;Using Remove="System.Windows.Forms" /&gt;</code> と <code>&lt;Using Remove="System.Drawing" /&gt;</code> を書いて外した。</li>
+    <li><strong>Fluent テーマの Button はアクセスキーの "_" を解釈しない。</strong>Content に「保存(_S)」と書くとそのまま表示される。<code>&lt;AccessText&gt;</code> を Content にするか、ラベルは <code>Label</code> にすると下線付きで出る。</li>
+    <li><strong>本家の文字数は改行を 1 文字と数える。</strong>最初は改行を除いて数えていて 9 少なかった。内部は CRLF なので <code>\r</code> の分を引くと本家と一致する。</li>
+    <li><strong>C# 13 では <code>obj?.Prop = value</code> のような null 条件付き代入は書けない。</strong>.NET 9 SDK の既定言語バージョンでは <code>if (x is { } v)</code> で受けてから代入する。</li>
+    <li><strong>撮影スクリプトのキー入力が別アプリへ飛ぶ事故。</strong>step1 と同じ対策で、キー送信前に前面プロセスを確認し、長文はクリップボード経由で貼り付けるようにした。</li>
+  </ul>
+</main>
+<footer class="site">
+  <div class="inner">memopad 備忘録 — スクリーンショットは自分の環境で撮影したもの。Windows およびメモ帳は Microsoft の製品です。</div>
+</footer>
+</body>
+</html>

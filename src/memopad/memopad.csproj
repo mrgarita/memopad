@@ -9,6 +9,8 @@
     <!-- 「その他の色」のカラーピッカーに Windows 標準の ColorDialog を使うため -->
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>memopad</AssemblyName>
+    <!-- アイコンは docs/tools/make-icon.ps1 で生成する -->
+    <ApplicationIcon>memopad.ico</ApplicationIcon>
     <RootNamespace>Memopad</RootNamespace>
     <Version>0.1.0</Version>
     <Product>memopad</Product>
