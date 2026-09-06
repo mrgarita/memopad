@@ -206,7 +206,11 @@ winget install JRSoftware.InnoSetup
     <tr><td>デスクトップ ショートカット</td><td>任意（既定はオフ）</td></tr>
     <tr><td>関連付け</td><td>「プログラムから開く」の候補に memopad を追加する（.txt の既定アプリは変えない）</td></tr>
     <tr><td>アンインストール</td><td>設定とアプリ一覧から。<code>%APPDATA%\memopad</code> の設定ファイルは残す</td></tr>
+    <tr><td>サイズ</td><td>約 51 MB（.NET ランタイム同梱のため。ランタイム別配布にすれば数 MB になるが、導入の手間が増える）</td></tr>
   </table>
+  </div>
+  <div class="note">
+    <strong>検証（2026-09-06）：</strong><code>/VERYSILENT /CURRENTUSER /DIR=...</code> で一時フォルダへサイレント インストールし、インストール先の memopad.exe が起動してサンプル ファイルを開けること、スタート メニューにショートカットが作られることを確認。続けて <code>unins000.exe /VERYSILENT</code> でアンインストールし、フォルダとレジストリの登録が残らないことを確認した。
   </div>
 
   <h2 id="diff">8. 本家メモ帳との違い</h2>

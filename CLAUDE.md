@@ -5,9 +5,11 @@
 
 ## リポジトリの状態
 
-仕様策定段階。現時点で「正」となるのは `project.txt`（プロダクトの目的・仕様・
-制作環境・進行 step を定義）のみで、実装コードも備忘録サイト（`docs/site/`）も
-まだ存在しない。Git リポジトリも未初期化。
+step2（実装）まで完了し、step3（フィードバック対応）に入る段階。「正」となるのは
+`project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
+仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#／WPF）、
+インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
+Git リポジトリはローカルのみ（GitHub 未公開）。
 
 ## プロダクト概要
 
@@ -74,10 +76,15 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
 以下は `project.txt` で「現時点で検討している環境のため変更可」とされている。
 変更する場合は本ファイルと `project.txt` の両方を更新する。
 
-- **アプリ本体**：Visual Studio 2022／C# で制作する Windows デスクトップアプリ。
-  UI フレームワーク（Windows Forms／WPF）は step1 の機能洗い出し結果を踏まえて
-  決定する（未確定）
-- **インストーラ**：Inno Setup
+- **アプリ本体**：C#／WPF（.NET 9、`net9.0-windows`）。テーマは .NET 9 の Fluent
+  テーマ（`Application.ThemeMode`）。Visual Studio 2022 が無い端末でも `dotnet` CLI
+  だけでビルドできる構成（`memopad.sln` があるので Visual Studio でも開ける）。
+  選定理由は `docs/site/step2/index.html` 1 節
+- **ビルドと確認**：`dotnet build src\memopad\memopad.csproj`。動作確認とスクリーン
+  ショットは `docs\tools\capture-memopad.ps1`（実行中はマウス／キーボードに触らない）
+- **インストーラ**：Inno Setup 6（winget で導入済み）。`installer\build-installer.ps1`
+  で self-contained 発行→ `installer\output\memopad-setup-<version>.exe`
+- **設定の保存先**：`%APPDATA%\memopad\settings.json`
 - **備忘録サイト**：`docs/site/` 配下の静的 HTML。`index.html` を起点に各 step の
   ページへリンクする。スクリーンショットは `docs/site/img/` に置く
 - **MCP サーバー**：Visual Studio 等、本プロジェクトで使えそうな MCP サーバーが
