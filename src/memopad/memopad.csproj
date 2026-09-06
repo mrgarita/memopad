@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- 「その他の色」のカラーピッカーに Windows 標準の ColorDialog を使うため -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>memopad</AssemblyName>
+    <RootNamespace>Memopad</RootNamespace>
+    <Version>0.1.0</Version>
+    <Product>memopad</Product>
+    <Description>背景色と文字色を変えられるメモ帳</Description>
+    <Copyright>mrgarita</Copyright>
+    <!-- WPF0001：.NET 9 の Fluent テーマ（ThemeMode）は実験的 API 扱いのため警告を抑止する -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <SatelliteResourceLanguages>ja</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWindowsForms が暗黙に足す using は WPF の型名（Color, TextBox など）と衝突するので外す。
+         Windows Forms の型は ColorPicker などで完全修飾して使う -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ANSI（Shift_JIS, cp932）の読み書きに必要 -->
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.11" />
+  </ItemGroup>
+
+</Project>

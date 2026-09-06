@@ -1,0 +1,199 @@
+<Window x:Class="Memopad.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Memopad"
+        Title="memopad"
+        MinWidth="420" MinHeight="300"
+        AllowDrop="True"
+        Drop="Window_Drop"
+        PreviewMouseWheel="Window_PreviewMouseWheel"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        Closing="Window_Closing">
+    <Window.CommandBindings>
+        <!-- ファイル -->
+        <CommandBinding Command="{x:Static local:Commands.NewTab}" Executed="NewTab_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.NewWindow}" Executed="NewWindow_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.Open}" Executed="Open_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.Save}" Executed="Save_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.SaveAs}" Executed="SaveAs_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.SaveAll}" Executed="SaveAll_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.CloseTab}" Executed="CloseTab_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.CloseWindow}" Executed="CloseWindow_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.Exit}" Executed="CloseWindow_Executed" />
+        <!-- 編集 -->
+        <CommandBinding Command="{x:Static local:Commands.Find}" Executed="Find_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.FindNext}" Executed="FindNext_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.FindPrevious}" Executed="FindPrevious_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.Replace}" Executed="Replace_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.GoTo}" Executed="GoTo_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.InsertDateTime}" Executed="InsertDateTime_Executed" />
+        <!-- 表示 -->
+        <CommandBinding Command="{x:Static local:Commands.ZoomIn}" Executed="ZoomIn_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.ZoomOut}" Executed="ZoomOut_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.ZoomReset}" Executed="ZoomReset_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.ToggleStatusBar}" Executed="ToggleStatusBar_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.ToggleWordWrap}" Executed="ToggleWordWrap_Executed" />
+        <!-- 書式 -->
+        <CommandBinding Command="{x:Static local:Commands.ResetColors}" Executed="ResetColors_Executed" />
+    </Window.CommandBindings>
+
+    <DockPanel>
+        <!-- メニュー：項目とショートカットはメモ帳に合わせる -->
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="ファイル(_F)">
+                <MenuItem Header="新しいタブ(_N)" Command="{x:Static local:Commands.NewTab}" />
+                <MenuItem Header="新しいウィンドウ(_W)" Command="{x:Static local:Commands.NewWindow}" />
+                <MenuItem Header="開く(_O)..." Command="{x:Static local:Commands.Open}" />
+                <MenuItem x:Name="RecentFilesMenu" Header="最近使ったファイル(_R)" SubmenuOpened="RecentFilesMenu_SubmenuOpened">
+                    <MenuItem Header="(なし)" IsEnabled="False" />
+                </MenuItem>
+                <MenuItem Header="保存(_S)" Command="{x:Static local:Commands.Save}" />
+                <MenuItem Header="名前を付けて保存(_A)..." Command="{x:Static local:Commands.SaveAs}" />
+                <MenuItem Header="すべて保存(_L)" Command="{x:Static local:Commands.SaveAll}" />
+                <Separator />
+                <MenuItem Header="ページ設定(_U)..." Command="{x:Static local:Commands.PageSetup}" />
+                <MenuItem Header="印刷(_P)..." Command="{x:Static local:Commands.Print}" />
+                <Separator />
+                <MenuItem Header="タブを閉じる(_C)" Command="{x:Static local:Commands.CloseTab}" />
+                <MenuItem Header="ウィンドウを閉じる(_E)" Command="{x:Static local:Commands.CloseWindow}" />
+                <MenuItem Header="終了(_X)" Command="{x:Static local:Commands.Exit}" />
+            </MenuItem>
+            <MenuItem Header="編集(_E)">
+                <MenuItem Header="元に戻す(_U)" Command="Undo" />
+                <MenuItem Header="やり直し(_R)" Command="Redo" />
+                <Separator />
+                <MenuItem Header="切り取り(_T)" Command="Cut" />
+                <MenuItem Header="コピー(_C)" Command="Copy" />
+                <MenuItem Header="貼り付け(_P)" Command="Paste" />
+                <MenuItem Header="削除(_L)" Command="Delete" />
+                <Separator />
+                <MenuItem Header="検索(_F)..." Command="{x:Static local:Commands.Find}" />
+                <MenuItem Header="次を検索(_N)" Command="{x:Static local:Commands.FindNext}" />
+                <MenuItem Header="前を検索(_V)" Command="{x:Static local:Commands.FindPrevious}" />
+                <MenuItem Header="置換(_R)..." Command="{x:Static local:Commands.Replace}" />
+                <MenuItem Header="行へ移動(_G)..." Command="{x:Static local:Commands.GoTo}" />
+                <Separator />
+                <MenuItem Header="すべて選択(_A)" Command="SelectAll" />
+                <MenuItem Header="日付と時刻(_D)" Command="{x:Static local:Commands.InsertDateTime}" />
+            </MenuItem>
+            <MenuItem Header="表示(_V)">
+                <MenuItem Header="ズーム(_Z)">
+                    <MenuItem Header="拡大(_I)" Command="{x:Static local:Commands.ZoomIn}" InputGestureText="Ctrl+プラス記号 (+)" />
+                    <MenuItem Header="縮小(_O)" Command="{x:Static local:Commands.ZoomOut}" InputGestureText="Ctrl+マイナス記号 (-)" />
+                    <MenuItem Header="既定の倍率に戻す(_R)" Command="{x:Static local:Commands.ZoomReset}" InputGestureText="Ctrl+0" />
+                </MenuItem>
+                <MenuItem x:Name="StatusBarMenuItem" Header="ステータス バー(_S)" IsCheckable="True" Command="{x:Static local:Commands.ToggleStatusBar}" />
+                <MenuItem x:Name="WordWrapMenuItem" Header="右端で折り返す(_W)" IsCheckable="True" Command="{x:Static local:Commands.ToggleWordWrap}" />
+            </MenuItem>
+            <!-- 書式：memopad の追加機能（背景色・文字色）とフォント・テーマ -->
+            <MenuItem Header="書式(_O)">
+                <MenuItem Header="フォント(_F)..." Command="{x:Static local:Commands.Font}" />
+                <Separator />
+                <MenuItem x:Name="BackgroundColorMenu" Header="背景色(_B)" />
+                <MenuItem x:Name="ForegroundColorMenu" Header="文字色(_T)" />
+                <MenuItem Header="既定の色に戻す(_D)" Command="{x:Static local:Commands.ResetColors}" />
+                <Separator />
+                <MenuItem Header="テーマ(_M)">
+                    <MenuItem x:Name="ThemeLightMenuItem" Header="ライト(_L)" IsCheckable="True" Tag="Light" Click="ThemeMenuItem_Click" />
+                    <MenuItem x:Name="ThemeDarkMenuItem" Header="ダーク(_D)" IsCheckable="True" Tag="Dark" Click="ThemeMenuItem_Click" />
+                    <MenuItem x:Name="ThemeSystemMenuItem" Header="システム設定を使用する(_S)" IsCheckable="True" Tag="System" Click="ThemeMenuItem_Click" />
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="ヘルプ(_H)">
+                <MenuItem Header="memopad について(_A)" Command="{x:Static local:Commands.About}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- ステータスバー：行・列／文字数／ズーム／改行コード／エンコード（メモ帳と同じ並び） -->
+        <StatusBar x:Name="StatusBar" DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="PositionText" Text="行 1、列 1" MinWidth="110" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock x:Name="CharCountText" Text="0 文字" MinWidth="80" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="ZoomText" Text="100%" MinWidth="50" Margin="0,0,16,0" />
+                    <TextBlock x:Name="LineEndingText" Text="Windows (CRLF)" MinWidth="120" Margin="0,0,16,0"
+                               Cursor="Hand" ToolTip="クリックして改行コードを変更" MouseLeftButtonUp="LineEndingText_Click" />
+                    <TextBlock x:Name="EncodingText" Text="UTF-8" MinWidth="110"
+                               Cursor="Hand" ToolTip="クリックしてエンコードを変更" MouseLeftButtonUp="EncodingText_Click" />
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
+
+        <!-- 検索／置換バー：Ctrl+F / Ctrl+H で表示、Esc で閉じる -->
+        <Border x:Name="FindBar" DockPanel.Dock="Top" Visibility="Collapsed" Padding="8,6" BorderThickness="0,0,0,1"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" MaxWidth="360" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="検索:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBox x:Name="FindTextBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
+                         KeyDown="FindTextBox_KeyDown" TextChanged="FindTextBox_TextChanged" />
+                <Button Grid.Row="0" Grid.Column="2" Content="↓ 次へ" Margin="6,0,0,0" Click="FindNextButton_Click" ToolTip="次を検索 (F3)" />
+                <Button Grid.Row="0" Grid.Column="3" Content="↑ 前へ" Margin="6,0,0,0" Click="FindPreviousButton_Click" ToolTip="前を検索 (Shift+F3)" />
+                <CheckBox x:Name="MatchCaseCheckBox" Grid.Row="0" Grid.Column="4" Content="大文字と小文字を区別する" Margin="14,0,0,0" VerticalAlignment="Center" />
+                <CheckBox x:Name="WrapAroundCheckBox" Grid.Row="0" Grid.Column="5" Content="折り返す" Margin="12,0,0,0" VerticalAlignment="Center" IsChecked="True" />
+                <Button Grid.Row="0" Grid.Column="7" Content="✕" Width="28" Click="CloseFindBar_Click" ToolTip="閉じる (Esc)" />
+
+                <TextBlock x:Name="ReplaceLabel" Grid.Row="1" Grid.Column="0" Text="置換:" VerticalAlignment="Center" Margin="0,6,8,0" />
+                <TextBox x:Name="ReplaceTextBox" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,6,0,0" KeyDown="ReplaceTextBox_KeyDown" />
+                <Button x:Name="ReplaceButton" Grid.Row="1" Grid.Column="2" Content="置換" Margin="6,6,0,0" Click="ReplaceButton_Click" />
+                <Button x:Name="ReplaceAllButton" Grid.Row="1" Grid.Column="3" Content="すべて置換" Margin="6,6,0,0" Click="ReplaceAllButton_Click" />
+                <TextBlock x:Name="FindStatusText" Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="3" Margin="14,6,0,0" VerticalAlignment="Center" Opacity="0.8" />
+            </Grid>
+        </Border>
+
+        <!-- タブ ストリップ＋編集領域 -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0">
+                <Button DockPanel.Dock="Right" Content="＋" Width="32" Margin="4,2" Padding="0" Command="{x:Static local:Commands.NewTab}" ToolTip="新しいタブ (Ctrl+N)" />
+                <ListBox x:Name="TabList"
+                         BorderThickness="0"
+                         Padding="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                         SelectionChanged="TabList_SelectionChanged"
+                         PreviewMouseDown="TabList_PreviewMouseDown">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel MinWidth="120" Margin="2,0">
+                                <Button DockPanel.Dock="Right" Content="✕" Width="22" Height="22" Padding="0" Margin="8,0,0,0"
+                                        Background="Transparent" BorderThickness="0"
+                                        ToolTip="タブを閉じる (Ctrl+W)" Click="CloseTabButton_Click" />
+                                <TextBlock Text="{Binding Document.TabTitle}" VerticalAlignment="Center" ToolTip="{Binding Document.FilePath}" />
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+            <ContentControl x:Name="EditorHost" Grid.Row="1" Focusable="False" />
+        </Grid>
+    </DockPanel>
+</Window>
