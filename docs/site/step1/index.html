@@ -298,7 +298,7 @@
   </div>
 
   <h2 id="scope">10. memopad で再現する範囲（仕分け）</h2>
-  <p>「メモ帳の機能はそのまま」を、<strong>テキスト エディタとして日常的に使う機能はすべて再現する</strong>と解釈し、Microsoft アカウントやクラウド前提の機能は対象外にする。仕分けは step2 の着手前にユーザーと確認する。</p>
+  <p>「メモ帳の機能はそのまま」を、<strong>テキスト エディタとして日常的に使う機能はすべて再現する</strong>と解釈し、Microsoft アカウントやクラウド前提の機能は対象外にする。<strong>2026-09-06 にタブ・セッション復元・未保存の確認ダイアログの 3 点をユーザーと確定した</strong>（下表の「確定」欄を参照）。マークダウンとスペル チェックは未確定のまま残している。</p>
   <div class="table-wrap">
   <table>
     <tr><th>区分</th><th>機能</th><th>方針</th></tr>
@@ -309,14 +309,19 @@
     <tr><td><span class="tag must">必須</span></td><td>設定：フォント（ファミリ／スタイル／サイズ）、折り返しの既定値、テーマ</td><td>テーマは少なくともライト／ダーク</td></tr>
     <tr><td><span class="tag must">必須（追加機能）</span></td><td><strong>背景色・文字色の変更</strong></td><td>標準色 16 色のパレット＋カラーピッカー。設定は次回起動時も保持する</td></tr>
     <tr><td><span class="tag must">必須</span></td><td>インストーラ</td><td>Inno Setup。アンインストールも含む</td></tr>
-    <tr><td><span class="tag maybe">検討</span></td><td>タブ（複数ファイル）／セッション復元／未保存の確認ダイアログ</td><td>実装コストが大きい。まずは 1 ウィンドウ 1 ファイルで作り、要望があれば追加する案</td></tr>
-    <tr><td><span class="tag maybe">検討</span></td><td>マークダウン モード（書式ツールバー、装飾表示）</td><td>「メモ帳をシンプルなエディタとして使う」用途からは外れるため、後回しの案</td></tr>
-    <tr><td><span class="tag maybe">検討</span></td><td>スペル チェック／自動修正</td><td>日本語入力では効果が薄い。対象外の案</td></tr>
+    <tr><td><span class="tag must">必須</span></td><td><strong>タブ（複数ファイル）</strong></td><td>2026-09-06 確定。タブで複数ファイルを開く。新しいタブ、タブを閉じる、タブの切り替えを備える</td></tr>
+    <tr><td><span class="tag must">必須</span></td><td><strong>未保存の確認ダイアログ</strong></td><td>2026-09-06 確定。未保存のまま閉じたら「保存／保存しない／キャンセル」を出す。タブを閉じるとき、ウィンドウを閉じるとき、終了するときに働く</td></tr>
+    <tr><td><span class="tag skip">対象外</span></td><td>セッション復元</td><td>2026-09-06 確定。未保存タブを次回起動時に復元する動作は作らない。起動時は常に新規の空タブから始める</td></tr>
+    <tr><td><span class="tag maybe">検討</span></td><td>マークダウン モード（書式ツールバー、装飾表示）</td><td>「メモ帳をシンプルなエディタとして使う」用途からは外れるため、後回しの案。<strong>未確定</strong></td></tr>
+    <tr><td><span class="tag maybe">検討</span></td><td>スペル チェック／自動修正</td><td>日本語入力では効果が薄い。対象外の案。<strong>未確定</strong></td></tr>
     <tr><td><span class="tag skip">対象外</span></td><td>Copilot（記述・リライト・要約）、Bing で定義、ユーザー アバター、新着情報</td><td>Microsoft アカウントやオンライン サービスに依存するため作らない</td></tr>
   </table>
   </div>
   <div class="note">
-    <strong>実装への影響：</strong>背景色と文字色を変えるだけなら Windows Forms の <code>TextBox</code> でも可能だが、ズームやマークダウン装飾まで視野に入れるなら <code>RichTextBox</code> か WPF の方が扱いやすい。UI フレームワークの選定は、上の仕分けが確定してから決める。
+    <strong>実装への影響：</strong>タブが必須になったため、1 ウィンドウ 1 ファイルの単純な構成は取らない。開いているファイルごとに本文・ファイルパス・エンコード・改行コード・変更フラグを持つモデルを用意し、タブの選択に応じて編集領域とステータスバーを切り替える設計にする。未保存の確認ダイアログは、タブを閉じるとき・ウィンドウを閉じるとき・終了するときの 3 か所から同じ処理を呼ぶ。セッション復元が対象外になったので、未保存の内容をディスクへ退避する仕組みは要らない。
+  </div>
+  <div class="note">
+    <strong>UI フレームワークの選定：</strong>背景色と文字色を変えるだけなら Windows Forms の <code>TextBox</code> でも足りるが、タブとズームが必須になったこと、将来マークダウン装飾を足す余地を残すことを考えると <strong>WPF</strong> が有力。step2 の冒頭で Windows Forms と比較して決める。
   </div>
 </main>
 <footer class="site">
