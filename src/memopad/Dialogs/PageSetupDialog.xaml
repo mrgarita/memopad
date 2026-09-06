@@ -1,0 +1,57 @@
+<Window x:Class="Memopad.Dialogs.PageSetupDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ページ設定"
+        Width="460"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <!-- メモ帳のページ設定に相当：用紙の向き、余白、ヘッダー／フッター（&f &p &d &t の置換コード） -->
+    <StackPanel Margin="20">
+        <TextBlock Text="印刷の向き" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+            <RadioButton x:Name="PortraitRadio" Margin="0,0,20,0" IsChecked="True">
+                <AccessText Text="縦(_O)" />
+            </RadioButton>
+            <RadioButton x:Name="LandscapeRadio">
+                <AccessText Text="横(_A)" />
+            </RadioButton>
+        </StackPanel>
+
+        <TextBlock Text="余白 (mm)" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <Grid Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="90" />
+                <ColumnDefinition Width="24" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="90" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Label Grid.Row="0" Grid.Column="0" Content="左(_L):" Target="{Binding ElementName=LeftBox}" Padding="0" VerticalAlignment="Center" Margin="0,0,8,6" />
+            <TextBox x:Name="LeftBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,6" />
+            <Label Grid.Row="0" Grid.Column="3" Content="右(_R):" Target="{Binding ElementName=RightBox}" Padding="0" VerticalAlignment="Center" Margin="0,0,8,6" />
+            <TextBox x:Name="RightBox" Grid.Row="0" Grid.Column="4" Margin="0,0,0,6" />
+            <Label Grid.Row="1" Grid.Column="0" Content="上(_T):" Target="{Binding ElementName=TopBox}" Padding="0" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBox x:Name="TopBox" Grid.Row="1" Grid.Column="1" />
+            <Label Grid.Row="1" Grid.Column="3" Content="下(_B):" Target="{Binding ElementName=BottomBox}" Padding="0" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBox x:Name="BottomBox" Grid.Row="1" Grid.Column="4" />
+        </Grid>
+
+        <Label Content="ヘッダー(_H):" Target="{Binding ElementName=HeaderBox}" Padding="0" Margin="0,0,0,4" />
+        <TextBox x:Name="HeaderBox" Margin="0,0,0,10" />
+        <Label Content="フッター(_F):" Target="{Binding ElementName=FooterBox}" Padding="0" Margin="0,0,0,4" />
+        <TextBox x:Name="FooterBox" Margin="0,0,0,8" />
+        <TextBlock Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,16"
+                   Text="置換コード：&amp;f ファイル名、&amp;p ページ番号、&amp;d 日付、&amp;t 時刻、&amp;&amp; 記号の &amp;" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="OK" MinWidth="96" Margin="0,0,8,0" IsDefault="True" Click="OkButton_Click" />
+            <Button Content="キャンセル" MinWidth="96" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>

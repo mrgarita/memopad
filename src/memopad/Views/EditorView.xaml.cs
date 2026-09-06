@@ -88,13 +88,14 @@ public partial class EditorView : UserControl
         return (line, index - lineStart + 1);
     }
 
-    /// <summary>改行を除いた文字数（ステータスバーの「N 文字」）。</summary>
+    /// <summary>文字数（ステータスバーの「N 文字」）。メモ帳に合わせ、改行は 1 つにつき 1 文字と数える。</summary>
     public int GetCharacterCount()
     {
-        var count = 0;
-        foreach (var c in TextBox.Text)
+        var text = TextBox.Text;
+        var count = text.Length;
+        foreach (var c in text)
         {
-            if (c != '\r' && c != '\n') count++;
+            if (c == '\r') count--;   // 内部表現は CRLF なので \r の分を引くと改行 1 つ＝1 文字になる
         }
         return count;
     }

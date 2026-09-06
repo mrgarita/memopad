@@ -17,6 +17,8 @@
         <CommandBinding Command="{x:Static local:Commands.Save}" Executed="Save_Executed" />
         <CommandBinding Command="{x:Static local:Commands.SaveAs}" Executed="SaveAs_Executed" />
         <CommandBinding Command="{x:Static local:Commands.SaveAll}" Executed="SaveAll_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.PageSetup}" Executed="PageSetup_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.Print}" Executed="Print_Executed" />
         <CommandBinding Command="{x:Static local:Commands.CloseTab}" Executed="CloseTab_Executed" />
         <CommandBinding Command="{x:Static local:Commands.CloseWindow}" Executed="CloseWindow_Executed" />
         <CommandBinding Command="{x:Static local:Commands.Exit}" Executed="CloseWindow_Executed" />
@@ -34,7 +36,10 @@
         <CommandBinding Command="{x:Static local:Commands.ToggleStatusBar}" Executed="ToggleStatusBar_Executed" />
         <CommandBinding Command="{x:Static local:Commands.ToggleWordWrap}" Executed="ToggleWordWrap_Executed" />
         <!-- 書式 -->
+        <CommandBinding Command="{x:Static local:Commands.Font}" Executed="Font_Executed" />
         <CommandBinding Command="{x:Static local:Commands.ResetColors}" Executed="ResetColors_Executed" />
+        <!-- ヘルプ -->
+        <CommandBinding Command="{x:Static local:Commands.About}" Executed="About_Executed" />
     </Window.CommandBindings>
 
     <DockPanel>
@@ -128,36 +133,40 @@
         <!-- 検索／置換バー：Ctrl+F / Ctrl+H で表示、Esc で閉じる -->
         <Border x:Name="FindBar" DockPanel.Dock="Top" Visibility="Collapsed" Padding="8,6" BorderThickness="0,0,0,1"
                 BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+            <!-- 1 行目：検索語と前後ボタン、2 行目：置換（置換モードのみ）、3 行目：オプションと結果 -->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" MaxWidth="360" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="検索:" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <TextBox x:Name="FindTextBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="検索:" VerticalAlignment="Center" Margin="0,0,8,0" MinWidth="40" />
+                <TextBox x:Name="FindTextBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" MinWidth="200" MaxWidth="480" HorizontalAlignment="Left"
+                         Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}, Converter={x:Static local:HalfWidthConverter.Instance}}"
                          KeyDown="FindTextBox_KeyDown" TextChanged="FindTextBox_TextChanged" />
-                <Button Grid.Row="0" Grid.Column="2" Content="↓ 次へ" Margin="6,0,0,0" Click="FindNextButton_Click" ToolTip="次を検索 (F3)" />
-                <Button Grid.Row="0" Grid.Column="3" Content="↑ 前へ" Margin="6,0,0,0" Click="FindPreviousButton_Click" ToolTip="前を検索 (Shift+F3)" />
-                <CheckBox x:Name="MatchCaseCheckBox" Grid.Row="0" Grid.Column="4" Content="大文字と小文字を区別する" Margin="14,0,0,0" VerticalAlignment="Center" />
-                <CheckBox x:Name="WrapAroundCheckBox" Grid.Row="0" Grid.Column="5" Content="折り返す" Margin="12,0,0,0" VerticalAlignment="Center" IsChecked="True" />
-                <Button Grid.Row="0" Grid.Column="7" Content="✕" Width="28" Click="CloseFindBar_Click" ToolTip="閉じる (Esc)" />
+                <Button Grid.Row="0" Grid.Column="2" Content="↓ 次へ" MinWidth="90" Margin="6,0,0,0" Click="FindNextButton_Click" ToolTip="次を検索 (F3)" />
+                <Button Grid.Row="0" Grid.Column="3" Content="↑ 前へ" MinWidth="90" Margin="6,0,0,0" Click="FindPreviousButton_Click" ToolTip="前を検索 (Shift+F3)" />
+                <Button Grid.Row="0" Grid.Column="4" Content="✕" Width="32" Margin="12,0,0,0" Click="CloseFindBar_Click" ToolTip="閉じる (Esc)" />
 
                 <TextBlock x:Name="ReplaceLabel" Grid.Row="1" Grid.Column="0" Text="置換:" VerticalAlignment="Center" Margin="0,6,8,0" />
-                <TextBox x:Name="ReplaceTextBox" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,6,0,0" KeyDown="ReplaceTextBox_KeyDown" />
-                <Button x:Name="ReplaceButton" Grid.Row="1" Grid.Column="2" Content="置換" Margin="6,6,0,0" Click="ReplaceButton_Click" />
-                <Button x:Name="ReplaceAllButton" Grid.Row="1" Grid.Column="3" Content="すべて置換" Margin="6,6,0,0" Click="ReplaceAllButton_Click" />
-                <TextBlock x:Name="FindStatusText" Grid.Row="1" Grid.Column="4" Grid.ColumnSpan="3" Margin="14,6,0,0" VerticalAlignment="Center" Opacity="0.8" />
+                <TextBox x:Name="ReplaceTextBox" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,6,0,0" MinWidth="200" MaxWidth="480" HorizontalAlignment="Left"
+                         Width="{Binding ActualWidth, ElementName=FindTextBox}" KeyDown="ReplaceTextBox_KeyDown" />
+                <Button x:Name="ReplaceButton" Grid.Row="1" Grid.Column="2" Content="置換" MinWidth="90" Margin="6,6,0,0" Click="ReplaceButton_Click" />
+                <Button x:Name="ReplaceAllButton" Grid.Row="1" Grid.Column="3" Content="すべて置換" MinWidth="90" Margin="6,6,0,0" Click="ReplaceAllButton_Click" />
+
+                <StackPanel Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="4" Orientation="Horizontal" Margin="0,6,0,0">
+                    <CheckBox x:Name="MatchCaseCheckBox" Content="大文字と小文字を区別する" VerticalAlignment="Center" />
+                    <CheckBox x:Name="WrapAroundCheckBox" Content="折り返す" Margin="16,0,0,0" VerticalAlignment="Center" IsChecked="True" />
+                    <TextBlock x:Name="FindStatusText" Margin="20,0,0,0" VerticalAlignment="Center" Opacity="0.8" />
+                </StackPanel>
             </Grid>
         </Border>
 

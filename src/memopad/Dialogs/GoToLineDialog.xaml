@@ -8,11 +8,13 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False">
     <StackPanel Margin="20">
-        <TextBlock Text="行番号(_L):" Margin="0,0,0,6" />
+        <Label Content="行番号(_L):" Target="{Binding ElementName=LineTextBox}" Padding="0" Margin="0,0,0,6" />
         <TextBox x:Name="LineTextBox" Margin="0,0,0,4" />
         <TextBlock x:Name="RangeText" Opacity="0.7" Margin="0,0,0,16" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="移動(_G)" MinWidth="96" Margin="0,0,8,0" IsDefault="True" Click="GoButton_Click" />
+            <Button MinWidth="96" Margin="0,0,8,0" IsDefault="True" Click="GoButton_Click">
+                <AccessText Text="移動(_G)" />
+            </Button>
             <Button Content="キャンセル" MinWidth="96" IsCancel="True" />
         </StackPanel>
     </StackPanel>

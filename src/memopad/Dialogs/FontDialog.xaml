@@ -1,0 +1,53 @@
+<Window x:Class="Memopad.Dialogs.FontDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="フォント"
+        Width="640" Height="520"
+        MinWidth="560" MinHeight="440"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+    <!-- メモ帳の設定ページ「フォント」（ファミリ／スタイル／サイズ＋プレビュー）を 1 つのダイアログにまとめたもの -->
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="150" />
+            <ColumnDefinition Width="110" />
+        </Grid.ColumnDefinitions>
+
+        <Label Grid.Row="0" Grid.Column="0" Content="ファミリ(_F):" Target="{Binding ElementName=FamilyFilterBox}" Padding="0" Margin="0,0,12,4" />
+        <Label Grid.Row="0" Grid.Column="1" Content="スタイル(_Y):" Target="{Binding ElementName=StyleList}" Padding="0" Margin="0,0,12,4" />
+        <Label Grid.Row="0" Grid.Column="2" Content="サイズ(_S):" Target="{Binding ElementName=SizeBox}" Padding="0" Margin="0,0,0,4" />
+
+        <DockPanel Grid.Row="1" Grid.Column="0" Margin="0,0,12,0">
+            <TextBox x:Name="FamilyFilterBox" DockPanel.Dock="Top" Margin="0,0,0,6" TextChanged="FamilyFilterBox_TextChanged" />
+            <ListBox x:Name="FamilyList" SelectionChanged="Selection_Changed" DisplayMemberPath="DisplayName" />
+        </DockPanel>
+        <ListBox x:Name="StyleList" Grid.Row="1" Grid.Column="1" Margin="0,0,12,0" SelectionChanged="Selection_Changed">
+            <ListBoxItem Content="標準" />
+            <ListBoxItem Content="斜体" />
+            <ListBoxItem Content="太字" />
+            <ListBoxItem Content="太字 斜体" />
+        </ListBox>
+        <DockPanel Grid.Row="1" Grid.Column="2">
+            <TextBox x:Name="SizeBox" DockPanel.Dock="Top" Margin="0,0,0,6" TextChanged="SizeBox_TextChanged" />
+            <ListBox x:Name="SizeList" SelectionChanged="SizeList_SelectionChanged" />
+        </DockPanel>
+
+        <Border Grid.Row="2" Grid.ColumnSpan="3" Margin="0,14,0,0" BorderThickness="1" CornerRadius="4" MinHeight="90"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}">
+            <TextBlock x:Name="PreviewText" Margin="12" TextWrapping="Wrap" VerticalAlignment="Center"
+                       Text="海の波の音が私の心を落ち着かせます。 Aa Bb Cc 0123" />
+        </Border>
+
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="OK" MinWidth="96" Margin="0,0,8,0" IsDefault="True" Click="OkButton_Click" />
+            <Button Content="キャンセル" MinWidth="96" IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</Window>

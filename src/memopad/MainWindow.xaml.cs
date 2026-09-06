@@ -314,6 +314,24 @@ public partial class MainWindow : Window
         return true;
     }
 
+    private void PageSetup_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        PageSetupDialog.Show(this, Settings);
+    }
+
+    private void Print_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (Current is not { } tab) return;
+        try
+        {
+            PrintService.Print(this, tab.Document.Title, tab.Editor.Editor.Text, Settings);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"印刷できませんでした。\n{ex.Message}", "memopad", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void RecentFilesMenu_SubmenuOpened(object sender, RoutedEventArgs e)
     {
         RecentFilesMenu.Items.Clear();
@@ -615,6 +633,21 @@ public partial class MainWindow : Window
             if (picked is { } c) apply(ColorUtil.ToHex(c));
         };
         parent.Items.Add(other);
+    }
+
+    private void Font_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (FontDialog.Ask(this, Settings) is not { } choice) return;
+        Settings.FontFamily = choice.Family;
+        Settings.FontSize = choice.Size;
+        Settings.FontBold = choice.Bold;
+        Settings.FontItalic = choice.Italic;
+        ApplyAppearanceToAll();
+    }
+
+    private void About_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        new AboutDialog(this).ShowDialog();
     }
 
     private void ResetColors_Executed(object sender, ExecutedRoutedEventArgs e)

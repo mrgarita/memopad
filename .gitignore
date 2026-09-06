@@ -14,3 +14,7 @@ TestResults/
 
 # Inno Setup の出力（インストーラは Release で配布する）
 Output/
+
+# インストーラのビルド生成物
+installer/publish/
+installer/output/
