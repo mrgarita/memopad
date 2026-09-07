@@ -79,7 +79,7 @@
 
         <!-- プレビュー -->
         <GroupBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Header="プレビュー" Margin="0,14,0,0" Padding="8">
-            <Border x:Name="PreviewBorder" Height="88" CornerRadius="4" BorderBrush="#80808080" BorderThickness="1" Padding="12,8">
+            <Border x:Name="PreviewBorder" MinHeight="88" CornerRadius="4" BorderBrush="#80808080" BorderThickness="1" Padding="12,8">
                 <TextBlock x:Name="PreviewText" TextWrapping="Wrap"
                            Text="背景色と文字色を自由に変えられるメモ帳です。&#10;The quick brown fox jumps over the lazy dog. 0123456789" />
             </Border>

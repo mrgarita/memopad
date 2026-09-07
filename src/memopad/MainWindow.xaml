@@ -28,8 +28,6 @@
             <Setter Property="Width" Value="46" />
             <Setter Property="Height" Value="30" />
             <Setter Property="VerticalAlignment" Value="Top" />
-            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="10" />
             <Setter Property="Foreground" Value="{DynamicResource TabTextBrush}" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Focusable" Value="False" />
@@ -37,7 +35,9 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <!-- アイコン フォントはここだけに付ける（Button に付けるとツールチップまで継承して日本語が□になる） -->
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" TextElement.FontSize="10" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -53,7 +53,8 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd" Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" TextElement.FontSize="10" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -347,8 +348,10 @@
                          Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}, Converter={x:Static local:HalfWidthConverter.Instance}}"
                          KeyDown="FindTextBox_KeyDown" TextChanged="FindTextBox_TextChanged" />
                 <Button Grid.Row="0" Grid.Column="2" Content="↓ 次へ" MinWidth="90" Margin="6,0,0,0" Click="FindNextButton_Click" ToolTip="次を検索 (F3)" />
-                <Button Grid.Row="0" Grid.Column="3" Content="↑ 前へ" MinWidth="90" Margin="6,0,0,0" Click="FindPreviousButton_Click" ToolTip="前を検索 (Shift+F3)" />
-                <Button Grid.Row="0" Grid.Column="4" Content="✕" Width="32" Margin="12,0,0,0" Click="CloseFindBar_Click" ToolTip="閉じる (Esc)" />
+                <Button x:Name="FindPreviousButton" Grid.Row="0" Grid.Column="3" Content="↑ 前へ" MinWidth="90" Margin="6,0,0,0" Click="FindPreviousButton_Click" ToolTip="前を検索 (Shift+F3)" />
+                <Button Grid.Row="0" Grid.Column="4" MinWidth="40" Padding="0" Margin="12,0,0,0" Height="{Binding ActualHeight, ElementName=FindPreviousButton}" Click="CloseFindBar_Click" ToolTip="閉じる (Esc)">
+                    <TextBlock Text="&#xE8BB;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Button>
 
                 <TextBlock x:Name="ReplaceLabel" Grid.Row="1" Grid.Column="0" Text="置換:" VerticalAlignment="Center" Margin="0,6,8,0" />
                 <TextBox x:Name="ReplaceTextBox" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" Margin="0,6,0,0" MinWidth="200" MaxWidth="480" HorizontalAlignment="Left"

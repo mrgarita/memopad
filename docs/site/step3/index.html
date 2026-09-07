@@ -31,6 +31,7 @@
       <li><a href="#fb3">FB-3：「背景色」「文字色」を「色変更」に統合（v0.4.0）</a></li>
       <li><a href="#fb4">FB-4：目に優しい配色 16 パターン（v0.5.0）</a></li>
       <li><a href="#fb5">FB-5：タブをクリックしても切り替わらない（v0.5.1）</a></li>
+      <li><a href="#fb6">FB-6〜8：表示の細かな崩れ 3 件（v0.5.2）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -51,6 +52,15 @@
   <table>
     <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
     <tr><td>FB-5</td><td>不具合</td><td>タブをクリックしても切り替わらない（メニューと文字入力は動く）</td><td>v0.5.1</td><td><span class="tag must">対応済み</span></td></tr>
+  </table>
+  </div>
+  <p>3 回目のフィードバック（2026-09-07、v0.5.1 で「タブ切り替えは改善された」との確認とあわせて）。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-6</td><td>不具合</td><td>検索・置換バーの閉じるボタン（×）が欠けて見える</td><td>v0.5.2</td><td><span class="tag must">対応済み</span></td></tr>
+    <tr><td>FB-7</td><td>不具合</td><td>配色パターンのプレビュー枠で英語の行が見えない</td><td>v0.5.2</td><td><span class="tag must">対応済み</span></td></tr>
+    <tr><td>FB-8</td><td>不具合</td><td>右上の閉じる／最小化／最大化ボタンにマウスを載せると「□□□」と文字化けして見える</td><td>v0.5.2</td><td><span class="tag must">対応済み</span></td></tr>
   </table>
   </div>
 
@@ -316,7 +326,38 @@
   </table>
   </div>
 
-  <h2 id="notes">7. つまずいた点のメモ</h2>
+  <h2 id="fb6">7. FB-6〜8：表示の細かな崩れ 3 件（v0.5.2）</h2>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step3/fb_findbar_close.png" alt="欠けて見える検索バーの閉じるボタン" loading="lazy">
+      <figcaption>図 7-1：FB-6。×の文字グリフが幅 32 px のボタンに収まっていない</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v052_findbar.png" alt="修正後の検索バー" loading="lazy">
+      <figcaption>図 7-2：v0.5.2。Segoe Fluent Icons の閉じるグリフにし、幅と高さを隣のボタンに揃えた</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/fb_preview_clipped.png" alt="英語の行が切れている配色パターンのプレビュー" loading="lazy">
+      <figcaption>図 7-3：FB-7。プレビュー枠の高さを 88 px に固定していたため、フォントが大きいと 2 行目が隠れる</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v052_scheme_preview.png" alt="修正後の配色パターン ダイアログ" loading="lazy">
+      <figcaption>図 7-4：v0.5.2。最小高さに変え、フォントの大きさに合わせて枠が伸びる（色変更ダイアログも同様）</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/fb_tooltip_boxes.png" alt="□□□と表示されるツールチップ" loading="lazy">
+      <figcaption>図 7-5：FB-8。キャプション ボタンのスタイルに付けたアイコン フォント（Segoe Fluent Icons）をツールチップが継承し、日本語が□になっていた</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v052_tooltip.png" alt="修正後のツールチップ「最小化」" loading="lazy">
+      <figcaption>図 7-6：v0.5.2。アイコン フォントはグリフを描く部分だけに付け、ツールチップは通常のフォントで出る</figcaption>
+    </figure>
+  </div>
+  <div class="note">
+    <strong>確認のしかたを変えた点</strong>：3 件ともユーザーの環境（表示スケール 150 %、大きめのフォント設定）で見えた崩れで、既定設定で撮る撮影スクリプトでは出なかった。確認用の撮影は、設定を退避しない版（ユーザーの設定のまま起動して撮る）も併用する。また撮影スクリプトは、前面ウィンドウが自分で起動した memopad でなければキーを送らずに中断するようにした（ユーザーが操作中に別アプリへキーが飛ぶのを防ぐ）。
+  </div>
+
+  <h2 id="notes">8. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>

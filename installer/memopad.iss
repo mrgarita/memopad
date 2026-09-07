@@ -4,7 +4,7 @@
 
 #define MyAppName "memopad"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.5.1"
+  #define MyAppVersion "0.5.2"
 #endif
 #define MyAppPublisher "mrgarita"
 #define MyAppExeName "memopad.exe"
