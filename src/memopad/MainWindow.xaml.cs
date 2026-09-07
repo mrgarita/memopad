@@ -39,6 +39,8 @@ public partial class MainWindow : Window
         BuildColorMenus();
         UpdateViewMenu();
         UpdateThemeMenu();
+        UpdateTabBrushes();
+        LoadAppIcon();
 
         // 起動時は常に新規の空タブから始める（セッション復元は作らない方針）
         AddTab(new Document());
@@ -48,6 +50,42 @@ public partial class MainWindow : Window
     {
         base.OnSourceInitialized(e);
         ThemeService.MakeOpaque(this, Settings.Theme);
+    }
+
+    // =====================================================================
+    // 自前のタイトル行（WindowChrome）
+    // =====================================================================
+
+    /// <summary>タイトル行の左端に出すアプリ アイコン（exe に埋め込んだもの）。</summary>
+    private void LoadAppIcon()
+    {
+        try
+        {
+            if (Environment.ProcessPath is not { } exe) return;
+            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(exe);
+            if (icon is null) return;
+            AppIcon.Source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
+                icon.Handle, Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromWidthAndHeight(16, 16));
+        }
+        catch
+        {
+            // アイコンが取れなくても動作には影響しない
+        }
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) =>
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void Window_StateChanged(object sender, EventArgs e)
+    {
+        // 最大化中は「元に戻す」のグリフにする（Segoe Fluent Icons：E922＝最大化、E923＝元に戻す）
+        var maximized = WindowState == WindowState.Maximized;
+        MaximizeButton.Content = maximized ? "\uE923" : "\uE922";
+        MaximizeButton.ToolTip = maximized ? "元に戻す" : "最大化";
     }
 
     // =====================================================================
@@ -777,6 +815,7 @@ public partial class MainWindow : Window
             // テーマを切り替えると Fluent が Mica を掛け直すので、不透明化もやり直す
             Dispatcher.BeginInvoke(() => ThemeService.MakeOpaque(this, theme), System.Windows.Threading.DispatcherPriority.Loaded);
             UpdateThemeMenu();
+            UpdateTabBrushes();
             ApplyAppearanceToAll();
         }
     }
@@ -786,6 +825,20 @@ public partial class MainWindow : Window
         ThemeLightMenuItem.IsChecked = Settings.Theme == "Light";
         ThemeDarkMenuItem.IsChecked = Settings.Theme == "Dark";
         ThemeSystemMenuItem.IsChecked = Settings.Theme is not ("Light" or "Dark");
+    }
+
+    /// <summary>タブ ストリップとメニュー バーの色をテーマ（ライト／ダーク）に合わせる。選択中のタブは本文と同じ色にしてつなげて見せる。</summary>
+    private void UpdateTabBrushes()
+    {
+        var dark = ThemeService.IsDark(Settings.Theme);
+        // タイトル行は少し濃く、メニュー行と選択中のタブは同じ色にしてつなげる（メモ帳と同じ見せ方）
+        Resources["TitleBarBrush"] = new SolidColorBrush(dark ? Color.FromRgb(0x1C, 0x1C, 0x1C) : Color.FromRgb(0xE8, 0xE8, 0xE8));
+        Resources["MenuBarBrush"] = new SolidColorBrush(dark ? Color.FromRgb(0x2B, 0x2B, 0x2B) : Color.FromRgb(0xF9, 0xF9, 0xF9));
+        Resources["TabSelectedBrush"] = new SolidColorBrush(dark ? Color.FromRgb(0x2B, 0x2B, 0x2B) : Color.FromRgb(0xF9, 0xF9, 0xF9));
+        Resources["TabHoverBrush"] = new SolidColorBrush(dark ? Color.FromRgb(0x2A, 0x2A, 0x2A) : Color.FromRgb(0xDC, 0xDC, 0xDC));
+        Resources["TabTextBrush"] = new SolidColorBrush(dark ? Color.FromRgb(0xF0, 0xF0, 0xF0) : Color.FromRgb(0x1B, 0x1B, 0x1B));
+        Resources["MenuPopupBrush"] = new SolidColorBrush(dark ? Color.FromRgb(0x2C, 0x2C, 0x2C) : Color.FromRgb(0xF9, 0xF9, 0xF9));
+        Resources["MenuPopupBorderBrush"] = new SolidColorBrush(dark ? Color.FromRgb(0x3F, 0x3F, 0x3F) : Color.FromRgb(0xE0, 0xE0, 0xE0));
     }
 
     /// <summary>全タブにフォント・色・折り返し・ズームを反映する。</summary>

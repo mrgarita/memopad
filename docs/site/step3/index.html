@@ -40,8 +40,8 @@
   <table>
     <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
     <tr><td>FB-1</td><td>改善</td><td>IME 使用時にキーを打ってから一呼吸置いて文字が表示される。メモ帳と比べて明らかに遅い</td><td>v0.2.0</td><td><span class="tag must">対応済み</span></td></tr>
-    <tr><td>FB-2</td><td>修正</td><td>ウィンドウ上部からエディタまでの高さをメモ帳と同等にし、上からタブ→メニュー→エディタの順に並べる。＋ボタンはタブ名の近くに。フッターの高さもメモ帳に合わせる</td><td>v0.3.0</td><td><span class="tag skip">対応中</span></td></tr>
-    <tr><td>FB-3</td><td>変更</td><td>「背景色」「文字色」を「色変更」メニューに統合し、1 つのウィンドウで両方を変えられるようにする。16 色は PICO-8 パレットに置き替える</td><td>v0.4.0</td><td><span class="tag skip">未着手</span></td></tr>
+    <tr><td>FB-2</td><td>修正</td><td>ウィンドウ上部からエディタまでの高さをメモ帳と同等にし、上からタブ→メニュー→エディタの順に並べる。＋ボタンはタブ名の近くに。フッターの高さもメモ帳に合わせる</td><td>v0.3.0</td><td><span class="tag must">対応済み</span></td></tr>
+    <tr><td>FB-3</td><td>変更</td><td>「背景色」「文字色」を「色変更」メニューに統合し、1 つのウィンドウで両方を変えられるようにする。16 色は PICO-8 パレットに置き替える</td><td>v0.4.0</td><td><span class="tag skip">対応中</span></td></tr>
     <tr><td>FB-4</td><td>機能追加</td><td>背景色と文字色を一度に変える「目に優しい配色」16 パターンを、プレビューを見て選べる方式で追加する</td><td>v0.5.0</td><td><span class="tag skip">未着手</span></td></tr>
   </table>
   </div>
@@ -172,7 +172,52 @@
     <img src="../img/step3/fb_hud_height.png" alt="memopad v0.1.0（左）とメモ帳（右）の比較" loading="lazy">
     <figcaption>図 3-1：フィードバックで示された比較。左が memopad v0.1.0、右がメモ帳。上部の高さと並び順、フッターの高さが違う</figcaption>
   </figure>
-  <p>対応中。</p>
+  <h3>3.1 現象と目標</h3>
+  <p>v0.1.0 は「タイトル バー→メニュー→タブ→本文」の順で、本文が始まるまでがメモ帳より 50 px 以上低い。メモ帳は「タブ（タイトル バーに同居）→メニュー→本文」の順で、＋ボタンは最後のタブのすぐ右にある。フッター（ステータスバー）も memopad のほうが高い。</p>
+  <p>同じ大きさ（1000×720 物理 px、表示スケール 150 %）で並べて撮り、上端から本文までとステータスバーの高さを画像から測った。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目（論理 px）</th><th>メモ帳</th><th>memopad v0.1.0</th><th>memopad v0.3.0</th></tr>
+    <tr><td>上端から本文まで</td><td class="center">75</td><td class="center">127</td><td class="center"><strong>74</strong></td></tr>
+    <tr><td>　タイトル行（タブを含む）</td><td class="center">41</td><td class="center">30（標準のタイトル バー）＋ 49（メニュー）＋ 48（タブ）</td><td class="center">42（タブを含む）</td></tr>
+    <tr><td>　メニュー行</td><td class="center">32</td><td class="center">—</td><td class="center">32</td></tr>
+    <tr><td>ステータスバー</td><td class="center">31</td><td class="center">47</td><td class="center"><strong>32</strong></td></tr>
+  </table>
+  </div>
+  <figure>
+    <img src="../img/step3/v030_vs_notepad.png" alt="v0.1.0、v0.3.0、メモ帳の上部を並べた比較" loading="lazy">
+    <figcaption>図 3-2：左から v0.1.0、v0.3.0、メモ帳（上部 260 px を切り出し）。v0.3.0 は本文の開始位置がメモ帳と 1 px 差</figcaption>
+  </figure>
+
+  <h3>3.2 やったこと</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>内容</th></tr>
+    <tr><td>タイトル バーを自前で描く</td><td>WPF の <code>WindowChrome</code>（<code>CaptionHeight=42</code>、<code>UseAeroCaptionButtons=False</code>）で標準のタイトル バーを外し、タイトル行にアイコン・タブ・＋ボタン・最小化／最大化／閉じるボタンを置いた。ボタンのグリフは Segoe Fluent Icons。ダブルクリックで最大化、ドラッグで移動、右クリックでシステム メニューは WindowChrome がそのまま面倒を見る</td></tr>
+    <tr><td>ガラス領域は使わない</td><td><code>GlassFrameThickness=0</code>。ガラス領域があると RichEdit が透ける（2.6 節）。角丸は <code>DWMWA_WINDOW_CORNER_PREFERENCE</code> で DWM に頼む</td></tr>
+    <tr><td>タブの見せ方</td><td>選択中のタブとメニュー行を同じ色にしてつなげ、タイトル行は少し濃くする（メモ帳と同じ）。Fluent の ListBoxItem は余白が大きいので、タブ用の簡素なテンプレートに差し替えた</td></tr>
+    <tr><td>メニュー行を 32 px に</td><td>Fluent の MenuItem は高さ約 58 px あり、Menu の高さを固定すると項目が描画されなくなる。トップ レベルの項目だけ簡素なテンプレート（サブメニューの Popup 込み）にし、サブメニューの項目は Fluent のまま</td></tr>
+    <tr><td>ステータスバーを 32 px に</td><td>StatusBarItem の Padding と文字サイズを詰めた</td></tr>
+    <tr><td>最大化時の余白</td><td>WindowChrome は最大化するとリサイズ枠の分だけ画面外にはみ出すので、最大化中はルートに 7 px の余白を付ける</td></tr>
+  </table>
+  </div>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step3/v030_main.png" alt="v0.3.0 のメイン画面" loading="lazy">
+      <figcaption>図 3-3：v0.3.0。タイトル行にタブと＋、その下にメニュー、本文の順</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v030_tabs.png" alt="v0.3.0 のダーク テーマでタブを 2 つ開いたところ" loading="lazy">
+      <figcaption>図 3-4：ダーク テーマ。未保存のタブには●が付く</figcaption>
+    </figure>
+  </div>
+  <figure>
+    <img src="../img/step3/v030_menu.png" alt="v0.3.0 のファイル メニュー" loading="lazy">
+    <figcaption>図 3-5：メニュー行を詰めても、サブメニューは Fluent の見た目のまま</figcaption>
+  </figure>
+  <div class="note">
+    <strong>計測の落とし穴</strong>：最初の計測では本文の開始位置が 7 px ずれて見えた。設定ファイルに「最大化」が保存されていたため、最大化中の余白が写り込んでいた。撮影スクリプト（<code>capture-memopad.ps1</code>）は設定を退避してから撮るので、そちらの値を採用した。
+  </div>
 
   <h2 id="fb3">4. FB-3：「背景色」「文字色」を「色変更」に統合（v0.4.0）</h2>
   <p>未着手。</p>
@@ -186,6 +231,9 @@
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
     <li><strong>PowerShell の <code>-WindowStyle Hidden</code> は子の Windows Forms フォームまで隠す。</strong>計測用のホスト ウィンドウが出ず、しばらく原因が分からなかった。</li>
     <li><strong>スクリプト ファイルは BOM 付き UTF-8 で保存する。</strong>BOM 無しだと PowerShell 5.1 が ANSI として読み、日本語のコメントで構文が壊れる。</li>
+    <li><strong>ビルドが 1 回おきに失敗する原因はビルド サーバーだった。</strong>前回の MSBuild ノードや VBCSCompiler が <code>obj</code> の生成ファイルを掴んだままになる。<code>dotnet build-server shutdown</code> してから <code>-nodeReuse:false -p:UseSharedCompilation=false</code> でビルドすると安定した。</li>
+    <li><strong>Fluent の MenuItem は高さを縛ると消える。</strong>Menu に <code>Height=30</code> を付けただけで項目が描画されなくなった。テンプレートを差し替えるのが確実。</li>
+    <li><strong>表示スケールを決め打ちしない。</strong>この端末は 150 % で、125 % と思い込んで換算した値が合わなかった。<code>GetDpiForSystem</code> で確かめてから換算する。</li>
   </ul>
 </main>
 <footer class="site">

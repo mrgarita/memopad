@@ -86,9 +86,11 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   約 50 ms かかりメモ帳（約 19 ms）より遅かったため v0.2.0 で置き換えた（経緯は
   `docs/site/step3/index.html` 2 節）。RichEdit の中では WPF の InputBinding が効かないので、
   ショートカットは `MainWindow.HandleEditorCommandKey` で `Commands.All` と突き合わせる
-- **ビルドと確認**：`dotnet build src\memopad\memopad.csproj`。WPF のマークアップ コンパイルが
-  `obj` の生成ファイルを見失って 1 回おきに失敗することがあるので、失敗したら `src\memopad\obj`
-  を消して再ビルドする。動作確認とスクリーンショットは `docs\tools\capture-memopad.ps1`
+- **タイトル バー**：`WindowChrome` で自前描画（メモ帳と同じくタブをタイトル行に載せるため。
+  v0.3.0）。`GlassFrameThickness` は 0 のまま（ガラス領域があると RichEdit が透ける）
+- **ビルドと確認**：`dotnet build src\memopad\memopad.csproj`。前回のビルド サーバーが `obj` の
+  生成ファイルを掴んで 1 回おきに失敗することがあるので、失敗したら `dotnet build-server shutdown`
+  →`src\memopad\obj` を削除→`-nodeReuse:false -p:UseSharedCompilation=false` で再ビルドする。動作確認とスクリーンショットは `docs\tools\capture-memopad.ps1`
   （`-ExePath` と `-OutDir` を絶対パスで指定。実行中はマウス／キーボードに触らない）。
   入力→表示の遅延は環境変数 `MEMOPAD_PERF=1` の診断ログ（`Services/PerfLog.cs`）で調べられる
 - **インストーラ**：Inno Setup 6（winget で導入済み）。`installer\build-installer.ps1`

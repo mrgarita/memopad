@@ -102,7 +102,8 @@ function FgIsApp { [uint32]$fgPid = 0; [NativeWin2]::GetWindowThreadProcessId([N
 function Fg([IntPtr]$h = $hwnd) {
     if (FgIsApp) { return }
     for ($i = 0; $i -lt 10; $i++) {
-        $fgThread = [NativeWin2]::GetWindowThreadProcessId([NativeWin2]::GetForegroundWindow(), [IntPtr]::Zero)
+        [uint32]$fgPid2 = 0
+        $fgThread = [NativeWin2]::GetWindowThreadProcessId([NativeWin2]::GetForegroundWindow(), [ref]$fgPid2)
         $me = [NativeWin2]::GetCurrentThreadId()
         [NativeWin2]::AttachThreadInput($me, $fgThread, $true) | Out-Null
         [NativeWin2]::ShowWindow($h, 9) | Out-Null

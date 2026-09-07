@@ -55,6 +55,8 @@ public static class ThemeService
     [StructLayout(LayoutKind.Sequential)]
     private struct Margins { public int Left, Right, Top, Bottom; }
 
+    private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    private const int DWMWCP_ROUND = 2;
     private const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
     private const int DWMSBT_NONE = 1;
 
@@ -71,6 +73,9 @@ public static class ThemeService
         DwmExtendFrameIntoClientArea(hwnd, ref margins);
         var none = DWMSBT_NONE;
         DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ref none, sizeof(int));
+        // タイトル バーを自前にしても Windows 11 の角丸を保つ
+        var round = DWMWCP_ROUND;
+        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int));
         window.Background = new SolidColorBrush(IsDark(theme) ? Color.FromRgb(0x20, 0x20, 0x20) : Color.FromRgb(0xF3, 0xF3, 0xF3));
     }
 

@@ -8,7 +8,111 @@
         Drop="Window_Drop"
         PreviewMouseWheel="Window_PreviewMouseWheel"
         PreviewKeyDown="Window_PreviewKeyDown"
-        Closing="Window_Closing">
+        Closing="Window_Closing"
+        StateChanged="Window_StateChanged">
+    <!--
+        タイトル バーを自前で描き、メモ帳と同じくタブをタイトル行に載せる。
+        GlassFrameThickness は 0 にする（ガラス領域があると GDI で描く RichEdit が透ける）。
+        キャプション ボタンは UseAeroCaptionButtons=False にして自分で置く。
+    -->
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="42" ResizeBorderThickness="6" GlassFrameThickness="0" UseAeroCaptionButtons="False" CornerRadius="0" />
+    </WindowChrome.WindowChrome>
+    <Window.Resources>
+        <!-- タイトル行とメニュー行の色（UpdateTabBrushes でテーマに合わせて差し替える） -->
+        <SolidColorBrush x:Key="TitleBarBrush" Color="#E8E8E8" />
+        <SolidColorBrush x:Key="MenuBarBrush" Color="#F9F9F9" />
+        <!-- キャプション ボタン（最小化／最大化／閉じる）。Segoe Fluent Icons のグリフを使う -->
+        <Style x:Key="CaptionButtonStyle" TargetType="Button">
+            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Foreground" Value="{DynamicResource TabTextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CloseCaptionButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyle}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#C42B1C" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- タブの色。ライト／ダークの切り替え時に MainWindow.UpdateTabBrushes が差し替える -->
+        <SolidColorBrush x:Key="TabSelectedBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="TabHoverBrush" Color="#E6E6E6" />
+        <SolidColorBrush x:Key="TabTextBrush" Color="#1B1B1B" />
+        <!-- メニュー バー：メモ帳と同じ高さ（30 px）に詰める -->
+        <SolidColorBrush x:Key="MenuPopupBrush" Color="#F9F9F9" />
+        <SolidColorBrush x:Key="MenuPopupBorderBrush" Color="#E0E0E0" />
+        <!--
+            メニュー バーの項目（トップ レベル）。Fluent のテンプレートは高さが約 58 px あり、Menu の高さを
+            30 px に固定すると項目が描画されなくなるため、簡素なテンプレートに差し替える。
+            サブメニューの項目（PART_Popup の中身）は Fluent のテンプレートのまま。
+        -->
+        <Style x:Key="TopMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{DynamicResource TabTextBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Grid>
+                            <Border x:Name="Bd" Margin="2,3" Padding="10,0" CornerRadius="4" Background="Transparent">
+                                <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center" />
+                            </Border>
+                            <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="0" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                                <Border Margin="8" Padding="4" CornerRadius="8" BorderThickness="1"
+                                        Background="{DynamicResource MenuPopupBrush}" BorderBrush="{DynamicResource MenuPopupBorderBrush}">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.22" />
+                                    </Border.Effect>
+                                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" Grid.IsSharedSizeScope="True" />
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Window.CommandBindings>
         <!-- ファイル -->
         <CommandBinding Command="{x:Static local:Commands.NewTab}" Executed="NewTab_Executed" />
@@ -42,10 +146,88 @@
         <CommandBinding Command="{x:Static local:Commands.About}" Executed="About_Executed" />
     </Window.CommandBindings>
 
+    <Border x:Name="RootBorder">
+        <Border.Style>
+            <Style TargetType="Border">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding WindowState, RelativeSource={RelativeSource AncestorType=Window}}" Value="Maximized">
+                        <Setter Property="Margin" Value="7" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
     <DockPanel>
+        <!-- タイトル行：アイコン／タブ／＋／キャプション ボタン。高さは WindowChrome の CaptionHeight と同じ 48 -->
+        <Grid x:Name="TitleRow" DockPanel.Dock="Top" Height="42" Background="{DynamicResource TitleBarBrush}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Image x:Name="AppIcon" Grid.Column="0" Width="16" Height="16" Margin="12,0,4,0" VerticalAlignment="Center" />
+            <ListBox x:Name="TabList" Grid.Column="1" WindowChrome.IsHitTestVisibleInChrome="True" VerticalAlignment="Bottom"
+                     BorderThickness="0" Padding="0" Margin="0" Background="Transparent"
+                     MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Grid}, Converter={x:Static local:MinusConverter.Instance}, ConverterParameter=230}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                     ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                     SelectionChanged="TabList_SelectionChanged"
+                     PreviewMouseDown="TabList_PreviewMouseDown">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                    <!-- Fluent の ListBoxItem は余白が大きいので、タブ用の簡素なテンプレートに差し替える -->
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Focusable" Value="False" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="Bd" Margin="4,8,0,0" Padding="12,0,4,0" CornerRadius="6,6,0,0" Background="Transparent" MinWidth="120" Height="34">
+                                        <ContentPresenter VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabHoverBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabSelectedBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="✕" Width="22" Height="22" Padding="0" Margin="8,0,0,0" FontSize="11"
+                                    Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TabTextBrush}"
+                                    ToolTip="タブを閉じる (Ctrl+W)" Click="CloseTabButton_Click" />
+                            <TextBlock Text="{Binding Document.TabTitle}" FontSize="13" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TabTextBrush}" ToolTip="{Binding Document.FilePath}" />
+                        </DockPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Button Grid.Column="2" Content="＋" Width="30" Height="28" Margin="4,8,0,0" Padding="0" FontSize="15"
+                    WindowChrome.IsHitTestVisibleInChrome="True"
+                    VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TabTextBrush}"
+                    Command="{x:Static local:Commands.NewTab}" ToolTip="新しいタブ (Ctrl+N)" />
+            <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Top">
+                <Button Style="{StaticResource CaptionButtonStyle}" Content="&#xE921;" Click="Minimize_Click" ToolTip="最小化" />
+                <Button x:Name="MaximizeButton" Style="{StaticResource CaptionButtonStyle}" Content="&#xE922;" Click="Maximize_Click" ToolTip="最大化" />
+                <Button Style="{StaticResource CloseCaptionButtonStyle}" Content="&#xE8BB;" Click="Close_Click" ToolTip="閉じる" />
+            </StackPanel>
+        </Grid>
+
         <!-- メニュー：項目とショートカットはメモ帳に合わせる -->
-        <Menu x:Name="MainMenu" DockPanel.Dock="Top">
-            <MenuItem Header="ファイル(_F)">
+        <Menu x:Name="MainMenu" DockPanel.Dock="Top" Height="32" Margin="0" Background="{DynamicResource MenuBarBrush}" Padding="6,0">
+            <MenuItem Header="ファイル(_F)" Style="{StaticResource TopMenuItemStyle}">
                 <MenuItem Header="新しいタブ(_N)" Command="{x:Static local:Commands.NewTab}" />
                 <MenuItem Header="新しいウィンドウ(_W)" Command="{x:Static local:Commands.NewWindow}" />
                 <MenuItem Header="開く(_O)..." Command="{x:Static local:Commands.Open}" />
@@ -64,7 +246,7 @@
                 <MenuItem Header="終了(_X)" Command="{x:Static local:Commands.Exit}" />
             </MenuItem>
             <!-- 編集：元に戻す〜削除はエディタ（RichEdit）が自前で処理するので Click で呼ぶ。有効／無効はメニューを開くときに更新する -->
-            <MenuItem Header="編集(_E)" SubmenuOpened="EditMenu_SubmenuOpened">
+            <MenuItem Header="編集(_E)" Style="{StaticResource TopMenuItemStyle}" SubmenuOpened="EditMenu_SubmenuOpened">
                 <MenuItem x:Name="UndoMenuItem" Header="元に戻す(_U)" InputGestureText="Ctrl+Z" Click="Undo_Click" />
                 <MenuItem x:Name="RedoMenuItem" Header="やり直し(_R)" InputGestureText="Ctrl+Y" Click="Redo_Click" />
                 <Separator />
@@ -82,7 +264,7 @@
                 <MenuItem Header="すべて選択(_A)" InputGestureText="Ctrl+A" Click="SelectAll_Click" />
                 <MenuItem Header="日付と時刻(_D)" Command="{x:Static local:Commands.InsertDateTime}" />
             </MenuItem>
-            <MenuItem Header="表示(_V)">
+            <MenuItem Header="表示(_V)" Style="{StaticResource TopMenuItemStyle}">
                 <MenuItem Header="ズーム(_Z)">
                     <MenuItem Header="拡大(_I)" Command="{x:Static local:Commands.ZoomIn}" InputGestureText="Ctrl+プラス記号 (+)" />
                     <MenuItem Header="縮小(_O)" Command="{x:Static local:Commands.ZoomOut}" InputGestureText="Ctrl+マイナス記号 (-)" />
@@ -92,7 +274,7 @@
                 <MenuItem x:Name="WordWrapMenuItem" Header="右端で折り返す(_W)" IsCheckable="True" Command="{x:Static local:Commands.ToggleWordWrap}" />
             </MenuItem>
             <!-- 書式：memopad の追加機能（背景色・文字色）とフォント・テーマ -->
-            <MenuItem Header="書式(_O)">
+            <MenuItem Header="書式(_O)" Style="{StaticResource TopMenuItemStyle}">
                 <MenuItem Header="フォント(_F)..." Command="{x:Static local:Commands.Font}" />
                 <Separator />
                 <MenuItem x:Name="BackgroundColorMenu" Header="背景色(_B)" />
@@ -105,13 +287,22 @@
                     <MenuItem x:Name="ThemeSystemMenuItem" Header="システム設定を使用する(_S)" IsCheckable="True" Tag="System" Click="ThemeMenuItem_Click" />
                 </MenuItem>
             </MenuItem>
-            <MenuItem Header="ヘルプ(_H)">
+            <MenuItem Header="ヘルプ(_H)" Style="{StaticResource TopMenuItemStyle}">
                 <MenuItem Header="memopad について(_A)" Command="{x:Static local:Commands.About}" />
             </MenuItem>
         </Menu>
 
         <!-- ステータスバー：行・列／文字数／ズーム／改行コード／エンコード（メモ帳と同じ並び） -->
-        <StatusBar x:Name="StatusBar" DockPanel.Dock="Bottom">
+        <StatusBar x:Name="StatusBar" DockPanel.Dock="Bottom" Height="32" Padding="4,0" FontSize="12">
+            <StatusBar.Resources>
+                <Style TargetType="StatusBarItem">
+                    <Setter Property="Padding" Value="8,0" />
+                    <Setter Property="VerticalContentAlignment" Value="Center" />
+                </Style>
+                <Style TargetType="Separator">
+                    <Setter Property="Margin" Value="0,8" />
+                </Style>
+            </StatusBar.Resources>
             <StatusBarItem>
                 <TextBlock x:Name="PositionText" Text="行 1、列 1" MinWidth="110" />
             </StatusBarItem>
@@ -171,39 +362,8 @@
             </Grid>
         </Border>
 
-        <!-- タブ ストリップ＋編集領域 -->
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-            <DockPanel Grid.Row="0">
-                <Button DockPanel.Dock="Right" Content="＋" Width="32" Margin="4,2" Padding="0" Command="{x:Static local:Commands.NewTab}" ToolTip="新しいタブ (Ctrl+N)" />
-                <ListBox x:Name="TabList"
-                         BorderThickness="0"
-                         Padding="0"
-                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                         SelectionChanged="TabList_SelectionChanged"
-                         PreviewMouseDown="TabList_PreviewMouseDown">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <DockPanel MinWidth="120" Margin="2,0">
-                                <Button DockPanel.Dock="Right" Content="✕" Width="22" Height="22" Padding="0" Margin="8,0,0,0"
-                                        Background="Transparent" BorderThickness="0"
-                                        ToolTip="タブを閉じる (Ctrl+W)" Click="CloseTabButton_Click" />
-                                <TextBlock Text="{Binding Document.TabTitle}" VerticalAlignment="Center" ToolTip="{Binding Document.FilePath}" />
-                            </DockPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-            <ContentControl x:Name="EditorHost" Grid.Row="1" Focusable="False" />
-        </Grid>
+        <!-- 編集領域（残り全部） -->
+        <ContentControl x:Name="EditorHost" Focusable="False" />
     </DockPanel>
+    </Border>
 </Window>
