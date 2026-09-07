@@ -41,8 +41,8 @@
     <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
     <tr><td>FB-1</td><td>改善</td><td>IME 使用時にキーを打ってから一呼吸置いて文字が表示される。メモ帳と比べて明らかに遅い</td><td>v0.2.0</td><td><span class="tag must">対応済み</span></td></tr>
     <tr><td>FB-2</td><td>修正</td><td>ウィンドウ上部からエディタまでの高さをメモ帳と同等にし、上からタブ→メニュー→エディタの順に並べる。＋ボタンはタブ名の近くに。フッターの高さもメモ帳に合わせる</td><td>v0.3.0</td><td><span class="tag must">対応済み</span></td></tr>
-    <tr><td>FB-3</td><td>変更</td><td>「背景色」「文字色」を「色変更」メニューに統合し、1 つのウィンドウで両方を変えられるようにする。16 色は PICO-8 パレットに置き替える</td><td>v0.4.0</td><td><span class="tag skip">対応中</span></td></tr>
-    <tr><td>FB-4</td><td>機能追加</td><td>背景色と文字色を一度に変える「目に優しい配色」16 パターンを、プレビューを見て選べる方式で追加する</td><td>v0.5.0</td><td><span class="tag skip">未着手</span></td></tr>
+    <tr><td>FB-3</td><td>変更</td><td>「背景色」「文字色」を「色変更」メニューに統合し、1 つのウィンドウで両方を変えられるようにする。16 色は PICO-8 パレットに置き替える</td><td>v0.4.0</td><td><span class="tag must">対応済み</span></td></tr>
+    <tr><td>FB-4</td><td>機能追加</td><td>背景色と文字色を一度に変える「目に優しい配色」16 パターンを、プレビューを見て選べる方式で追加する</td><td>v0.5.0</td><td><span class="tag skip">対応中</span></td></tr>
   </table>
   </div>
 
@@ -220,7 +220,46 @@
   </div>
 
   <h2 id="fb3">4. FB-3：「背景色」「文字色」を「色変更」に統合（v0.4.0）</h2>
-  <p>未着手。</p>
+  <h3>4.1 現象</h3>
+  <p>v0.1.0 では「書式」メニューに「背景色」「文字色」のサブメニューが別々にあり、どちらも同じ 16 色＋「その他の色」が並んでいた。片方を選ぶたびにメニューを開き直すので使い勝手が悪い、というフィードバック。あわせて 16 色は Windows の基本 16 色から、参照ファイルの PICO-8 パレットに置き替える。</p>
+  <h3>4.2 やったこと</h3>
+  <ul>
+    <li>「書式」メニューを「フォント」「色変更...」「既定の色に戻す」「テーマ」にした。</li>
+    <li>「色変更」ダイアログ（<code>Dialogs/ColorChangeDialog.xaml</code>）を新設。左に背景色、右に文字色の 16 色見本（4×4）を置き、それぞれ「その他の色...」から Windows 標準の色の設定ダイアログを開ける。下のプレビューには現在のフォントで見本文を出し、選ぶたびに色が変わる。「既定の色に戻す」もダイアログ内に置いた。OK で反映、キャンセルで元のまま。</li>
+    <li>16 色の定義（<code>Services/ColorUtil.StandardColors</code>）を PICO-8 の番号順に置き替えた。名前は日本語。</li>
+    <li>撮影スクリプトは、見本ボタンに付けた UI Automation の名前（例「濃い青 #1D2B53」）で色を選ぶように変えた。</li>
+  </ul>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>名前</th><th>色</th><th>番号</th><th>名前</th><th>色</th></tr>
+    <tr><td>0</td><td>黒</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#000000;border:1px solid #888;vertical-align:middle"></span> #000000</td><td>8</td><td>赤</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#FF004D;border:1px solid #888;vertical-align:middle"></span> #FF004D</td></tr>
+    <tr><td>1</td><td>濃い青</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#1D2B53;border:1px solid #888;vertical-align:middle"></span> #1D2B53</td><td>9</td><td>オレンジ</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#FFA300;border:1px solid #888;vertical-align:middle"></span> #FFA300</td></tr>
+    <tr><td>2</td><td>濃い紫</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#7E2553;border:1px solid #888;vertical-align:middle"></span> #7E2553</td><td>10</td><td>黄</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#FFEC27;border:1px solid #888;vertical-align:middle"></span> #FFEC27</td></tr>
+    <tr><td>3</td><td>濃い緑</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#008751;border:1px solid #888;vertical-align:middle"></span> #008751</td><td>11</td><td>緑</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#00E436;border:1px solid #888;vertical-align:middle"></span> #00E436</td></tr>
+    <tr><td>4</td><td>茶</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#AB5236;border:1px solid #888;vertical-align:middle"></span> #AB5236</td><td>12</td><td>青</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#29ADFF;border:1px solid #888;vertical-align:middle"></span> #29ADFF</td></tr>
+    <tr><td>5</td><td>濃い灰</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#5F574F;border:1px solid #888;vertical-align:middle"></span> #5F574F</td><td>13</td><td>藍</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#83769C;border:1px solid #888;vertical-align:middle"></span> #83769C</td></tr>
+    <tr><td>6</td><td>明るい灰</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#C2C3C7;border:1px solid #888;vertical-align:middle"></span> #C2C3C7</td><td>14</td><td>ピンク</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#FF77A8;border:1px solid #888;vertical-align:middle"></span> #FF77A8</td></tr>
+    <tr><td>7</td><td>白</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#FFF1E8;border:1px solid #888;vertical-align:middle"></span> #FFF1E8</td><td>15</td><td>桃</td><td><span style="display:inline-block;width:1.4em;height:1em;background:#FFCCAA;border:1px solid #888;vertical-align:middle"></span> #FFCCAA</td></tr>
+  </table>
+  </div>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step3/v040_menu_format.png" alt="v0.4.0 の書式メニュー" loading="lazy">
+      <figcaption>図 4-1：書式メニュー。「背景色」「文字色」が「色変更...」にまとまった</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v040_color_dialog.png" alt="色変更ダイアログで背景色に濃い青、文字色に黄を選んだところ" loading="lazy">
+      <figcaption>図 4-2：色変更ダイアログ。背景色と文字色を並べて選び、下のプレビューで確かめる</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v040_colors.png" alt="濃い青の背景に黄の文字" loading="lazy">
+      <figcaption>図 4-3：OK を押した後の本文</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step2/11_color_picker.png" alt="その他の色から開く色の設定ダイアログ" loading="lazy">
+      <figcaption>図 4-4：「その他の色...」は Windows 標準の色の設定ダイアログ（変更なし）</figcaption>
+    </figure>
+  </div>
 
   <h2 id="fb4">5. FB-4：目に優しい配色 16 パターン（v0.5.0）</h2>
   <p>未着手。</p>

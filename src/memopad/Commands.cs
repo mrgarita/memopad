@@ -49,6 +49,7 @@ public static class Commands
 
     // 書式（memopad の追加機能）
     public static readonly RoutedUICommand Font = Make("フォント...", nameof(Font));
+    public static readonly RoutedUICommand ChangeColors = Make("色変更...", nameof(ChangeColors));
     public static readonly RoutedUICommand ResetColors = Make("既定の色に戻す", nameof(ResetColors));
 
     // ヘルプ
@@ -60,6 +61,6 @@ public static class Commands
         NewTab, NewWindow, Open, Save, SaveAs, SaveAll, PageSetup, Print, CloseTab, CloseWindow, Exit,
         Find, FindNext, FindPrevious, Replace, GoTo, InsertDateTime,
         ZoomIn, ZoomOut, ZoomReset, ToggleStatusBar, ToggleWordWrap,
-        Font, ResetColors, About,
+        Font, ChangeColors, ResetColors, About,
     };
 }

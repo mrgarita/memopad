@@ -36,7 +36,6 @@ public partial class MainWindow : Window
         if (Settings.WindowMaximized) WindowState = WindowState.Maximized;
 
         TabList.ItemsSource = _tabs;
-        BuildColorMenus();
         UpdateViewMenu();
         UpdateThemeMenu();
         UpdateTabBrushes();
@@ -745,43 +744,16 @@ public partial class MainWindow : Window
     }
 
     // =====================================================================
-    // 書式：背景色・文字色・テーマ
+    // 書式：色変更・テーマ
     // =====================================================================
 
-    private void BuildColorMenus()
+    /// <summary>「色変更」ダイアログで背景色と文字色をまとめて変える（v0.4.0 で背景色／文字色のサブメニューから統合）。</summary>
+    private void ChangeColors_Executed(object sender, ExecutedRoutedEventArgs e)
     {
-        FillColorMenu(BackgroundColorMenu, hex => { Settings.BackgroundColor = hex; ApplyAppearanceToAll(); }, () => Settings.BackgroundColor);
-        FillColorMenu(ForegroundColorMenu, hex => { Settings.ForegroundColor = hex; ApplyAppearanceToAll(); }, () => Settings.ForegroundColor);
-    }
-
-    /// <summary>標準色 16 色＋「その他の色...」（カラーピッカー）のサブメニューを作る。</summary>
-    private void FillColorMenu(MenuItem parent, Action<string> apply, Func<string> current)
-    {
-        parent.Items.Clear();
-        foreach (var (name, color) in ColorUtil.StandardColors)
-        {
-            var hex = ColorUtil.ToHex(color);
-            var item = new MenuItem
-            {
-                Header = $"{name}  {hex}",
-                Icon = new Border
-                {
-                    Width = 16, Height = 16,
-                    Background = new SolidColorBrush(color),
-                    BorderBrush = Brushes.Gray, BorderThickness = new Thickness(1),
-                },
-            };
-            item.Click += (_, _) => apply(hex);
-            parent.Items.Add(item);
-        }
-        parent.Items.Add(new Separator());
-        var other = new MenuItem { Header = "その他の色(_M)..." };
-        other.Click += (_, _) =>
-        {
-            var picked = ColorPicker.Pick(this, ColorUtil.TryParse(current()));
-            if (picked is { } c) apply(ColorUtil.ToHex(c));
-        };
-        parent.Items.Add(other);
+        if (ColorChangeDialog.Ask(this, Settings) is not { } result) return;
+        Settings.BackgroundColor = result.Background;
+        Settings.ForegroundColor = result.Foreground;
+        ApplyAppearanceToAll();
     }
 
     private void Font_Executed(object sender, ExecutedRoutedEventArgs e)

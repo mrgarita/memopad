@@ -141,6 +141,7 @@
         <CommandBinding Command="{x:Static local:Commands.ToggleWordWrap}" Executed="ToggleWordWrap_Executed" />
         <!-- 書式 -->
         <CommandBinding Command="{x:Static local:Commands.Font}" Executed="Font_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.ChangeColors}" Executed="ChangeColors_Executed" />
         <CommandBinding Command="{x:Static local:Commands.ResetColors}" Executed="ResetColors_Executed" />
         <!-- ヘルプ -->
         <CommandBinding Command="{x:Static local:Commands.About}" Executed="About_Executed" />
@@ -273,12 +274,11 @@
                 <MenuItem x:Name="StatusBarMenuItem" Header="ステータス バー(_S)" IsCheckable="True" Command="{x:Static local:Commands.ToggleStatusBar}" />
                 <MenuItem x:Name="WordWrapMenuItem" Header="右端で折り返す(_W)" IsCheckable="True" Command="{x:Static local:Commands.ToggleWordWrap}" />
             </MenuItem>
-            <!-- 書式：memopad の追加機能（背景色・文字色）とフォント・テーマ -->
+            <!-- 書式：memopad の追加機能（色変更）とフォント・テーマ -->
             <MenuItem Header="書式(_O)" Style="{StaticResource TopMenuItemStyle}">
                 <MenuItem Header="フォント(_F)..." Command="{x:Static local:Commands.Font}" />
                 <Separator />
-                <MenuItem x:Name="BackgroundColorMenu" Header="背景色(_B)" />
-                <MenuItem x:Name="ForegroundColorMenu" Header="文字色(_T)" />
+                <MenuItem Header="色変更(_C)..." Command="{x:Static local:Commands.ChangeColors}" />
                 <MenuItem Header="既定の色に戻す(_D)" Command="{x:Static local:Commands.ResetColors}" />
                 <Separator />
                 <MenuItem Header="テーマ(_M)">

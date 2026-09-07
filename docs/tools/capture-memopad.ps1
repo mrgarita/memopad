@@ -175,7 +175,7 @@ try {
     Fg; Keys '%f'; Shot '02_menu_file'; Keys '{ESC}' 400
     Fg; Keys '%e'; Shot '03_menu_edit'; Keys '{ESC}' 400
     Fg; Keys '%v'; Keys 'z'; Shot '04_menu_view_zoom'; Keys '{ESC}{ESC}' 400
-    Fg; Keys '%o'; Keys 'b' 900; Shot '05_menu_format_background'; Keys '{ESC}{ESC}' 400
+    Fg; Keys '%o' 900; Shot '05_menu_format'; Keys '{ESC}' 400
 
     # 06-07 検索／置換バー
     Fg; Keys '^f' 800; Set-Clipboard -Value 'メモ帳'; Keys '^v' 500; Keys '{ENTER}' 600; Shot '06_find'
@@ -187,18 +187,28 @@ try {
     # 09 フォント ダイアログ
     Fg; Keys '%o' 500; Keys 'f' 1200; $dlg = ShotWithDialog '09_font_dialog' 'フォント'; CloseDialog $dlg
 
-    # 10 背景色を紺、文字色を黄にする（標準 16 色から選ぶ）
-    Fg; Keys '%o' 500; Keys 'b' 800; Invoke-El (ByName '紺  #000080' $CT::MenuItem)
-    Fg; Keys '%o' 500; Keys 't' 800; Invoke-El (ByName '黄  #FFFF00' $CT::MenuItem)
-    Shot '10_colors_navy_yellow'
+    # 10 色変更ダイアログで背景色を濃い青、文字色を黄にする（PICO-8 の 16 色から選ぶ）
+    Fg; Keys '%o' 500; Keys 'c' 1200
+    $dlg = TopWindow '色変更'
+    if ($dlg) {
+        Invoke-El (ByName '濃い青 #1D2B53' $CT::Button)
+        $fgSwatch = $dlg.FindAll($TS::Descendants, (AndC @((PC $AE::NameProperty '黄 #FFEC27'), (PC $AE::ControlTypeProperty $CT::Button))))
+        if ($fgSwatch.Count -ge 2) { Invoke-El $fgSwatch.Item(1) } elseif ($fgSwatch.Count -ge 1) { Invoke-El $fgSwatch.Item(0) }
+    }
+    ShotWithDialog '10_color_dialog' '色変更' | Out-Null
+    CloseDialog $dlg 'OK'
+    Shot '10b_colors_navy_yellow'
 
-    # 11 その他の色（Windows 標準の色の設定ダイアログ）
-    Fg; Keys '%o' 500; Keys 'b' 800; Invoke-El (ByName 'その他の色(M)...' $CT::MenuItem)
+    # 11 その他の色（Windows 標準の色の設定ダイアログ）：色変更ダイアログから開く
+    Fg; Keys '%o' 500; Keys 'c' 1200
+    $colorDlg = TopWindow '色変更'
+    if ($colorDlg) { Invoke-El ($colorDlg.FindFirst($TS::Descendants, (AndC @((PC $AE::NameProperty 'その他の色(M)...'), (PC $AE::ControlTypeProperty $CT::Button))))) }
     Start-Sleep -Milliseconds 800
     # Windows のダイアログは画面の別の場所に出るので、ダイアログだけを撮る
     $dlg = TopWindow '色の設定'
     if ($dlg) { Shot '11_color_picker' ([IntPtr]$dlg.Current.NativeWindowHandle) } else { Write-Warning '色の設定ダイアログが見つかりません' }
     CloseDialog $dlg
+    CloseDialog $colorDlg 'キャンセル'
 
     # 12 既定の色に戻してダーク テーマへ
     Fg; Keys '%o' 500; Keys 'd' 800
