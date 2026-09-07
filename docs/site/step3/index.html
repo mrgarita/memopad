@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>step3：完成品のフィードバック対応 | memopad 備忘録</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="../index.html">memopad 備忘録</a>
+    <nav>
+      <a href="../index.html">トップ</a>
+      <a href="../step1/index.html">step1 機能洗い出し</a>
+      <a href="../step2/index.html">step2 memopad.exe の作成</a>
+      <a href="./index.html">step3 フィードバック対応</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>step3：完成品のフィードバック対応</h1>
+  <p class="lead">v0.1.0 を実際に使って出たフィードバックを 1 件ずつ記録し、対応版をリリースしていく。フィードバックが 0 件になった時点を v1.0 とする。着手日：2026-09-07</p>
+
+  <div class="toc">
+    <strong>目次</strong>
+    <ol>
+      <li><a href="#list">フィードバック一覧と対応バージョン</a></li>
+      <li><a href="#fb1">FB-1：IME 入力のレスポンスが悪い（v0.2.0）</a></li>
+      <li><a href="#fb2">FB-2：上部の高さと配置をメモ帳に合わせる（v0.3.0）</a></li>
+      <li><a href="#fb3">FB-3：「背景色」「文字色」を「色変更」に統合（v0.4.0）</a></li>
+      <li><a href="#fb4">FB-4：目に優しい配色 16 パターン（v0.5.0）</a></li>
+      <li><a href="#notes">つまずいた点のメモ</a></li>
+    </ol>
+  </div>
+
+  <h2 id="list">1. フィードバック一覧と対応バージョン</h2>
+  <p>初回フィードバック（2026-09-07 受領）は 4 件。種類ごとにバージョンを分けて対応する。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-1</td><td>改善</td><td>IME 使用時にキーを打ってから一呼吸置いて文字が表示される。メモ帳と比べて明らかに遅い</td><td>v0.2.0</td><td><span class="tag must">対応済み</span></td></tr>
+    <tr><td>FB-2</td><td>修正</td><td>ウィンドウ上部からエディタまでの高さをメモ帳と同等にし、上からタブ→メニュー→エディタの順に並べる。＋ボタンはタブ名の近くに。フッターの高さもメモ帳に合わせる</td><td>v0.3.0</td><td><span class="tag skip">対応中</span></td></tr>
+    <tr><td>FB-3</td><td>変更</td><td>「背景色」「文字色」を「色変更」メニューに統合し、1 つのウィンドウで両方を変えられるようにする。16 色は PICO-8 パレットに置き替える</td><td>v0.4.0</td><td><span class="tag skip">未着手</span></td></tr>
+    <tr><td>FB-4</td><td>機能追加</td><td>背景色と文字色を一度に変える「目に優しい配色」16 パターンを、プレビューを見て選べる方式で追加する</td><td>v0.5.0</td><td><span class="tag skip">未着手</span></td></tr>
+  </table>
+  </div>
+
+  <h2 id="fb1">2. FB-1：IME 入力のレスポンスが悪い（v0.2.0）</h2>
+  <h3>2.1 現象</h3>
+  <p>「メモ帳に比べ、キータッチしたときに一呼吸置いてからエディタ部分に表示される。キー入力に表示が追い付いていない。シンプルなメモ帳でこのレスポンスの悪さは致命的」というフィードバック。IME（日本語入力）のときに特に気になるとのこと。</p>
+
+  <h3>2.2 調べ方</h3>
+  <p>体感を数値にするため、2 段階で計測した。</p>
+  <ol>
+    <li><strong>アプリ内部の処理時間。</strong>環境変数 <code>MEMOPAD_PERF=1</code> で有効になる診断ログ（<code>Services/PerfLog.cs</code>）を組み込み、キー押下（KeyDown）→本文変更（TextChanged）→描画（CompositionTarget.Rendering）の各時刻と、ウィンドウ メッセージ・Dispatcher の処理時間を <code>%TEMP%\memopad-perf.log</code> に記録した。</li>
+    <li><strong>入力から画面に出るまでの時間。</strong>PowerShell から <code>keybd_event</code> でキーを 1 つ送り、画面上部をキャプチャし続けてピクセルが変わるまでの時間を測るスクリプトを書いた。IME は <kbd>半角/全角</kbd> キーを送って ON にし、「nihongo…」とローマ字を 1 文字ずつ送る。同じ手順をメモ帳にも当てて比べる。キャプチャ 1 回に約 18 ms かかるので、精度はその程度。</li>
+  </ol>
+
+  <h3>2.3 結果</h3>
+  <p>アプリ内部は速かった。キー押下から本文変更まで 3〜5 ms、描画要求まで +2 ms で、115 KB のファイルでも変わらない。ステータスバー更新などの自前処理は 0.01 ms。つまり <strong>アプリのコードが遅いのではなかった。</strong></p>
+  <p>一方、画面に出るまでの時間はメモ帳の 2.5 倍あった。WPF の TextBox は、UI スレッドが描画内容を作ってから別の描画スレッドが DirectX で描き、それを DWM（デスクトップ合成）が画面に出す、という 3 段階を経る。その途中で垂直同期に合わせて待つため、1〜2 フレーム（16〜33 ms）分の遅れが構造的に乗る。テーマ（Fluent）を外しても、ソフトウェア描画に切り替えても変わらなかった。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>エディタ</th><th>IME 入力（ひらがな合成中）</th><th>半角入力</th></tr>
+    <tr><td>メモ帳（Windows 11 Store 版）</td><td class="center">約 19 ms</td><td class="center">約 17 ms</td></tr>
+    <tr><td>memopad v0.1.0（WPF TextBox）</td><td class="center"><strong>約 50 ms</strong></td><td class="center">約 31〜49 ms</td></tr>
+    <tr><td>WPF TextBox＋Fluent テーマ無効</td><td class="center">約 50 ms</td><td class="center">—</td></tr>
+    <tr><td>WPF TextBox＋ソフトウェア描画</td><td class="center">約 45 ms</td><td class="center">約 41 ms</td></tr>
+    <tr><td>Win32 RichEdit（Windows Forms の RichTextBox）</td><td class="center">約 22 ms</td><td class="center">約 20 ms</td></tr>
+    <tr><td>Win32 Edit（Windows Forms の TextBox）</td><td class="center">約 28 ms</td><td class="center">約 20 ms</td></tr>
+    <tr><td><strong>memopad v0.2.0（RichEdit に置き換え）</strong></td><td class="center"><strong>約 21 ms</strong></td><td class="center"><strong>約 16 ms</strong></td></tr>
+  </table>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 230" width="100%" style="max-width:720px;display:block;margin:0 auto" role="img" aria-label="キー送信から画面に文字が出るまでの時間の比較">
+      <style>.b{font:13px "Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.v{font:12px "Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}</style>
+      <text x="10" y="18" class="b" font-weight="700">キー送信から画面に文字が出るまで（IME 入力、単位 ms、短いほど良い）</text>
+      <g transform="translate(10,36)">
+        <text x="0" y="14" class="b">メモ帳</text>
+        <rect x="200" y="2" width="114" height="16" fill="#0b5cad"/><text x="320" y="14" class="v">19</text>
+        <text x="0" y="46" class="b">memopad v0.1.0（WPF TextBox）</text>
+        <rect x="200" y="34" width="300" height="16" fill="#c0392b"/><text x="506" y="46" class="v">50</text>
+        <text x="0" y="78" class="b">RichEdit 単体（試作）</text>
+        <rect x="200" y="66" width="132" height="16" fill="#7a7a78"/><text x="338" y="78" class="v">22</text>
+        <text x="0" y="110" class="b">memopad v0.2.0（RichEdit）</text>
+        <rect x="200" y="98" width="126" height="16" fill="#0b5cad"/><text x="332" y="110" class="v">21</text>
+        <line x1="200" y1="126" x2="200" y2="130" stroke="#59636e"/><line x1="200" y1="128" x2="560" y2="128" stroke="#59636e"/>
+        <text x="196" y="146" class="v">0</text><text x="290" y="146" class="v">16</text><text x="384" y="146" class="v">33</text><text x="480" y="146" class="v">50</text><text x="540" y="146" class="v">60</text>
+        <text x="200" y="168" class="v">※ 16 ms ＝ 60 Hz の 1 フレーム。キャプチャの分解能が約 18 ms なので目安の値</text>
+      </g>
+    </svg>
+    <figcaption>図 2-1：入力から表示までの遅延。v0.2.0 でメモ帳と同等になった</figcaption>
+  </figure>
+
+  <h3>2.4 原因のまとめ</h3>
+  <figure>
+    <svg viewBox="0 0 760 250" width="100%" style="max-width:760px;display:block;margin:0 auto" role="img" aria-label="WPF TextBox と RichEdit の描画経路の違い">
+      <style>.t{font:13px "Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.s{font:11px "Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}.box{fill:#fff;stroke:#0b5cad;stroke-width:1.5}.bad{fill:#fff6e0;stroke:#e6b94d;stroke-width:1.5}</style>
+      <text x="10" y="20" class="t" font-weight="700">v0.1.0：WPF TextBox</text>
+      <rect x="10" y="34" width="110" height="44" rx="6" class="box"/><text x="22" y="52" class="t">キー入力</text><text x="22" y="70" class="s">IME → WPF</text>
+      <rect x="150" y="34" width="130" height="44" rx="6" class="box"/><text x="162" y="52" class="t">UI スレッド</text><text x="162" y="70" class="s">レイアウト・描画命令</text>
+      <rect x="310" y="34" width="150" height="44" rx="6" class="bad"/><text x="322" y="52" class="t">描画スレッド</text><text x="322" y="70" class="s">垂直同期を待って DirectX 描画</text>
+      <rect x="490" y="34" width="120" height="44" rx="6" class="bad"/><text x="502" y="52" class="t">DWM 合成</text><text x="502" y="70" class="s">次のフレームで表示</text>
+      <rect x="640" y="34" width="100" height="44" rx="6" class="box"/><text x="652" y="52" class="t">画面</text><text x="652" y="70" class="s">約 50 ms</text>
+      <path d="M120 56h30M280 56h30M460 56h30M610 56h30" stroke="#59636e" stroke-width="1.5" fill="none" marker-end="url(#a)"/>
+      <text x="10" y="130" class="t" font-weight="700">v0.2.0：Win32 RichEdit（WindowsFormsHost で埋め込み）</text>
+      <rect x="10" y="144" width="110" height="44" rx="6" class="box"/><text x="22" y="162" class="t">キー入力</text><text x="22" y="180" class="s">IME → RichEdit</text>
+      <rect x="150" y="144" width="200" height="44" rx="6" class="box"/><text x="162" y="162" class="t">UI スレッドで GDI 描画</text><text x="162" y="180" class="s">その場でウィンドウに描く</text>
+      <rect x="380" y="144" width="120" height="44" rx="6" class="box"/><text x="392" y="162" class="t">DWM 合成</text><text x="392" y="180" class="s">次のフレームで表示</text>
+      <rect x="530" y="144" width="100" height="44" rx="6" class="box"/><text x="542" y="162" class="t">画面</text><text x="542" y="180" class="s">約 21 ms</text>
+      <path d="M120 166h30M350 166h30M500 166h30" stroke="#59636e" stroke-width="1.5" fill="none"/>
+      <text x="10" y="225" class="s">黄色の箱が余分に待つ段階。WPF は描画を別スレッドに渡し、垂直同期に合わせて提示するため、メモ帳より 1〜2 フレーム遅れる</text>
+      <defs><marker id="a" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0 0L6 3L0 6z" fill="#59636e"/></marker></defs>
+    </svg>
+    <figcaption>図 2-2：描画経路の違い。アプリのコードではなく WPF の表示パイプラインが原因だった</figcaption>
+  </figure>
+
+  <h3>2.5 対策：エディタを RichEdit に置き換える</h3>
+  <p>本文の編集部分だけを Windows 標準の RichEdit（<code>msftedit.dll</code>）にした。Windows Forms の <code>RichTextBox</code> を継承した <code>Views/PlainTextEdit.cs</code> を作り、<code>WindowsFormsHost</code> で WPF の画面に埋め込む。メニュー・タブ・検索バー・ダイアログはこれまでどおり WPF なので、見た目とテーマはそのまま。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>やったこと</th></tr>
+    <tr><td>プレーン テキスト化</td><td><code>EM_SETTEXTMODE</code> で <code>TM_PLAINTEXT</code> にする（本文が空のうちに送る必要がある）。貼り付けても書式が付かず、フォント・色は全体で 1 つになる</td></tr>
+    <tr><td>元に戻す</td><td><code>TM_MULTILEVELUNDO</code>＋<code>EM_SETUNDOLIMIT</code>＝1000。Ctrl+Z／Ctrl+Y は RichEdit が処理し、Ctrl+Y だけアプリ側で Redo を呼ぶ</td></tr>
+    <tr><td>折り返し</td><td>Windows Forms の <code>WordWrap</code> はハンドルを作り直して履歴が消えるので、<code>EM_SETTARGETDEVICE</code> を直接送る</td></tr>
+    <tr><td>ズーム</td><td><code>ZoomFactor</code>（<code>EM_SETZOOM</code>）。Ctrl＋ホイールは <code>WM_MOUSEWHEEL</code> を横取りしてアプリのズームに回し、ステータスバーの % と連動させる</td></tr>
+    <tr><td>ショートカット</td><td>WindowsFormsHost の中では WPF の InputBinding が効かない。<code>ProcessCmdKey</code> で押されたキーを <code>Commands.All</code> の KeyGesture と突き合わせて実行する。Alt+F などのアクセス キーも同じ経路でメニューを開く</td></tr>
+    <tr><td>右クリック</td><td><code>WM_CONTEXTMENU</code> を受けて WPF の ContextMenu（元に戻す〜すべて選択、検索）を出す</td></tr>
+    <tr><td>ファイルのドロップ</td><td>RichEdit 自身の OLE ドロップを止め（<code>EnableAutoDragDrop=false</code>）、<code>DragDrop</code> でファイルを開く</td></tr>
+    <tr><td>余白</td><td><code>EM_SETRECT</code> で左に 8 px の余白。サイズ変更で戻るので都度設定</td></tr>
+    <tr><td>ダーク テーマ</td><td>スクロールバーに <code>SetWindowTheme(hwnd, "DarkMode_Explorer")</code></td></tr>
+    <tr><td>ステータスバー更新</td><td>全文を読む処理は連続入力中に毎回動かさず、入力が途切れたとき（Dispatcher の Background）に 1 回だけ行う</td></tr>
+  </table>
+  </div>
+
+  <h3>2.6 置き換えで起きた問題と対処</h3>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step3/v020_glass_bug.png" alt="RichEdit の文字が透けて見える状態" loading="lazy">
+      <figcaption>図 2-3：置き換え直後。本文が薄く透け、背後のウィンドウまで見えている</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v020_main.png" alt="不透明化した v0.2.0 のメイン画面" loading="lazy">
+      <figcaption>図 2-4：ウィンドウを不透明にし、日本語フォントの自動選択を有効にした後</figcaption>
+    </figure>
+  </div>
+  <ul>
+    <li><strong>本文が透ける。</strong>.NET 9 の Fluent テーマはウィンドウ全体を DWM のガラス領域（Mica 背景）にする。GDI で描く RichEdit はアルファ値 0 で描くため、そこが透明扱いになっていた。<code>DwmExtendFrameIntoClientArea</code> でフレーム拡張を 0 に戻し、<code>DWMWA_SYSTEMBACKDROP_TYPE</code> を NONE にして、背景色をテーマに合わせて塗った（<code>ThemeService.MakeOpaque</code>）。テーマ切り替え時にも呼び直す。</li>
+    <li><strong>日本語が細い別フォントで出る。</strong>Consolas に日本語グリフが無く、GDI のフォント リンクで MS UI Gothic に落ちていた。RichEdit の自動フォント選択（<code>LanguageOption</code> の AutoFont＋DualFont）を有効にすると、日本語部分だけ適切なフォントで描かれる。</li>
+    <li><strong>ビルドが 1 回おきに失敗する。</strong>WPF のマークアップ コンパイル（wpftmp プロジェクト）が <code>obj</code> 内の生成ファイルを見失う。<code>obj</code> を消してからビルドすると通るので、確認用の手順はそれに統一した。</li>
+  </ul>
+
+  <h3>2.7 確認</h3>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step3/v020_colors.png" alt="背景色を紺、文字色を黄にしたところ" loading="lazy">
+      <figcaption>図 2-5：背景色・文字色の変更も RichEdit で動く（<code>BackColor</code>／<code>ForeColor</code>）</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v020_dark.png" alt="ダーク テーマで検索した状態" loading="lazy">
+      <figcaption>図 2-6：ダーク テーマ。検索の一致箇所が選択され、スクロールバーもダーク用</figcaption>
+    </figure>
+  </div>
+  <p>step2 の撮影スクリプト（<code>docs/tools/capture-memopad.ps1</code>）を回帰確認に使い、メニュー・検索／置換・行へ移動・フォント・色・テーマ・タブ・未保存確認・ページ設定・バージョン情報がすべて動くことを確認した。遅延の再計測は表 2-3 の最終行のとおり。</p>
+  <div class="note">
+    <strong>診断ログの使い方</strong>：レスポンスの問題が再発したときは、環境変数 <code>MEMOPAD_PERF=1</code> を設定して memopad を起動すると <code>%TEMP%\memopad-perf.log</code> にキー押下と本文変更の時刻が記録される。通常起動では何も書かない。
+  </div>
+
+  <h2 id="fb2">3. FB-2：上部の高さと配置をメモ帳に合わせる（v0.3.0）</h2>
+  <figure>
+    <img src="../img/step3/fb_hud_height.png" alt="memopad v0.1.0（左）とメモ帳（右）の比較" loading="lazy">
+    <figcaption>図 3-1：フィードバックで示された比較。左が memopad v0.1.0、右がメモ帳。上部の高さと並び順、フッターの高さが違う</figcaption>
+  </figure>
+  <p>対応中。</p>
+
+  <h2 id="fb3">4. FB-3：「背景色」「文字色」を「色変更」に統合（v0.4.0）</h2>
+  <p>未着手。</p>
+
+  <h2 id="fb4">5. FB-4：目に優しい配色 16 パターン（v0.5.0）</h2>
+  <p>未着手。</p>
+
+  <h2 id="notes">6. つまずいた点のメモ</h2>
+  <ul>
+    <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
+    <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
+    <li><strong>PowerShell の <code>-WindowStyle Hidden</code> は子の Windows Forms フォームまで隠す。</strong>計測用のホスト ウィンドウが出ず、しばらく原因が分からなかった。</li>
+    <li><strong>スクリプト ファイルは BOM 付き UTF-8 で保存する。</strong>BOM 無しだと PowerShell 5.1 が ANSI として読み、日本語のコメントで構文が壊れる。</li>
+  </ul>
+</main>
+<footer class="site">
+  <div class="inner">memopad 備忘録 — スクリーンショットは自分の環境で撮影したもの。Windows およびメモ帳は Microsoft の製品です。</div>
+</footer>
+</body>
+</html>

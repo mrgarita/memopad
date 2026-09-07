@@ -44,7 +44,7 @@
 
     <DockPanel>
         <!-- メニュー：項目とショートカットはメモ帳に合わせる -->
-        <Menu DockPanel.Dock="Top">
+        <Menu x:Name="MainMenu" DockPanel.Dock="Top">
             <MenuItem Header="ファイル(_F)">
                 <MenuItem Header="新しいタブ(_N)" Command="{x:Static local:Commands.NewTab}" />
                 <MenuItem Header="新しいウィンドウ(_W)" Command="{x:Static local:Commands.NewWindow}" />
@@ -63,14 +63,15 @@
                 <MenuItem Header="ウィンドウを閉じる(_E)" Command="{x:Static local:Commands.CloseWindow}" />
                 <MenuItem Header="終了(_X)" Command="{x:Static local:Commands.Exit}" />
             </MenuItem>
-            <MenuItem Header="編集(_E)">
-                <MenuItem Header="元に戻す(_U)" Command="Undo" />
-                <MenuItem Header="やり直し(_R)" Command="Redo" />
+            <!-- 編集：元に戻す〜削除はエディタ（RichEdit）が自前で処理するので Click で呼ぶ。有効／無効はメニューを開くときに更新する -->
+            <MenuItem Header="編集(_E)" SubmenuOpened="EditMenu_SubmenuOpened">
+                <MenuItem x:Name="UndoMenuItem" Header="元に戻す(_U)" InputGestureText="Ctrl+Z" Click="Undo_Click" />
+                <MenuItem x:Name="RedoMenuItem" Header="やり直し(_R)" InputGestureText="Ctrl+Y" Click="Redo_Click" />
                 <Separator />
-                <MenuItem Header="切り取り(_T)" Command="Cut" />
-                <MenuItem Header="コピー(_C)" Command="Copy" />
-                <MenuItem Header="貼り付け(_P)" Command="Paste" />
-                <MenuItem Header="削除(_L)" Command="Delete" />
+                <MenuItem x:Name="CutMenuItem" Header="切り取り(_T)" InputGestureText="Ctrl+X" Click="Cut_Click" />
+                <MenuItem x:Name="CopyMenuItem" Header="コピー(_C)" InputGestureText="Ctrl+C" Click="Copy_Click" />
+                <MenuItem x:Name="PasteMenuItem" Header="貼り付け(_P)" InputGestureText="Ctrl+V" Click="Paste_Click" />
+                <MenuItem x:Name="DeleteMenuItem" Header="削除(_L)" InputGestureText="Del" Click="Delete_Click" />
                 <Separator />
                 <MenuItem Header="検索(_F)..." Command="{x:Static local:Commands.Find}" />
                 <MenuItem Header="次を検索(_N)" Command="{x:Static local:Commands.FindNext}" />
@@ -78,7 +79,7 @@
                 <MenuItem Header="置換(_R)..." Command="{x:Static local:Commands.Replace}" />
                 <MenuItem Header="行へ移動(_G)..." Command="{x:Static local:Commands.GoTo}" />
                 <Separator />
-                <MenuItem Header="すべて選択(_A)" Command="SelectAll" />
+                <MenuItem Header="すべて選択(_A)" InputGestureText="Ctrl+A" Click="SelectAll_Click" />
                 <MenuItem Header="日付と時刻(_D)" Command="{x:Static local:Commands.InsertDateTime}" />
             </MenuItem>
             <MenuItem Header="表示(_V)">

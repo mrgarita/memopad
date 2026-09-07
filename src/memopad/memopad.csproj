@@ -12,7 +12,7 @@
     <!-- アイコンは docs/tools/make-icon.ps1 で生成する -->
     <ApplicationIcon>memopad.ico</ApplicationIcon>
     <RootNamespace>Memopad</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Product>memopad</Product>
     <Description>背景色と文字色を変えられるメモ帳</Description>
     <Copyright>mrgarita</Copyright>

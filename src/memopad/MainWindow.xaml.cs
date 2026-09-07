@@ -44,6 +44,12 @@ public partial class MainWindow : Window
         AddTab(new Document());
     }
 
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        ThemeService.MakeOpaque(this, Settings.Theme);
+    }
+
     // =====================================================================
     // タブ
     // =====================================================================
@@ -56,6 +62,11 @@ public partial class MainWindow : Window
         tab.Editor.ApplyAppearance(Settings, _zoomPercent);
         tab.Editor.CaretChanged += (_, _) => { if (tab == _current) UpdateCaretStatus(); };
         tab.Editor.ContentChanged += (_, _) => { if (tab == _current) UpdateContentStatus(); };
+        // RichEdit はキーやホイールを自分で受け取るので、アプリ側の操作へ橋渡しする
+        tab.Editor.Edit.CommandKey += HandleEditorCommandKey;
+        tab.Editor.Edit.ZoomWheel += delta => SetZoom(_zoomPercent + (delta > 0 ? ZoomStep : -ZoomStep));
+        tab.Editor.Edit.ContextMenuRequested += () => ShowEditorContextMenu(tab);
+        tab.Editor.Edit.FilesDropped += files => { foreach (var f in files) if (File.Exists(f)) OpenFile(f); };
         document.PropertyChanged += (_, _) => { if (tab == _current) UpdateTitle(); };
         _tabs.Add(tab);
         TabList.SelectedItem = tab;
@@ -71,7 +82,7 @@ public partial class MainWindow : Window
         UpdateContentStatus();
         if (tab is not null)
         {
-            Dispatcher.BeginInvoke(() => tab.Editor.Editor.Focus(), System.Windows.Threading.DispatcherPriority.Input);
+            Dispatcher.BeginInvoke(() => tab.Editor.FocusEditor(), System.Windows.Threading.DispatcherPriority.Input);
         }
     }
 
@@ -163,19 +174,72 @@ public partial class MainWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        // Ctrl+Tab / Ctrl+Shift+Tab でタブを切り替える
-        if (e.Key == Key.Tab && Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && _tabs.Count > 1)
+        if (HandleGlobalKey(e.Key, Keyboard.Modifiers)) e.Handled = true;
+    }
+
+    /// <summary>Ctrl+Tab（タブ切り替え）と Esc（検索バーを閉じる）。処理したら true。</summary>
+    private bool HandleGlobalKey(Key key, ModifierKeys modifiers)
+    {
+        if (key == Key.Tab && modifiers.HasFlag(ModifierKeys.Control) && _tabs.Count > 1)
         {
             var index = _current is null ? 0 : _tabs.IndexOf(_current);
-            var delta = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? -1 : 1;
+            var delta = modifiers.HasFlag(ModifierKeys.Shift) ? -1 : 1;
             TabList.SelectedItem = _tabs[(index + delta + _tabs.Count) % _tabs.Count];
-            e.Handled = true;
+            return true;
         }
-        else if (e.Key == Key.Escape && FindBar.Visibility == Visibility.Visible)
+        if (key == Key.Escape && FindBar.Visibility == Visibility.Visible)
         {
             HideFindBar();
-            e.Handled = true;
+            return true;
         }
+        return false;
+    }
+
+    /// <summary>
+    /// エディタ（RichEdit）で押されたショートカットをアプリのコマンドに変換する。
+    /// WindowsFormsHost の中では WPF の InputBinding が効かないため、ここで Commands の KeyGesture と突き合わせる。
+    /// 元に戻す・切り取り・コピー・貼り付け・すべて選択などは RichEdit 自身に任せる（false を返す）。
+    /// </summary>
+    private bool HandleEditorCommandKey(System.Windows.Forms.Keys keys)
+    {
+        var key = KeyInterop.KeyFromVirtualKey((int)(keys & System.Windows.Forms.Keys.KeyCode));
+        var modifiers = ModifierKeys.None;
+        if (keys.HasFlag(System.Windows.Forms.Keys.Control)) modifiers |= ModifierKeys.Control;
+        if (keys.HasFlag(System.Windows.Forms.Keys.Shift)) modifiers |= ModifierKeys.Shift;
+        if (keys.HasFlag(System.Windows.Forms.Keys.Alt)) modifiers |= ModifierKeys.Alt;
+
+        if (HandleGlobalKey(key, modifiers)) return true;
+        if (key == Key.Y && modifiers == ModifierKeys.Control)
+        {
+            Current?.Editor.Redo();
+            return true;
+        }
+        // Alt＋アクセス キーでメニューを開く（Alt+F など）
+        if (modifiers == ModifierKeys.Alt && key is >= Key.A and <= Key.Z)
+        {
+            var letter = (char)('A' + (key - Key.A));
+            foreach (var item in MainMenu.Items.OfType<MenuItem>())
+            {
+                if (item.Header is string header && header.Contains($"(_{letter})", StringComparison.OrdinalIgnoreCase))
+                {
+                    item.Focus();
+                    item.IsSubmenuOpen = true;
+                    return true;
+                }
+            }
+        }
+        foreach (var command in Commands.All)
+        {
+            foreach (var gesture in command.InputGestures.OfType<KeyGesture>())
+            {
+                if (gesture.Key == key && gesture.Modifiers == modifiers)
+                {
+                    command.Execute(null, this);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // =====================================================================
@@ -220,7 +284,7 @@ public partial class MainWindow : Window
         }
 
         // 空の「タイトルなし」しか無いときはそのタブを使い回す（メモ帳と同じ挙動）
-        var tab = Current is { } c && c.Document.FilePath is null && !c.Document.IsDirty && c.Editor.Editor.Text.Length == 0
+        var tab = Current is { } c && c.Document.FilePath is null && !c.Document.IsDirty && c.Editor.TextLength == 0
             ? c
             : AddTab(new Document());
 
@@ -299,7 +363,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            TextFileService.Write(path, tab.Editor.Editor.Text, tab.Document.Encoding, tab.Document.LineEnding);
+            TextFileService.Write(path, tab.Editor.Text, tab.Document.Encoding, tab.Document.LineEnding);
         }
         catch (Exception ex)
         {
@@ -324,7 +388,7 @@ public partial class MainWindow : Window
         if (Current is not { } tab) return;
         try
         {
-            PrintService.Print(this, tab.Document.Title, tab.Editor.Editor.Text, Settings);
+            PrintService.Print(this, tab.Document.Title, tab.Editor.Text, Settings);
         }
         catch (Exception ex)
         {
@@ -394,7 +458,7 @@ public partial class MainWindow : Window
         FindStatusText.Text = "";
 
         // 選択中の文字列があれば検索語にする（1 行以内のときだけ）
-        if (Current is { } tab && tab.Editor.Editor.SelectedText is { Length: > 0 } sel && !sel.Contains('\n'))
+        if (Current is { } tab && tab.Editor.SelectedText is { Length: > 0 } sel && !sel.Contains('\n'))
         {
             FindTextBox.Text = sel;
         }
@@ -405,7 +469,7 @@ public partial class MainWindow : Window
     private void HideFindBar()
     {
         FindBar.Visibility = Visibility.Collapsed;
-        Current?.Editor.Editor.Focus();
+        Current?.Editor.FocusEditor();
     }
 
     private void CloseFindBar_Click(object sender, RoutedEventArgs e) => HideFindBar();
@@ -451,7 +515,7 @@ public partial class MainWindow : Window
             return false;
         }
 
-        var editor = tab.Editor.Editor;
+        var editor = tab.Editor;
         var text = editor.Text;
         var wrap = WrapAroundCheckBox.IsChecked == true;
         int index;
@@ -477,7 +541,6 @@ public partial class MainWindow : Window
         }
 
         editor.Select(index, query.Length);
-        editor.ScrollToLine(editor.GetLineIndexFromCharacterIndex(index));
         FindStatusText.Text = "";
         return true;
     }
@@ -486,7 +549,7 @@ public partial class MainWindow : Window
     private void ReplaceOne()
     {
         if (Current is not { } tab) return;
-        var editor = tab.Editor.Editor;
+        var editor = tab.Editor;
         var query = FindTextBox.Text;
         if (query.Length == 0) return;
         if (editor.SelectionLength > 0 && string.Equals(editor.SelectedText, query, FindComparison))
@@ -501,7 +564,7 @@ public partial class MainWindow : Window
     private void ReplaceAll()
     {
         if (Current is not { } tab) return;
-        var editor = tab.Editor.Editor;
+        var editor = tab.Editor;
         var query = FindTextBox.Text;
         if (query.Length == 0) return;
 
@@ -534,7 +597,7 @@ public partial class MainWindow : Window
     {
         if (Current is not { } tab) return;
         var (line, _) = tab.Editor.GetCaretPosition();
-        var lineCount = tab.Editor.Editor.Text.AsSpan().Count('\n') + 1;
+        var lineCount = tab.Editor.Text.AsSpan().Count('\n') + 1;
         var result = GoToLineDialog.Ask(this, line, lineCount);
         if (result is { } target) tab.Editor.GoToLine(target);
     }
@@ -544,11 +607,59 @@ public partial class MainWindow : Window
         // メモ帳の F5 と同じ形式（例：16:25 2026/09/06）
         if (Current is { } tab)
         {
-            var editor = tab.Editor.Editor;
+            var editor = tab.Editor;
             editor.SelectedText = DateTime.Now.ToString("H:mm yyyy/MM/dd");
             editor.Select(editor.SelectionStart + editor.SelectionLength, 0);
-            editor.Focus();
+            editor.FocusEditor();
         }
+    }
+
+    // =====================================================================
+    // 編集：元に戻す〜すべて選択（RichEdit に委譲）と右クリック メニュー
+    // =====================================================================
+
+    private void EditMenu_SubmenuOpened(object sender, RoutedEventArgs e)
+    {
+        var editor = Current?.Editor;
+        UndoMenuItem.IsEnabled = editor?.CanUndo == true;
+        RedoMenuItem.IsEnabled = editor?.CanRedo == true;
+        CutMenuItem.IsEnabled = editor?.HasSelection == true;
+        CopyMenuItem.IsEnabled = editor?.HasSelection == true;
+        DeleteMenuItem.IsEnabled = editor?.HasSelection == true;
+        PasteMenuItem.IsEnabled = editor?.CanPaste == true;
+    }
+
+    private void Undo_Click(object sender, RoutedEventArgs e) => Current?.Editor.Undo();
+    private void Redo_Click(object sender, RoutedEventArgs e) => Current?.Editor.Redo();
+    private void Cut_Click(object sender, RoutedEventArgs e) => Current?.Editor.Cut();
+    private void Copy_Click(object sender, RoutedEventArgs e) => Current?.Editor.Copy();
+    private void Paste_Click(object sender, RoutedEventArgs e) => Current?.Editor.Paste();
+    private void Delete_Click(object sender, RoutedEventArgs e) => Current?.Editor.Delete();
+    private void SelectAll_Click(object sender, RoutedEventArgs e) => Current?.Editor.SelectAll();
+
+    /// <summary>テキスト領域の右クリック メニュー（メモ帳の編集項目。Copilot 系は対象外）。</summary>
+    private void ShowEditorContextMenu(DocumentTab tab)
+    {
+        var editor = tab.Editor;
+        var menu = new ContextMenu { PlacementTarget = editor, Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint };
+        void Add(string header, string gesture, bool enabled, Action action)
+        {
+            var item = new MenuItem { Header = header, InputGestureText = gesture, IsEnabled = enabled };
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+        }
+        Add("元に戻す(_U)", "Ctrl+Z", editor.CanUndo, editor.Undo);
+        Add("やり直し(_R)", "Ctrl+Y", editor.CanRedo, editor.Redo);
+        menu.Items.Add(new Separator());
+        Add("切り取り(_T)", "Ctrl+X", editor.HasSelection, editor.Cut);
+        Add("コピー(_C)", "Ctrl+C", editor.HasSelection, editor.Copy);
+        Add("貼り付け(_P)", "Ctrl+V", editor.CanPaste, editor.Paste);
+        Add("削除(_D)", "Del", editor.HasSelection, editor.Delete);
+        menu.Items.Add(new Separator());
+        Add("すべて選択(_A)", "Ctrl+A", true, editor.SelectAll);
+        Add("検索(_F)...", "Ctrl+F", true, () => ShowFindBar(replace: false));
+        menu.Closed += (_, _) => editor.FocusEditor();
+        menu.IsOpen = true;
     }
 
     // =====================================================================
@@ -663,6 +774,8 @@ public partial class MainWindow : Window
         {
             Settings.Theme = theme;
             ThemeService.Apply(theme);
+            // テーマを切り替えると Fluent が Mica を掛け直すので、不透明化もやり直す
+            Dispatcher.BeginInvoke(() => ThemeService.MakeOpaque(this, theme), System.Windows.Threading.DispatcherPriority.Loaded);
             UpdateThemeMenu();
             ApplyAppearanceToAll();
         }

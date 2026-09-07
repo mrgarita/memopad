@@ -4,7 +4,8 @@ namespace Memopad;
 
 /// <summary>
 /// メニューとショートカットで使うコマンド。キー割り当てはメモ帳（Store 版 11.x）に合わせる。
-/// 切り取り・コピー・貼り付け・元に戻す・やり直し・すべて選択は ApplicationCommands をそのまま使う。
+/// 切り取り・コピー・貼り付け・元に戻す・やり直し・すべて選択は RichEdit が自前で処理するので、
+/// メニュー用に Click ハンドラで呼ぶ（コマンドは持たない）。
 /// </summary>
 public static class Commands
 {
@@ -52,4 +53,13 @@ public static class Commands
 
     // ヘルプ
     public static readonly RoutedUICommand About = Make("memopad について", nameof(About));
+
+    /// <summary>ショートカットを持つコマンドの一覧。エディタ（RichEdit）で押されたキーをコマンドに変換するときに使う。</summary>
+    public static readonly RoutedUICommand[] All =
+    {
+        NewTab, NewWindow, Open, Save, SaveAs, SaveAll, PageSetup, Print, CloseTab, CloseWindow, Exit,
+        Find, FindNext, FindPrevious, Replace, GoTo, InsertDateTime,
+        ZoomIn, ZoomOut, ZoomReset, ToggleStatusBar, ToggleWordWrap,
+        Font, ResetColors, About,
+    };
 }

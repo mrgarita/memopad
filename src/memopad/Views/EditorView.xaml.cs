@@ -1,34 +1,78 @@
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
+using System.Windows.Threading;
 using Memopad.Models;
 using Memopad.Services;
+using WinForms = System.Windows.Forms;
 
 namespace Memopad.Views;
 
 /// <summary>
-/// タブ 1 つ分の編集領域。TextBox をタブごとに持つことで、元に戻す履歴とカーソル位置をタブ単位で保てる。
+/// タブ 1 つ分の編集領域。エディタ（RichEdit）をタブごとに持つことで、元に戻す履歴とカーソル位置をタブ単位で保てる。
+/// MainWindow からは本文・選択範囲・編集操作をこのクラス経由で扱う。
 /// </summary>
 public partial class EditorView : UserControl
 {
+    private readonly PlainTextEdit _edit = new();
     private bool _loading;
+    private bool _statusPending;
+    private bool _contentPending;
 
     public EditorView(Document document)
     {
         InitializeComponent();
         Document = document;
+        Host.Child = _edit;
+        _edit.TextChanged += Edit_TextChanged;
+        _edit.SelectionChanged += Edit_SelectionChanged;
+        if (PerfLog.Enabled) AttachPerfProbes();
     }
 
     public Document Document { get; }
 
-    /// <summary>本文の TextBox。検索・置換やカーソル操作で使う。</summary>
-    public TextBox Editor => TextBox;
+    /// <summary>編集コントロール本体（ショートカット・ホイール・右クリック・ドロップのイベント購読用）。</summary>
+    public PlainTextEdit Edit => _edit;
 
-    /// <summary>カーソル位置や選択範囲が変わったとき（ステータスバー更新用）。</summary>
+    /// <summary>カーソル位置や選択範囲が変わったとき（ステータスバー更新用）。連続入力中はまとめて 1 回にする。</summary>
     public event EventHandler? CaretChanged;
 
-    /// <summary>本文が変わったとき（変更フラグ・文字数更新用）。</summary>
+    /// <summary>本文が変わったとき（変更フラグ・文字数更新用）。連続入力中はまとめて 1 回にする。</summary>
     public event EventHandler? ContentChanged;
+
+    // --- 本文と選択範囲（改行は "\n" 1 文字で表現される）
+
+    public string Text => _edit.Text;
+    public int TextLength => _edit.TextLength;
+    public int SelectionStart => _edit.SelectionStart;
+    public int SelectionLength => _edit.SelectionLength;
+
+    public string SelectedText
+    {
+        get => _edit.SelectedText;
+        set => _edit.SelectedText = value;
+    }
+
+    /// <summary>範囲を選択し、見える位置までスクロールする。</summary>
+    public void Select(int start, int length)
+    {
+        _edit.Select(start, length);
+        _edit.ScrollToCaret();
+    }
+
+    public void SelectAll() => _edit.SelectAll();
+    public void FocusEditor() => _edit.Focus();
+
+    // --- 編集操作（編集メニューと右クリック メニューから使う）
+
+    public bool CanUndo => _edit.CanUndo;
+    public bool CanRedo => _edit.CanRedo;
+    public bool HasSelection => _edit.SelectionLength > 0;
+    public bool CanPaste => WinForms.Clipboard.ContainsText();
+    public void Undo() { if (_edit.CanUndo) _edit.Undo(); }
+    public void Redo() { if (_edit.CanRedo) _edit.Redo(); }
+    public void Cut() => _edit.Cut();
+    public void Copy() => _edit.Copy();
+    public void Paste() { if (WinForms.Clipboard.ContainsText()) _edit.SelectedText = WinForms.Clipboard.GetText(); }
+    public void Delete() { if (_edit.SelectionLength > 0) _edit.SelectedText = ""; }
 
     /// <summary>ファイルから読み込んだ本文を設定する。元に戻す履歴は捨て、変更なしの状態にする。</summary>
     public void LoadText(string text)
@@ -36,10 +80,9 @@ public partial class EditorView : UserControl
         _loading = true;
         try
         {
-            TextBox.IsUndoEnabled = false;   // 履歴をクリア
-            TextBox.Text = TextFileService.NormalizeToCrlf(text);
-            TextBox.IsUndoEnabled = true;
-            TextBox.CaretIndex = 0;
+            _edit.Text = text;
+            _edit.ClearUndo();
+            _edit.Select(0, 0);
         }
         finally
         {
@@ -50,60 +93,45 @@ public partial class EditorView : UserControl
         CaretChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>フォント・色・折り返し・ズームを反映する。</summary>
+    /// <summary>フォント・色・折り返し・ズーム・スクロールバーのテーマを反映する。</summary>
     public void ApplyAppearance(AppSettings settings, int zoomPercent)
     {
-        TextBox.FontFamily = new FontFamily(settings.FontFamily);
-        // WPF の FontSize は px 単位。メモ帳と同じくポイント指定なので 96/72 を掛ける
-        TextBox.FontSize = Math.Max(1, settings.FontSize * 96.0 / 72.0 * zoomPercent / 100.0);
-        TextBox.FontWeight = settings.FontBold ? FontWeights.Bold : FontWeights.Normal;
-        TextBox.FontStyle = settings.FontItalic ? FontStyles.Italic : FontStyles.Normal;
-        TextBox.TextWrapping = settings.WordWrap ? TextWrapping.Wrap : TextWrapping.NoWrap;
-        TextBox.HorizontalScrollBarVisibility = settings.WordWrap ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
+        var style = System.Drawing.FontStyle.Regular;
+        if (settings.FontBold) style |= System.Drawing.FontStyle.Bold;
+        if (settings.FontItalic) style |= System.Drawing.FontStyle.Italic;
+        var current = _edit.Font;
+        if (current.Name != settings.FontFamily || Math.Abs(current.SizeInPoints - settings.FontSize) > 0.01 || current.Style != style)
+        {
+            _edit.Font = new System.Drawing.Font(settings.FontFamily, (float)Math.Max(1, settings.FontSize), style, System.Drawing.GraphicsUnit.Point);
+        }
+        _edit.ZoomFactor = Math.Clamp(zoomPercent / 100f, 1f / 64, 64f);
+        _edit.WrapText = settings.WordWrap;
 
         var bg = ColorUtil.TryParse(settings.BackgroundColor) ?? ThemeService.DefaultBackground(settings.Theme);
         var fg = ColorUtil.TryParse(settings.ForegroundColor) ?? ThemeService.DefaultForeground(settings.Theme);
-        TextBox.Background = new SolidColorBrush(bg);
-        TextBox.Foreground = new SolidColorBrush(fg);
-        TextBox.CaretBrush = new SolidColorBrush(fg);
-        // 選択範囲は文字色を半透明にして、どんな背景色でも見えるようにする
-        TextBox.SelectionBrush = new SolidColorBrush(Color.FromArgb(0x60, fg.R, fg.G, fg.B));
+        _edit.BackColor = System.Drawing.Color.FromArgb(bg.R, bg.G, bg.B);
+        _edit.ForeColor = System.Drawing.Color.FromArgb(fg.R, fg.G, fg.B);
+        _edit.DarkScrollBars = ThemeService.IsDark(settings.Theme);
     }
 
     /// <summary>カーソル位置を「論理行, 列」で返す（折り返しの見た目の行ではなく、改行で数えた行）。</summary>
     public (int Line, int Column) GetCaretPosition()
     {
-        var text = TextBox.Text;
-        var index = Math.Min(TextBox.CaretIndex, text.Length);
-        var line = 1;
-        var lineStart = 0;
-        for (var i = 0; i < index; i++)
-        {
-            if (text[i] == '\n')
-            {
-                line++;
-                lineStart = i + 1;
-            }
-        }
+        var text = _edit.Text;
+        var index = Math.Min(_edit.SelectionStart, text.Length);
+        var head = text.AsSpan(0, index);
+        var line = head.Count('\n') + 1;
+        var lineStart = head.LastIndexOf('\n') + 1;
         return (line, index - lineStart + 1);
     }
 
     /// <summary>文字数（ステータスバーの「N 文字」）。メモ帳に合わせ、改行は 1 つにつき 1 文字と数える。</summary>
-    public int GetCharacterCount()
-    {
-        var text = TextBox.Text;
-        var count = text.Length;
-        foreach (var c in text)
-        {
-            if (c == '\r') count--;   // 内部表現は CRLF なので \r の分を引くと改行 1 つ＝1 文字になる
-        }
-        return count;
-    }
+    public int GetCharacterCount() => _edit.TextLength;
 
     /// <summary>指定した論理行の先頭へカーソルを移動する。</summary>
     public void GoToLine(int line)
     {
-        var text = TextBox.Text;
+        var text = _edit.Text;
         var current = 1;
         var index = 0;
         while (current < line && index < text.Length)
@@ -113,20 +141,41 @@ public partial class EditorView : UserControl
             index = next + 1;
             current++;
         }
-        TextBox.CaretIndex = index;
-        TextBox.ScrollToLine(TextBox.GetLineIndexFromCharacterIndex(index));
-        TextBox.Focus();
+        Select(index, 0);
+        _edit.Focus();
     }
 
-    private void TextBox_SelectionChanged(object sender, RoutedEventArgs e)
+    private void Edit_SelectionChanged(object? sender, EventArgs e)
     {
-        if (!_loading) CaretChanged?.Invoke(this, EventArgs.Empty);
+        if (_loading || _statusPending) return;
+        // 連続入力中に毎回全文を読まないよう、入力が途切れたタイミング（Background）で 1 回だけ通知する
+        _statusPending = true;
+        Dispatcher.BeginInvoke(() =>
+        {
+            _statusPending = false;
+            CaretChanged?.Invoke(this, EventArgs.Empty);
+        }, DispatcherPriority.Background);
     }
 
-    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+    private void Edit_TextChanged(object? sender, EventArgs e)
     {
         if (_loading) return;
         Document.IsDirty = true;
-        ContentChanged?.Invoke(this, EventArgs.Empty);
+        if (_contentPending) return;
+        _contentPending = true;
+        Dispatcher.BeginInvoke(() =>
+        {
+            _contentPending = false;
+            ContentChanged?.Invoke(this, EventArgs.Empty);
+        }, DispatcherPriority.Background);
+    }
+
+    // --- 診断（MEMOPAD_PERF=1 のときだけ）：キー押下から本文変更までの時間を記録する
+    private double _keyDownAt;
+
+    private void AttachPerfProbes()
+    {
+        _edit.KeyDown += (_, e) => { _keyDownAt = PerfLog.Now; PerfLog.Write($"KeyDown {e.KeyCode}"); };
+        _edit.TextChanged += (_, _) => PerfLog.Write($"TextChanged (+{PerfLog.Now - _keyDownAt:F1} ms after KeyDown)");
     }
 }

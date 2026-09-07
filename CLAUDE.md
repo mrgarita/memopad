@@ -5,7 +5,8 @@
 
 ## リポジトリの状態
 
-step2（実装）まで完了し、step3（フィードバック対応）に入る段階。「正」となるのは
+step3（フィードバック対応）を進行中。初回フィードバック 4 件を v0.2.0〜v0.5.0 に分けて対応する
+（一覧は `docs/site/step3/index.html` 1 節）。「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#／WPF）、
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
@@ -80,8 +81,16 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   テーマ（`Application.ThemeMode`）。Visual Studio 2022 が無い端末でも `dotnet` CLI
   だけでビルドできる構成（`memopad.sln` があるので Visual Studio でも開ける）。
   選定理由は `docs/site/step2/index.html` 1 節
-- **ビルドと確認**：`dotnet build src\memopad\memopad.csproj`。動作確認とスクリーン
-  ショットは `docs\tools\capture-memopad.ps1`（実行中はマウス／キーボードに触らない）
+- **本文のエディタ**：Win32 の RichEdit（Windows Forms の `RichTextBox` を継承した
+  `Views/PlainTextEdit.cs`）を `WindowsFormsHost` で埋め込む。WPF の TextBox は入力から表示まで
+  約 50 ms かかりメモ帳（約 19 ms）より遅かったため v0.2.0 で置き換えた（経緯は
+  `docs/site/step3/index.html` 2 節）。RichEdit の中では WPF の InputBinding が効かないので、
+  ショートカットは `MainWindow.HandleEditorCommandKey` で `Commands.All` と突き合わせる
+- **ビルドと確認**：`dotnet build src\memopad\memopad.csproj`。WPF のマークアップ コンパイルが
+  `obj` の生成ファイルを見失って 1 回おきに失敗することがあるので、失敗したら `src\memopad\obj`
+  を消して再ビルドする。動作確認とスクリーンショットは `docs\tools\capture-memopad.ps1`
+  （`-ExePath` と `-OutDir` を絶対パスで指定。実行中はマウス／キーボードに触らない）。
+  入力→表示の遅延は環境変数 `MEMOPAD_PERF=1` の診断ログ（`Services/PerfLog.cs`）で調べられる
 - **インストーラ**：Inno Setup 6（winget で導入済み）。`installer\build-installer.ps1`
   で self-contained 発行→ `installer\output\memopad-setup-<version>.exe`
 - **設定の保存先**：`%APPDATA%\memopad\settings.json`

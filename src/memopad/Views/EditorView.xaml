@@ -1,36 +1,11 @@
 <UserControl x:Class="Memopad.Views.EditorView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
              Focusable="False">
     <!--
-        本文の編集領域。TextBox のテンプレートを素の Border＋ScrollViewer に差し替えているのは、
-        テーマ（Fluent）の TextBox テンプレートがフォーカス時などに背景色を上書きしてしまい、
-        ユーザーが選んだ背景色・文字色が崩れるのを防ぐため。
+        本文の編集領域。Win32 の RichEdit（PlainTextEdit）を WindowsFormsHost で埋め込む。
+        WPF の TextBox は入力から表示までの遅延が大きい（v0.1.0 のフィードバック）ため置き換えた。
     -->
-    <TextBox x:Name="TextBox"
-             AcceptsReturn="True"
-             AcceptsTab="True"
-             IsUndoEnabled="True"
-             UndoLimit="-1"
-             TextWrapping="NoWrap"
-             VerticalScrollBarVisibility="Auto"
-             HorizontalScrollBarVisibility="Auto"
-             Padding="8,6"
-             BorderThickness="0"
-             SelectionChanged="TextBox_SelectionChanged"
-             TextChanged="TextBox_TextChanged">
-        <TextBox.Template>
-            <ControlTemplate TargetType="TextBox">
-                <Border Background="{TemplateBinding Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}">
-                    <ScrollViewer x:Name="PART_ContentHost"
-                                  Focusable="False"
-                                  Padding="{TemplateBinding Padding}"
-                                  HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
-                                  VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}" />
-                </Border>
-            </ControlTemplate>
-        </TextBox.Template>
-    </TextBox>
+    <wfi:WindowsFormsHost x:Name="Host" />
 </UserControl>
