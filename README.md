@@ -1,0 +1,62 @@
+# memopad
+
+<img src="docs/assets/app-icon-256.png" alt="memopad のアイコン" width="96" align="right">
+
+Windows 標準の「メモ帳」の使い勝手はそのままに、**背景色・文字色・フォントを自由に変えられる**テキスト エディタです。
+
+- 紹介ページ：https://mrgarita.github.io/memopad/
+- 制作の備忘録（機能の洗い出し・実装・フィードバック対応の記録）：https://mrgarita.github.io/memopad/site/
+- ダウンロード：[Releases](https://github.com/mrgarita/memopad/releases/latest) の `memopad-setup-<バージョン>.exe`
+
+## 特長
+
+| 機能 | 内容 |
+|---|---|
+| 色変更 | 背景色と文字色を 1 つのダイアログで選ぶ。PICO-8 の 16 色＋カラーピッカー、プレビュー付き |
+| 配色パターン | 目に優しい 16 パターン（ライト 8・ダーク 8）をカードから選ぶと、背景色と文字色が一度に変わる |
+| メモ帳の機能 | タブ、検索・置換、行へ移動、ズーム、右端で折り返す、日付と時刻、ページ設定と印刷、エンコード／改行コードの切り替え、未保存の確認 |
+| 入力レスポンス | 本文に Windows 標準の RichEdit を使い、入力から表示までメモ帳と同等（約 20 ms）。IME も快適 |
+| テーマ | ライト／ダーク／システム設定に追従 |
+
+## 動作環境
+
+Windows 10 / 11（64 ビット）。インストーラに .NET ランタイムを同梱しているので、追加のインストールは不要です。設定は `%APPDATA%\memopad\settings.json` に保存されます。
+
+## ビルド
+
+.NET 9 SDK があれば `dotnet` CLI だけでビルドできます（Visual Studio 2022 でも `memopad.sln` を開けます）。
+
+```powershell
+dotnet build src\memopad\memopad.csproj
+```
+
+インストーラは Inno Setup 6 を使います（`winget install JRSoftware.InnoSetup`）。
+
+```powershell
+.\installer\build-installer.ps1
+# → installer\output\memopad-setup-<version>.exe
+```
+
+## リポジトリ構成
+
+| パス | 内容 |
+|---|---|
+| `src/memopad/` | アプリ本体（C#／WPF、.NET 9） |
+| `installer/` | Inno Setup のスクリプトとビルド スクリプト |
+| `docs/index.html` | 紹介ページ（GitHub Pages） |
+| `docs/site/` | 制作の備忘録（step1〜step3） |
+| `docs/tools/` | スクリーンショット撮影・動作確認用の PowerShell スクリプト |
+| `project.txt` | プロジェクトの目的・仕様・進行 step |
+
+## 制作の流れ
+
+1. **step1**：メモ帳（Windows 11 Store 版）の機能を UI Automation で洗い出し、memopad で再現する範囲を決める
+2. **step2**：C#／WPF で実装し、インストーラを作る
+3. **step3**：実際に使ったフィードバックを 1 件ずつ反映する。フィードバックが 0 件になった時点を v1.0 とする
+
+詳しくは[備忘録](https://mrgarita.github.io/memopad/site/)を参照してください。
+
+## 謝辞
+
+- 16 色パレットは [PICO-8](https://www.lexaloffle.com/pico-8.php)（Lexaloffle Games）の配色を使わせてもらっています
+- Windows およびメモ帳は Microsoft の製品です

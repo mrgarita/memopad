@@ -10,7 +10,9 @@ step3（フィードバック対応）を進行中。初回フィードバック
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#／WPF）、
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
-Git リポジトリはローカルのみ（GitHub 未公開）。
+GitHub に公開済み（https://github.com/mrgarita/memopad）。GitHub Pages は main の `/docs` を公開し、
+`docs/index.html` が紹介ページ、`docs/site/` が備忘録（https://mrgarita.github.io/memopad/）。
+インストーラは GitHub Releases に添付する。
 
 ## プロダクト概要
 
@@ -98,6 +100,8 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
 - **色の機能**：「色変更」ダイアログ（`Dialogs/ColorChangeDialog`、PICO-8 の 16 色＋カラーピッカー。
   v0.4.0）と「配色パターン」ダイアログ（`Dialogs/ColorSchemeDialog`、`Services/ColorSchemes.cs` の
   16 パターン。v0.5.0）。どちらも結果は設定の背景色・文字色（"#RRGGBB"）に入る
+- **アプリ アイコン**：ユーザー提供の `memopad.ico`（v0.6.0 で採用。生成スクリプトは廃止）。差し替える
+  ときは `src/memopad/memopad.ico` と `docs/assets/`（紹介ページ用 PNG・favicon）を同時に更新する
 - **設定の保存先**：`%APPDATA%\memopad\settings.json`
 - **備忘録サイト**：`docs/site/` 配下の静的 HTML。`index.html` を起点に各 step の
   ページへリンクする。スクリーンショットは `docs/site/img/` に置く

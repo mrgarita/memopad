@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>memopad — 背景色と文字色を変えられるメモ帳</title>
+<meta name="description" content="Windows のメモ帳の使い勝手はそのままに、背景色・文字色・フォントを自由に変えられるテキスト エディタ memopad の紹介ページ。">
+<link rel="icon" href="./assets/favicon.ico">
+<link rel="stylesheet" href="./site/assets/style.css">
+<style>
+  .hero { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; margin: 8px 0 24px; }
+  .hero img { width: 112px; height: 112px; }
+  .hero h1 { margin: 0 0 6px; font-size: 2.2rem; }
+  .hero .tagline { color: var(--muted); margin: 0; font-size: 1.05rem; }
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin: 18px 0 8px; }
+  .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700; border: 1px solid var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.secondary { background: #fff; color: var(--accent); }
+  .btn:hover { opacity: 0.9; text-decoration: none; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 12px 0; }
+  .feature { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: #fff; }
+  .feature h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .feature p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .shots figure { margin: 0; }
+  .shots img { width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+  .shots figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 12px 0; }
+  .swatch { border-radius: 8px; padding: 8px 10px; border: 1px solid #8884; font-size: 0.9rem; }
+  .swatch b { display: block; }
+  small.muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./index.html">memopad</a>
+    <nav>
+      <a href="#download">ダウンロード</a>
+      <a href="#features">特長</a>
+      <a href="#screens">画面</a>
+      <a href="./site/index.html">制作の備忘録</a>
+      <a href="https://github.com/mrgarita/memopad">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <div class="hero">
+    <img src="./assets/app-icon-256.png" alt="memopad のアイコン">
+    <div>
+      <h1>memopad</h1>
+      <p class="tagline">Windows の「メモ帳」の使い勝手はそのままに、<strong>背景色・文字色・フォント</strong>を自由に変えられるテキスト エディタ。</p>
+      <div class="actions">
+        <a class="btn primary" href="https://github.com/mrgarita/memopad/releases/latest">最新版をダウンロード</a>
+        <a class="btn secondary" href="./site/index.html">制作の備忘録を読む</a>
+      </div>
+      <small class="muted">Windows 10 / 11（64 ビット）。インストーラ形式（.NET ランタイム同梱、追加のインストール不要）。</small>
+    </div>
+  </div>
+
+  <h2 id="features">特長</h2>
+  <div class="features">
+    <div class="feature"><h3>色変更</h3><p>背景色と文字色を 1 つの画面で選べます。PICO-8 の 16 色から選ぶか、カラーピッカーで好きな色に。プレビューを見ながら決められます。</p></div>
+    <div class="feature"><h3>配色パターン 16 種</h3><p>目に優しい配色（生成り、セピア、ミント、夜、墨、コーヒー…）をカードから選ぶと、背景色と文字色が一度に変わります。</p></div>
+    <div class="feature"><h3>メモ帳の機能はそのまま</h3><p>タブ、検索・置換、行へ移動、ズーム、右端で折り返す、日付と時刻、ページ設定と印刷、エンコード（UTF-8 / ANSI / UTF-16）と改行コードの切り替え。</p></div>
+    <div class="feature"><h3>軽い入力レスポンス</h3><p>本文の編集部分に Windows 標準の RichEdit を使い、キーを打ってから文字が出るまでの時間はメモ帳と同等（約 20 ms）。日本語入力（IME）も快適です。</p></div>
+    <div class="feature"><h3>ライト／ダーク テーマ</h3><p>Windows の設定に合わせるか、手動で切り替え。メニューやダイアログもテーマに追従します。</p></div>
+    <div class="feature"><h3>フォント</h3><p>ファミリ・スタイル・サイズを選べます。日本語部分は自動で適切なフォントに切り替わります。</p></div>
+  </div>
+
+  <h2 id="screens">画面</h2>
+  <div class="shots">
+    <figure><img src="./site/img/step3/v050_main.png" alt="memopad のメイン画面" loading="lazy"><figcaption>メイン画面。メモ帳と同じく、タブ→メニュー→本文の並び</figcaption></figure>
+    <figure><img src="./site/img/step3/v040_color_dialog.png" alt="色変更ダイアログ" loading="lazy"><figcaption>色変更ダイアログ。背景色と文字色を並べて選ぶ</figcaption></figure>
+    <figure><img src="./site/img/step3/v050_scheme_dialog.png" alt="配色パターン ダイアログ" loading="lazy"><figcaption>配色パターン。カードを選ぶとプレビューが切り替わる</figcaption></figure>
+    <figure><img src="./site/img/step3/v050_scheme_night.png" alt="配色パターン「夜」を適用した画面" loading="lazy"><figcaption>配色パターン「夜」を適用したところ</figcaption></figure>
+  </div>
+
+  <h2>配色パターン</h2>
+  <div class="swatches">
+    <div class="swatch" style="background:#F7F3E9;color:#3B372E"><b style="color:#B08D57">生成り</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#F2F2F0;color:#333333"><b style="color:#7A7A78">ソフトグレー</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#F4ECD8;color:#4A3F35"><b style="color:#A9762F">セピア</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#EAF4F0;color:#2C3E3A"><b style="color:#3E8E7E">ミント</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#F1EEF7;color:#35313F"><b style="color:#7C6A9C">ラベンダー</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#FBEEE6;color:#4A3226"><b style="color:#C97B53">ピーチ</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#EAF2F8;color:#2A3B4A"><b style="color:#3E76A0">スカイ</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#F5EFE6;color:#453D33"><b style="color:#9C8358">サンド</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#2B2B2B;color:#DCDCDC"><b style="color:#8FA6B3">チャコール</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#1F2B24;color:#D6E4DA"><b style="color:#6FAE8B">森</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#1B2430;color:#D7DEE8"><b style="color:#6E8FBF">夜</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#232323;color:#E0DCD3"><b style="color:#C9A45C">墨</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#241F2E;color:#E1DCE8"><b style="color:#A78BC9">ダークパープル</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#2A211B;color:#E5DACB"><b style="color:#C99A6B">コーヒー</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#262B30;color:#DCE1E5"><b style="color:#7FA6B8">スレート</b>あいうえお Aa 0123</div>
+    <div class="swatch" style="background:#2A1E22;color:#E5D9DB"><b style="color:#C77E8C">ワイン</b>あいうえお Aa 0123</div>
+  </div>
+
+  <h2 id="download">ダウンロードとインストール</h2>
+  <ol>
+    <li><a href="https://github.com/mrgarita/memopad/releases/latest">Releases</a> から <code>memopad-setup-&lt;バージョン&gt;.exe</code> をダウンロードします。</li>
+    <li>実行してインストールします（管理者権限なしでユーザー単位にインストールできます）。「テキスト文書を memopad で開く」の関連付けはインストール時に選べます。</li>
+    <li>スタート メニューの memopad から起動します。設定は <code>%APPDATA%\memopad\settings.json</code> に保存されます。</li>
+  </ol>
+  <div class="note">
+    Windows の SmartScreen が「発行元を確認できません」と表示することがあります。コード署名をしていないためで、「詳細情報」→「実行」で続行できます。
+  </div>
+
+  <h2>制作について</h2>
+  <p>「シンプルなエディタとしてメモ帳をよく使うが、背景色と文字色を変えられないのが不満」という動機から作りました。メモ帳の機能を洗い出し（step1）、C#／WPF で作り（step2）、実際に使ったフィードバックを反映する（step3）、という流れを <a href="./site/index.html">備忘録</a> にスクリーンショット付きで残しています。ソース コードは <a href="https://github.com/mrgarita/memopad">GitHub</a> にあります。</p>
+</main>
+<footer class="site">
+  <div class="inner">memopad — Windows およびメモ帳は Microsoft の製品です。PICO-8 パレットは Lexaloffle Games の PICO-8 の配色です。</div>
+</footer>
+</body>
+</html>

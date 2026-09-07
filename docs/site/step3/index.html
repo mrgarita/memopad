@@ -63,6 +63,15 @@
     <tr><td>FB-8</td><td>不具合</td><td>右上の閉じる／最小化／最大化ボタンにマウスを載せると「□□□」と文字化けして見える</td><td>v0.5.2</td><td><span class="tag must">対応済み</span></td></tr>
   </table>
   </div>
+  <p>4 回目のフィードバック（2026-09-07、v0.5.2 は OK との確認とあわせて）。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-9</td><td>変更</td><td>アプリ アイコンをユーザー提供のデザイン（緑の文書に白い罫線、16〜256 px の 7 サイズ入り .ico）に変更する</td><td>v0.6.0</td><td><span class="tag must">対応済み</span></td></tr>
+    <tr><td>FB-10</td><td>公開</td><td>GitHub Pages の公開、README.md の追加、アプリの紹介ページの作成</td><td>v0.6.0</td><td><span class="tag must">対応済み</span></td></tr>
+  </table>
+  </div>
+  <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
   <h2 id="fb1">2. FB-1：IME 入力のレスポンスが悪い（v0.2.0）</h2>
   <h3>2.1 現象</h3>

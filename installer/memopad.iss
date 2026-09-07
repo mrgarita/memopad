@@ -4,7 +4,7 @@
 
 #define MyAppName "memopad"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.5.2"
+  #define MyAppVersion "0.6.0"
 #endif
 #define MyAppPublisher "mrgarita"
 #define MyAppExeName "memopad.exe"
@@ -17,6 +17,8 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
+; インストーラ自体のアイコンもアプリと同じにする
+SetupIconFile=..\src\memopad\memopad.ico
 OutputDir=output
 OutputBaseFilename=memopad-setup-{#MyAppVersion}
 Compression=lzma2
