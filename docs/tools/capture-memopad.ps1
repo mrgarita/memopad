@@ -210,6 +210,14 @@ try {
     CloseDialog $dlg
     CloseDialog $colorDlg 'キャンセル'
 
+    # 11b 配色パターン：「夜」を選んで反映する
+    Fg; Keys '%o' 500; Keys 'p' 1200
+    $schemeDlg = TopWindow '配色パターン'
+    if ($schemeDlg) { Invoke-El ($schemeDlg.FindFirst($TS::Descendants, (AndC @((PC $AE::NameProperty '夜'), (PC $AE::ControlTypeProperty $CT::Button))))) }
+    ShotWithDialog '11b_color_scheme_dialog' '配色パターン' | Out-Null
+    CloseDialog $schemeDlg 'OK'
+    Shot '11c_color_scheme_night'
+
     # 12 既定の色に戻してダーク テーマへ
     Fg; Keys '%o' 500; Keys 'd' 800
     Fg; Keys '%o' 500; Keys 'm' 600; Keys 'd' 1500; Shot '12_dark_theme'

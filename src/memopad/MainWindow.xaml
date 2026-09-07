@@ -142,6 +142,7 @@
         <!-- 書式 -->
         <CommandBinding Command="{x:Static local:Commands.Font}" Executed="Font_Executed" />
         <CommandBinding Command="{x:Static local:Commands.ChangeColors}" Executed="ChangeColors_Executed" />
+        <CommandBinding Command="{x:Static local:Commands.ColorScheme}" Executed="ColorScheme_Executed" />
         <CommandBinding Command="{x:Static local:Commands.ResetColors}" Executed="ResetColors_Executed" />
         <!-- ヘルプ -->
         <CommandBinding Command="{x:Static local:Commands.About}" Executed="About_Executed" />
@@ -279,6 +280,7 @@
                 <MenuItem Header="フォント(_F)..." Command="{x:Static local:Commands.Font}" />
                 <Separator />
                 <MenuItem Header="色変更(_C)..." Command="{x:Static local:Commands.ChangeColors}" />
+                <MenuItem Header="配色パターン(_P)..." Command="{x:Static local:Commands.ColorScheme}" />
                 <MenuItem Header="既定の色に戻す(_D)" Command="{x:Static local:Commands.ResetColors}" />
                 <Separator />
                 <MenuItem Header="テーマ(_M)">

@@ -95,6 +95,9 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   入力→表示の遅延は環境変数 `MEMOPAD_PERF=1` の診断ログ（`Services/PerfLog.cs`）で調べられる
 - **インストーラ**：Inno Setup 6（winget で導入済み）。`installer\build-installer.ps1`
   で self-contained 発行→ `installer\output\memopad-setup-<version>.exe`
+- **色の機能**：「色変更」ダイアログ（`Dialogs/ColorChangeDialog`、PICO-8 の 16 色＋カラーピッカー。
+  v0.4.0）と「配色パターン」ダイアログ（`Dialogs/ColorSchemeDialog`、`Services/ColorSchemes.cs` の
+  16 パターン。v0.5.0）。どちらも結果は設定の背景色・文字色（"#RRGGBB"）に入る
 - **設定の保存先**：`%APPDATA%\memopad\settings.json`
 - **備忘録サイト**：`docs/site/` 配下の静的 HTML。`index.html` を起点に各 step の
   ページへリンクする。スクリーンショットは `docs/site/img/` に置く

@@ -42,7 +42,7 @@
     <tr><td>FB-1</td><td>改善</td><td>IME 使用時にキーを打ってから一呼吸置いて文字が表示される。メモ帳と比べて明らかに遅い</td><td>v0.2.0</td><td><span class="tag must">対応済み</span></td></tr>
     <tr><td>FB-2</td><td>修正</td><td>ウィンドウ上部からエディタまでの高さをメモ帳と同等にし、上からタブ→メニュー→エディタの順に並べる。＋ボタンはタブ名の近くに。フッターの高さもメモ帳に合わせる</td><td>v0.3.0</td><td><span class="tag must">対応済み</span></td></tr>
     <tr><td>FB-3</td><td>変更</td><td>「背景色」「文字色」を「色変更」メニューに統合し、1 つのウィンドウで両方を変えられるようにする。16 色は PICO-8 パレットに置き替える</td><td>v0.4.0</td><td><span class="tag must">対応済み</span></td></tr>
-    <tr><td>FB-4</td><td>機能追加</td><td>背景色と文字色を一度に変える「目に優しい配色」16 パターンを、プレビューを見て選べる方式で追加する</td><td>v0.5.0</td><td><span class="tag skip">対応中</span></td></tr>
+    <tr><td>FB-4</td><td>機能追加</td><td>背景色と文字色を一度に変える「目に優しい配色」16 パターンを、プレビューを見て選べる方式で追加する</td><td>v0.5.0</td><td><span class="tag must">対応済み</span></td></tr>
   </table>
   </div>
 
@@ -262,7 +262,31 @@
   </div>
 
   <h2 id="fb4">5. FB-4：目に優しい配色 16 パターン（v0.5.0）</h2>
-  <p>未着手。</p>
+  <h3>5.1 要望</h3>
+  <p>テーマのように全体の配色をまとめて変える機能として、目に優しい配色 16 パターン（参照ファイル「テキストエディタ配色パターン」）を用意し、プレビューを見て選べる方式にしてほしい、というフィードバック。背景色と文字色を一度に変える。</p>
+  <h3>5.2 やったこと</h3>
+  <ul>
+    <li>「書式」メニューに「配色パターン...」を追加（「色変更...」の下）。</li>
+    <li>「配色パターン」ダイアログ（<code>Dialogs/ColorSchemeDialog.xaml</code>）を新設。ライト 8 種・ダーク 8 種をカードで並べ、各カードはそのパターンの背景色の上に名前（アクセント色）・見本文（文字色）・色コードを出す。クリックで選ぶと下のプレビューが現在のフォントで切り替わり、OK で本文に反映する。</li>
+    <li>16 パターンの定義は <code>Services/ColorSchemes.cs</code>。現在の背景色・文字色に一致するパターンがあれば、開いたときにそのカードが選択済みになる。</li>
+    <li>反映後は設定の背景色・文字色に色コードとして保存されるので、「色変更...」で片方だけ変えることもできる。</li>
+  </ul>
+  <p>16 パターン（HTML で再現したもの。名前はアクセント色、色コードは背景 / 文字）：</p>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0"><div style="background:#F7F3E9;color:#3B372E;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#B08D57;font-weight:700">生成り</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#F7F3E9 / #3B372E</div></div><div style="background:#F2F2F0;color:#333333;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#7A7A78;font-weight:700">ソフトグレー</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#F2F2F0 / #333333</div></div><div style="background:#F4ECD8;color:#4A3F35;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#A9762F;font-weight:700">セピア</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#F4ECD8 / #4A3F35</div></div><div style="background:#EAF4F0;color:#2C3E3A;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#3E8E7E;font-weight:700">ミント</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#EAF4F0 / #2C3E3A</div></div><div style="background:#F1EEF7;color:#35313F;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#7C6A9C;font-weight:700">ラベンダー</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#F1EEF7 / #35313F</div></div><div style="background:#FBEEE6;color:#4A3226;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#C97B53;font-weight:700">ピーチ</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#FBEEE6 / #4A3226</div></div><div style="background:#EAF2F8;color:#2A3B4A;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#3E76A0;font-weight:700">スカイ</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#EAF2F8 / #2A3B4A</div></div><div style="background:#F5EFE6;color:#453D33;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#9C8358;font-weight:700">サンド</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#F5EFE6 / #453D33</div></div><div style="background:#2B2B2B;color:#DCDCDC;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#8FA6B3;font-weight:700">チャコール</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#2B2B2B / #DCDCDC</div></div><div style="background:#1F2B24;color:#D6E4DA;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#6FAE8B;font-weight:700">森</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#1F2B24 / #D6E4DA</div></div><div style="background:#1B2430;color:#D7DEE8;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#6E8FBF;font-weight:700">夜</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#1B2430 / #D7DEE8</div></div><div style="background:#232323;color:#E0DCD3;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#C9A45C;font-weight:700">墨</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#232323 / #E0DCD3</div></div><div style="background:#241F2E;color:#E1DCE8;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#A78BC9;font-weight:700">ダークパープル</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#241F2E / #E1DCE8</div></div><div style="background:#2A211B;color:#E5DACB;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#C99A6B;font-weight:700">コーヒー</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#2A211B / #E5DACB</div></div><div style="background:#262B30;color:#DCE1E5;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#7FA6B8;font-weight:700">スレート</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#262B30 / #DCE1E5</div></div><div style="background:#2A1E22;color:#E5D9DB;border:1px solid #8884;border-radius:8px;padding:8px 10px"><div style="color:#C77E8C;font-weight:700">ワイン</div><div style="font-size:.9em">あいうえお Aa Bb 0123</div><div style="font-size:.75em;opacity:.75">#2A1E22 / #E5D9DB</div></div></div>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step3/v050_menu_format.png" alt="v0.5.0 の書式メニュー" loading="lazy">
+      <figcaption>図 5-1：書式メニューに「配色パターン...」が加わった</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v050_scheme_dialog.png" alt="配色パターン ダイアログで「夜」を選んだところ" loading="lazy">
+      <figcaption>図 5-2：配色パターン ダイアログ。カードを選ぶと下のプレビューが変わる</figcaption>
+    </figure>
+  </div>
+  <figure>
+    <img src="../img/step3/v050_scheme_night.png" alt="配色パターン「夜」を反映した本文" loading="lazy">
+    <figcaption>図 5-3：「夜」を反映した本文</figcaption>
+  </figure>
 
   <h2 id="notes">6. つまずいた点のメモ</h2>
   <ul>

@@ -756,6 +756,15 @@ public partial class MainWindow : Window
         ApplyAppearanceToAll();
     }
 
+    /// <summary>「配色パターン」ダイアログで、目に優しい 16 パターンから背景色と文字色を一度に変える（v0.5.0）。</summary>
+    private void ColorScheme_Executed(object sender, ExecutedRoutedEventArgs e)
+    {
+        if (ColorSchemeDialog.Ask(this, Settings) is not { } scheme) return;
+        Settings.BackgroundColor = scheme.BackgroundHex;
+        Settings.ForegroundColor = scheme.ForegroundHex;
+        ApplyAppearanceToAll();
+    }
+
     private void Font_Executed(object sender, ExecutedRoutedEventArgs e)
     {
         if (FontDialog.Ask(this, Settings) is not { } choice) return;
