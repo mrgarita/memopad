@@ -183,8 +183,8 @@
                 </ListBox.ItemsPanel>
                 <ListBox.ItemContainerStyle>
                     <!-- Fluent の ListBoxItem は余白が大きいので、タブ用の簡素なテンプレートに差し替える -->
+                    <!-- Focusable は既定（True）のまま：ListBoxItem はクリック時にフォーカスを取れないと選択しない（v0.5.1 で修正） -->
                     <Style TargetType="ListBoxItem">
-                        <Setter Property="Focusable" Value="False" />
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="ListBoxItem">
