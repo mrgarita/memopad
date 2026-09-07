@@ -56,6 +56,10 @@ dotnet build src\memopad\memopad.csproj
 
 詳しくは[備忘録](https://mrgarita.github.io/memopad/site/)を参照してください。
 
+## ライセンス
+
+[MIT License](LICENSE)
+
 ## 謝辞
 
 - 16 色パレットは [PICO-8](https://www.lexaloffle.com/pico-8.php)（Lexaloffle Games）の配色を使わせてもらっています

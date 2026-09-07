@@ -12,7 +12,7 @@ step3（フィードバック対応）を進行中。初回フィードバック
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
 GitHub に公開済み（https://github.com/mrgarita/memopad）。GitHub Pages は main の `/docs` を公開し、
 `docs/index.html` が紹介ページ、`docs/site/` が備忘録（https://mrgarita.github.io/memopad/）。
-インストーラは GitHub Releases に添付する。
+インストーラは GitHub Releases に添付する。ライセンスは MIT（`LICENSE`）。
 
 ## プロダクト概要
 
