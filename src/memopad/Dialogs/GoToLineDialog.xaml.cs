@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 
 namespace Memopad.Dialogs;
 
@@ -8,17 +8,17 @@ public partial class GoToLineDialog : Window
     private readonly int _lineCount;
     private int? _result;
 
-    public GoToLineDialog(Window owner, int currentLine, int lineCount)
+    public GoToLineDialog(IntPtr owner, int currentLine, int lineCount)
     {
         InitializeComponent();
-        Owner = owner;
+        new System.Windows.Interop.WindowInteropHelper(this).Owner = owner;
         _lineCount = lineCount;
         LineTextBox.Text = currentLine.ToString();
         RangeText.Text = $"1 〜 {lineCount} 行";
         Loaded += (_, _) => { LineTextBox.Focus(); LineTextBox.SelectAll(); };
     }
 
-    public static int? Ask(Window owner, int currentLine, int lineCount)
+    public static int? Ask(IntPtr owner, int currentLine, int lineCount)
     {
         var dialog = new GoToLineDialog(owner, currentLine, lineCount);
         dialog.ShowDialog();
@@ -29,7 +29,7 @@ public partial class GoToLineDialog : Window
     {
         if (!int.TryParse(LineTextBox.Text.Trim(), out var line) || line < 1 || line > _lineCount)
         {
-            MessageBox.Show(this, "行番号が範囲外です。", "memopad - 行に移動", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "行番号が範囲外です。", "MemoPad - 行に移動", MessageBoxButton.OK, MessageBoxImage.Warning);
             LineTextBox.Focus();
             LineTextBox.SelectAll();
             return;

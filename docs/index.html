@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>memopad — 背景色と文字色を変えられるメモ帳</title>
-<meta name="description" content="Windows のメモ帳の使い勝手はそのままに、背景色・文字色・フォントを自由に変えられるテキスト エディタ memopad の紹介ページ。">
+<title>MemoPad — 背景色と文字色を変えられるメモ帳</title>
+<meta name="description" content="Windows のメモ帳の使い勝手はそのままに、背景色・文字色・フォントを自由に変えられるテキスト エディタ MemoPad の紹介ページ。">
 <link rel="icon" href="./assets/favicon.ico">
 <link rel="stylesheet" href="./site/assets/style.css">
 <style>
@@ -34,7 +34,7 @@
 <body>
 <header class="site">
   <div class="inner">
-    <a class="brand" href="./index.html">memopad</a>
+    <a class="brand" href="./index.html">MemoPad</a>
     <nav>
       <a href="#download">ダウンロード</a>
       <a href="#features">特長</a>
@@ -46,9 +46,9 @@
 </header>
 <main>
   <div class="hero">
-    <img src="./assets/app-icon-256.png" alt="memopad のアイコン">
+    <img src="./assets/app-icon-256.png" alt="MemoPad のアイコン">
     <div>
-      <h1>memopad</h1>
+      <h1>MemoPad</h1>
       <p class="tagline">Windows の「メモ帳」の使い勝手はそのままに、<strong>背景色・文字色・フォント</strong>を自由に変えられるテキスト エディタ。</p>
       <div class="actions">
         <a class="btn primary" href="https://github.com/mrgarita/memopad/releases/latest">最新版をダウンロード</a>
@@ -64,13 +64,14 @@
     <div class="feature"><h3>配色パターン 16 種</h3><p>目に優しい配色（生成り、セピア、ミント、夜、墨、コーヒー…）をカードから選ぶと、背景色と文字色が一度に変わります。</p></div>
     <div class="feature"><h3>メモ帳の機能はそのまま</h3><p>タブ、検索・置換、行へ移動、ズーム、右端で折り返す、日付と時刻、ページ設定と印刷、エンコード（UTF-8 / ANSI / UTF-16）と改行コードの切り替え。</p></div>
     <div class="feature"><h3>軽い入力レスポンス</h3><p>本文の編集部分に Windows 標準の RichEdit を使い、キーを打ってから文字が出るまでの時間はメモ帳と同等（約 20 ms）。日本語入力（IME）も快適です。</p></div>
+    <div class="feature"><h3>すぐ開く</h3><p>ウィンドウが出るまで約 0.2 秒。同じ端末のメモ帳と同じ速さです（v0.8.0 でメイン ウィンドウを作り直して短縮しました）。</p></div>
     <div class="feature"><h3>ライト／ダーク テーマ</h3><p>Windows の設定に合わせるか、手動で切り替え。メニューやダイアログもテーマに追従します。</p></div>
     <div class="feature"><h3>フォント</h3><p>ファミリ・スタイル・サイズを選べます。日本語部分は自動で適切なフォントに切り替わります。</p></div>
   </div>
 
   <h2 id="screens">画面</h2>
   <div class="shots">
-    <figure><img src="./site/img/step3/v050_main.png" alt="memopad のメイン画面" loading="lazy"><figcaption>メイン画面。メモ帳と同じく、タブ→メニュー→本文の並び</figcaption></figure>
+    <figure><img src="./site/img/step3/v080_main.png" alt="MemoPad のメイン画面" loading="lazy"><figcaption>メイン画面。メモ帳と同じく、タブ→メニュー→本文の並び</figcaption></figure>
     <figure><img src="./site/img/step3/v040_color_dialog.png" alt="色変更ダイアログ" loading="lazy"><figcaption>色変更ダイアログ。背景色と文字色を並べて選ぶ</figcaption></figure>
     <figure><img src="./site/img/step3/v050_scheme_dialog.png" alt="配色パターン ダイアログ" loading="lazy"><figcaption>配色パターン。カードを選ぶとプレビューが切り替わる</figcaption></figure>
     <figure><img src="./site/img/step3/v050_scheme_night.png" alt="配色パターン「夜」を適用した画面" loading="lazy"><figcaption>配色パターン「夜」を適用したところ</figcaption></figure>
@@ -98,9 +99,9 @@
 
   <h2 id="download">ダウンロードとインストール</h2>
   <ol>
-    <li><a href="https://github.com/mrgarita/memopad/releases/latest">Releases</a> から <code>memopad-setup-&lt;バージョン&gt;.exe</code> をダウンロードします。</li>
-    <li>実行してインストールします（管理者権限なしでユーザー単位にインストールできます）。「テキスト文書を memopad で開く」の関連付けはインストール時に選べます。</li>
-    <li>スタート メニューの memopad から起動します。設定は <code>%APPDATA%\memopad\settings.json</code> に保存されます。</li>
+    <li><a href="https://github.com/mrgarita/memopad/releases/latest">Releases</a> から <code>MemoPad-setup-&lt;バージョン&gt;.exe</code> をダウンロードします。</li>
+    <li>実行してインストールします（管理者権限なしでユーザー単位にインストールできます）。「テキスト文書を MemoPad で開く」の関連付けはインストール時に選べます。</li>
+    <li>スタート メニューの MemoPad から起動します。設定は <code>%APPDATA%\MemoPad\settings.json</code> に保存されます。</li>
   </ol>
   <div class="note">
     <strong>「WindowsによってPCが保護されました」と表示された場合</strong><br>
@@ -112,10 +113,10 @@
   </div>
 
   <h2>制作について</h2>
-  <p>「シンプルなエディタとしてメモ帳をよく使うが、背景色と文字色を変えられないのが不満」という動機から作りました。メモ帳の機能を洗い出し（step1）、C#／WPF で作り（step2）、実際に使ったフィードバックを反映する（step3）、という流れを <a href="./site/index.html">備忘録</a> にスクリーンショット付きで残しています。ソース コードは <a href="https://github.com/mrgarita/memopad">GitHub</a> にあります（MIT ライセンス）。</p>
+  <p>「シンプルなエディタとしてメモ帳をよく使うが、背景色と文字色を変えられないのが不満」という動機から作りました。メモ帳の機能を洗い出し（step1）、C#／.NET で作り（step2）、実際に使ったフィードバックを反映する（step3）、という流れを <a href="./site/index.html">備忘録</a> にスクリーンショット付きで残しています。ソース コードは <a href="https://github.com/mrgarita/memopad">GitHub</a> にあります（MIT ライセンス）。</p>
 </main>
 <footer class="site">
-  <div class="inner">memopad — Windows およびメモ帳は Microsoft の製品です。PICO-8 パレットは Lexaloffle Games の PICO-8 の配色です。</div>
+  <div class="inner">MemoPad — Windows およびメモ帳は Microsoft の製品です。PICO-8 パレットは Lexaloffle Games の PICO-8 の配色です。</div>
 </footer>
 </body>
 </html>

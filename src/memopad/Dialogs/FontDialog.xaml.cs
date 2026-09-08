@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
@@ -24,10 +24,10 @@ public partial class FontDialog : Window
     private FontChoice? _result;
     private bool _updating;
 
-    public FontDialog(Window owner, AppSettings settings)
+    public FontDialog(IntPtr owner, AppSettings settings)
     {
         InitializeComponent();
-        Owner = owner;
+        new System.Windows.Interop.WindowInteropHelper(this).Owner = owner;
 
         var ja = XmlLanguage.GetLanguage("ja-jp");
         _families = Fonts.SystemFontFamilies
@@ -59,7 +59,7 @@ public partial class FontDialog : Window
         UpdatePreview();
     }
 
-    public static FontChoice? Ask(Window owner, AppSettings settings)
+    public static FontChoice? Ask(IntPtr owner, AppSettings settings)
     {
         var dialog = new FontDialog(owner, settings);
         dialog.ShowDialog();
@@ -116,12 +116,12 @@ public partial class FontDialog : Window
     {
         if (SelectedFamily is not { } family)
         {
-            MessageBox.Show(this, "フォントを選んでください。", "memopad - フォント", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "フォントを選んでください。", "MemoPad - フォント", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
         if (SelectedSize is not { } size)
         {
-            MessageBox.Show(this, "サイズは 1 〜 400 の数値で指定してください。", "memopad - フォント", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "サイズは 1 〜 400 の数値で指定してください。", "MemoPad - フォント", MessageBoxButton.OK, MessageBoxImage.Warning);
             SizeBox.Focus();
             return;
         }

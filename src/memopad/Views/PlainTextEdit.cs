@@ -54,9 +54,6 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
         LanguageOption = WinForms.RichTextBoxLanguageOptions.AutoFont | WinForms.RichTextBoxLanguageOptions.DualFont;
     }
 
-    /// <summary>ショートカット キーが押されたとき。true を返すとエディタでは処理しない。</summary>
-    public event Func<WinForms.Keys, bool>? CommandKey;
-
     /// <summary>Ctrl＋ホイール（delta は WM_MOUSEWHEEL の値）。</summary>
     public event Action<int>? ZoomWheel;
 
@@ -125,13 +122,6 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
     {
         if (e.Data?.GetData(WinForms.DataFormats.FileDrop) is string[] files) FilesDropped?.Invoke(files);
         base.OnDragDrop(e);
-    }
-
-    protected override bool ProcessCmdKey(ref WinForms.Message msg, WinForms.Keys keyData)
-    {
-        // Ctrl+F などアプリのショートカットは WPF 側（MainWindow）に判断してもらう
-        if (CommandKey?.Invoke(keyData) == true) return true;
-        return base.ProcessCmdKey(ref msg, keyData);
     }
 
     protected override void WndProc(ref WinForms.Message m)

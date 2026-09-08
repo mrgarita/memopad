@@ -1,16 +1,16 @@
 ﻿<#
 .SYNOPSIS
-  memopad のスクリーンショットを docs/site/img/step2/ へ一括生成する（動作確認を兼ねる）。
+  MemoPad のスクリーンショットを docs/site/img/step2/ へ一括生成する（動作確認を兼ねる）。
 
 .DESCRIPTION
-  ビルド済みの memopad.exe をサンプル ファイル付きで起動し、メニュー・検索／置換・各ダイアログ・
+  ビルド済みの MemoPad.exe をサンプル ファイル付きで起動し、メニュー・検索／置換・各ダイアログ・
   色の変更・ダーク テーマ・タブ・未保存確認を UI Automation とキー操作で再現しながら撮影する。
   ユーザーの設定ファイル（%APPDATA%\memopad\settings.json）は退避し、終了時に元へ戻す。
 
   前提：実行中はマウス／キーボードに触らない（前面ウィンドウの確認に失敗すると中断する）。
 
 .PARAMETER ExePath
-  撮影対象の memopad.exe。既定は Debug ビルドの出力。
+  撮影対象の MemoPad.exe。既定は Debug ビルドの出力。
 
 .PARAMETER OutDir
   出力先フォルダ。既定は docs/site/img/step2。
@@ -39,6 +39,7 @@ public static class NativeWin2 {
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int hgt, bool repaint);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
 }
 "@
@@ -46,7 +47,7 @@ public static class NativeWin2 {
 
 $ExePath = [System.IO.Path]::GetFullPath($ExePath)
 $OutDir = [System.IO.Path]::GetFullPath($OutDir)
-if (-not (Test-Path $ExePath)) { throw "memopad.exe が見つかりません: $ExePath（先に dotnet build してください）" }
+if (-not (Test-Path $ExePath)) { throw "MemoPad.exe が見つかりません: $ExePath（先に dotnet build してください）" }
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
 $AE = [System.Windows.Automation.AutomationElement]
@@ -85,7 +86,7 @@ for ($i = 0; $i -lt 40; $i++) {
     $np.Refresh()
     if ($np.MainWindowHandle -ne 0) { $hwnd = $np.MainWindowHandle; break }
 }
-if ($hwnd -eq [IntPtr]::Zero) { throw 'memopad のウィンドウが見つかりません。' }
+if ($hwnd -eq [IntPtr]::Zero) { throw 'MemoPad のウィンドウが見つかりません。' }
 [NativeWin2]::MoveWindow($hwnd, 80, 60, 1000, 720, $true) | Out-Null
 Start-Sleep -Seconds 1
 
@@ -121,10 +122,13 @@ function Invoke-El($el) {
     catch { $el.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand() }
     Start-Sleep -Milliseconds 700
 }
+# ウィンドウは (80,60) に置くので、画面の左上隅はどの撮影範囲にも入らない
+function ParkCursor { [NativeWin2]::SetCursorPos(5, 5) | Out-Null; Start-Sleep -Milliseconds 120 }
 function ByName($name, $type) { ProcWait (AndC @((PC $AE::NameProperty $name), (PC $AE::ControlTypeProperty $type))) }
 function TopWindow($name) { ProcWait (AndC @((PC $AE::NameProperty $name), (PC $AE::ControlTypeProperty $CT::Window))) 6000 }
 function Shot($name, [IntPtr]$h = $hwnd) {
     if (-not (FgIsApp)) { Fg $h }
+    ParkCursor
     Start-Sleep -Milliseconds 350
     $r = New-Object NativeWin2+RECT
     [NativeWin2]::GetWindowRect($h, [ref]$r) | Out-Null
@@ -142,6 +146,7 @@ function ShotWithDialog($name, $dialogName) {
     $dlg = TopWindow $dialogName
     if (-not $dlg) { Write-Warning "ダイアログが見つかりません: $dialogName"; Shot $name; return $null }
     if (-not (FgIsApp)) { Fg }
+    ParkCursor
     Start-Sleep -Milliseconds 350
     $r = New-Object NativeWin2+RECT
     [NativeWin2]::GetWindowRect($hwnd, [ref]$r) | Out-Null
@@ -172,10 +177,10 @@ try {
     Fg; Shot '01_main'
 
     # 02-05 メニュー
-    Fg; Keys '%f'; Shot '02_menu_file'; Keys '{ESC}' 400
-    Fg; Keys '%e'; Shot '03_menu_edit'; Keys '{ESC}' 400
-    Fg; Keys '%v'; Keys 'z'; Shot '04_menu_view_zoom'; Keys '{ESC}{ESC}' 400
-    Fg; Keys '%o' 900; Shot '05_menu_format'; Keys '{ESC}' 400
+    Fg; Keys '%f'; Shot '02_menu_file'; Keys '{ESC}{ESC}' 400
+    Fg; Keys '%e'; Shot '03_menu_edit'; Keys '{ESC}{ESC}' 400
+    Fg; Keys '%v'; Keys 'z'; Shot '04_menu_view_zoom'; Keys '{ESC}{ESC}{ESC}' 400
+    Fg; Keys '%o' 900; Shot '05_menu_format'; Keys '{ESC}{ESC}' 400
 
     # 06-07 検索／置換バー
     Fg; Keys '^f' 800; Set-Clipboard -Value 'メモ帳'; Keys '^v' 500; Keys '{ENTER}' 600; Shot '06_find'
@@ -228,18 +233,18 @@ try {
     Keys '^v' 800; Shot '13_tabs_unsaved'
 
     # 14 未保存のタブを閉じようとしたときの確認
-    Fg; Keys '^w' 1000; $dlg = ShotWithDialog '14_save_changes' 'memopad'; CloseDialog $dlg 'キャンセル'
+    Fg; Keys '^w' 1000; $dlg = ShotWithDialog '14_save_changes' 'MemoPad'; CloseDialog $dlg 'キャンセル'
 
     # 15 ページ設定
     Fg; Keys '%f' 500; Keys 'u' 1000; $dlg = ShotWithDialog '15_page_setup' 'ページ設定'; CloseDialog $dlg
 
     # 16 バージョン情報
-    Fg; Keys '%h' 500; Keys 'a' 1000; $dlg = ShotWithDialog '16_about' 'memopad について'; CloseDialog $dlg 'OK'
+    Fg; Keys '%h' 500; Keys 'a' 1000; $dlg = ShotWithDialog '16_about' 'MemoPad について'; CloseDialog $dlg 'OK'
 
     # 後片付け：ライト テーマに戻し、未保存タブは保存せずに閉じる
     Fg; Keys '%o' 500; Keys 'm' 600; Keys 'l' 800
     Fg; Keys '^+w' 1000
-    $dlg = TopWindow 'memopad'
+    $dlg = TopWindow 'MemoPad'
     if ($dlg) { CloseDialog $dlg '保存しない(N)' }
     Start-Sleep -Seconds 1
     Write-Host '完了'

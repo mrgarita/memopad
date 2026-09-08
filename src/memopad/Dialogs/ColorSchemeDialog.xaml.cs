@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -16,10 +16,10 @@ public partial class ColorSchemeDialog : Window
     private ColorScheme? _selected;
     private ColorScheme? _result;
 
-    public ColorSchemeDialog(Window owner, AppSettings settings)
+    public ColorSchemeDialog(IntPtr owner, AppSettings settings)
     {
         InitializeComponent();
-        Owner = owner;
+        new System.Windows.Interop.WindowInteropHelper(this).Owner = owner;
         _settings = settings;
         _selected = ColorSchemes.Find(settings.BackgroundColor, settings.ForegroundColor);
 
@@ -36,7 +36,7 @@ public partial class ColorSchemeDialog : Window
     }
 
     /// <summary>選んだパターン。null ならキャンセル。</summary>
-    public static ColorScheme? Ask(Window owner, AppSettings settings)
+    public static ColorScheme? Ask(IntPtr owner, AppSettings settings)
     {
         var dialog = new ColorSchemeDialog(owner, settings);
         dialog.ShowDialog();

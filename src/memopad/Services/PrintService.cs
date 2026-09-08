@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Printing;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,7 +15,7 @@ public static class PrintService
 {
     private const double MmToPx = 96.0 / 25.4;
 
-    public static void Print(Window owner, string documentTitle, string text, AppSettings settings)
+    public static void Print(string documentTitle, string text, AppSettings settings)
     {
         var dialog = new PrintDialog();
         dialog.PrintTicket.PageOrientation = settings.PrintLandscape ? PageOrientation.Landscape : PageOrientation.Portrait;
@@ -48,7 +48,7 @@ public static class PrintService
 
         var inner = ((IDocumentPaginatorSource)doc).DocumentPaginator;
         var paginator = new HeaderFooterPaginator(inner, documentTitle, settings, family, fontSizePx, margins);
-        dialog.PrintDocument(paginator, $"{documentTitle} - memopad");
+        dialog.PrintDocument(paginator, $"{documentTitle} - MemoPad");
     }
 
     /// <summary>ページ設定の置換コード（&amp;f &amp;p &amp;d &amp;t &amp;&amp;）を展開する。</summary>

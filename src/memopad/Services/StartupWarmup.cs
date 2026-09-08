@@ -1,15 +1,13 @@
-﻿using System.Reflection;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Memopad.Services;
 
 /// <summary>
 /// 起動の高速化：UI スレッドが後で必要とするアセンブリと DLL を、別スレッドで先に読み込んでおく。
 ///
-/// 起動直後の UI スレッドは WPF の初期化と XAML の読み込みで手一杯だが、その間 CPU の他のコアは空いている。
-/// 最初のタブ（RichEdit）を作る時点で System.Windows.Forms／WindowsFormsIntegration／msftedit.dll、
-/// タイトル行のアイコンで System.Drawing、テーマ適用で PresentationFramework.Fluent を読み込むので、
-/// これらを並列に済ませておくと UI スレッドの待ち時間がその分減る（5 回目のフィードバック、v0.7.0）。
+/// 起動直後の UI スレッドは設定の読み込みとフォームの構築で手一杯だが、その間 CPU の他のコアは空いている。
+/// 最初のタブ（RichEdit）を作る時点で msftedit.dll を、設定の読み書きで System.Text.Json を読み込むので、
+/// これらを並列に済ませておくと UI スレッドの待ち時間がその分減る（v0.7.0 で導入、v0.8.0 で対象を見直し）。
 /// 読み込むだけで初期化は行わないため、UI スレッドとの競合は起きない。
 /// </summary>
 public static class StartupWarmup
@@ -28,13 +26,10 @@ public static class StartupWarmup
         try
         {
             PerfLog.Mark("プリロード開始（別スレッド）");
-            // typeof はそのアセンブリの読み込みだけを起こし、型の静的初期化は走らない
-            _ = typeof(System.Windows.Forms.RichTextBox);
-            _ = typeof(System.Windows.Forms.Integration.WindowsFormsHost);
-            _ = typeof(System.Drawing.Icon);
-            _ = typeof(System.Text.Json.JsonSerializer);
             LoadLibraryW("msftedit.dll");
-            Assembly.Load("PresentationFramework.Fluent");
+            // typeof はそのアセンブリの読み込みだけを起こし、型の静的初期化は走らない
+            _ = typeof(System.Text.Json.JsonSerializer);
+            _ = typeof(System.Windows.Forms.ToolStripProfessionalRenderer);
             PerfLog.Mark("プリロード完了（別スレッド）");
         }
         catch

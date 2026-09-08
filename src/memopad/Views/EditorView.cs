@@ -1,5 +1,3 @@
-﻿using System.Windows.Controls;
-using System.Windows.Threading;
 using Memopad.Models;
 using Memopad.Services;
 using WinForms = System.Windows.Forms;
@@ -8,9 +6,9 @@ namespace Memopad.Views;
 
 /// <summary>
 /// タブ 1 つ分の編集領域。エディタ（RichEdit）をタブごとに持つことで、元に戻す履歴とカーソル位置をタブ単位で保てる。
-/// MainWindow からは本文・選択範囲・編集操作をこのクラス経由で扱う。
+/// MainForm からは本文・選択範囲・編集操作をこのクラス経由で扱う（v0.8.0 で WPF の UserControl から純粋なクラスに変更）。
 /// </summary>
-public partial class EditorView : UserControl
+public sealed class EditorView
 {
     private readonly PlainTextEdit _edit = new();
     private bool _loading;
@@ -19,12 +17,8 @@ public partial class EditorView : UserControl
 
     public EditorView(Document document)
     {
-        PerfLog.Mark("EditorView ctor 開始");
-        InitializeComponent();
-        PerfLog.Mark("EditorView XAML を読み込み");
         Document = document;
-        Host.Child = _edit;
-        PerfLog.Mark("RichEdit を WindowsFormsHost に設定");
+        _edit.Dock = WinForms.DockStyle.Fill;
         _edit.TextChanged += Edit_TextChanged;
         _edit.SelectionChanged += Edit_SelectionChanged;
         if (PerfLog.Enabled) AttachPerfProbes();
@@ -32,7 +26,7 @@ public partial class EditorView : UserControl
 
     public Document Document { get; }
 
-    /// <summary>編集コントロール本体（ショートカット・ホイール・右クリック・ドロップのイベント購読用）。</summary>
+    /// <summary>編集コントロール本体（ホイール・右クリック・ドロップのイベント購読と、フォームへの配置に使う）。</summary>
     public PlainTextEdit Edit => _edit;
 
     /// <summary>カーソル位置や選択範囲が変わったとき（ステータスバー更新用）。連続入力中はまとめて 1 回にする。</summary>
@@ -110,10 +104,8 @@ public partial class EditorView : UserControl
         _edit.ZoomFactor = Math.Clamp(zoomPercent / 100f, 1f / 64, 64f);
         _edit.WrapText = settings.WordWrap;
 
-        var bg = ColorUtil.TryParse(settings.BackgroundColor) ?? ThemeService.DefaultBackground(settings.Theme);
-        var fg = ColorUtil.TryParse(settings.ForegroundColor) ?? ThemeService.DefaultForeground(settings.Theme);
-        _edit.BackColor = System.Drawing.Color.FromArgb(bg.R, bg.G, bg.B);
-        _edit.ForeColor = System.Drawing.Color.FromArgb(fg.R, fg.G, fg.B);
+        _edit.BackColor = ColorText.TryParse(settings.BackgroundColor) ?? ThemeService.EditorBackground(settings.Theme);
+        _edit.ForeColor = ColorText.TryParse(settings.ForegroundColor) ?? ThemeService.EditorForeground(settings.Theme);
         _edit.DarkScrollBars = ThemeService.IsDark(settings.Theme);
     }
 
@@ -151,13 +143,13 @@ public partial class EditorView : UserControl
     private void Edit_SelectionChanged(object? sender, EventArgs e)
     {
         if (_loading || _statusPending) return;
-        // 連続入力中に毎回全文を読まないよう、入力が途切れたタイミング（Background）で 1 回だけ通知する
+        // 連続入力中に毎回全文を読まないよう、入力が途切れたタイミングで 1 回だけ通知する
         _statusPending = true;
-        Dispatcher.BeginInvoke(() =>
+        Later(() =>
         {
             _statusPending = false;
             CaretChanged?.Invoke(this, EventArgs.Empty);
-        }, DispatcherPriority.Background);
+        });
     }
 
     private void Edit_TextChanged(object? sender, EventArgs e)
@@ -166,11 +158,18 @@ public partial class EditorView : UserControl
         Document.IsDirty = true;
         if (_contentPending) return;
         _contentPending = true;
-        Dispatcher.BeginInvoke(() =>
+        Later(() =>
         {
             _contentPending = false;
             ContentChanged?.Invoke(this, EventArgs.Empty);
-        }, DispatcherPriority.Background);
+        });
+    }
+
+    /// <summary>今処理中の入力が終わってから（メッセージ キューの後ろで）実行する。</summary>
+    private void Later(Action action)
+    {
+        if (_edit.IsHandleCreated) _edit.BeginInvoke(action);
+        else action();
     }
 
     // --- 診断（MEMOPAD_PERF=1 のときだけ）：キー押下から本文変更までの時間を記録する

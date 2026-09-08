@@ -1,11 +1,11 @@
 ﻿<#
 .SYNOPSIS
-  memopad を発行（self-contained, win-x64）して Inno Setup でインストーラを作る。
+  MemoPad を発行（self-contained, win-x64）して Inno Setup でインストーラを作る。
 
 .DESCRIPTION
   1. dotnet publish で installer\publish\ に実行ファイル一式を出力する（.NET ランタイム同梱）
   2. Inno Setup のコンパイラ（ISCC.exe）で installer\memopad.iss をビルドし、
-     installer\output\memopad-setup-<version>.exe を作る
+     installer\output\MemoPad-setup-<version>.exe を作る
 
   Inno Setup 6 が必要。未導入なら winget install JRSoftware.InnoSetup で入れる。
 

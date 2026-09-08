@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  メモ帳／memopad の起動時間を別プロセスから計測する。
+  メモ帳／MemoPad の起動時間を別プロセスから計測する。
 
 .DESCRIPTION
   対象を起動し、(1) 対象プロセスの可視トップレベル ウィンドウが現れるまで、(2) そのウィンドウの
@@ -10,14 +10,14 @@
   前提：実行中はマウス／キーボードに触らない。対象ウィンドウは画面内に出ること。
 
 .PARAMETER Target
-  'notepad'（Windows 11 の Store 版メモ帳）または memopad.exe のフル パス。
+  'notepad'（Windows 11 の Store 版メモ帳）または MemoPad.exe のフル パス。
 
 .PARAMETER Runs
   計測回数（既定 10）。1 回目はコールド スタート気味になるので、集計は 2 回目以降で行う。
 
 .EXAMPLE
   .\docs\tools\measure-startup.ps1 -Target notepad
-  .\docs\tools\measure-startup.ps1 -Target "$env:LOCALAPPDATA\Programs\memopad\memopad.exe"
+  .\docs\tools\measure-startup.ps1 -Target "$env:LOCALAPPDATA\Programs\MemoPad\MemoPad.exe"
 #>
 [CmdletBinding()]
 param(

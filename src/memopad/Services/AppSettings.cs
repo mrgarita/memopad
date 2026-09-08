@@ -1,7 +1,7 @@
-namespace Memopad.Services;
+﻿namespace Memopad.Services;
 
 /// <summary>
-/// 永続化する設定。%APPDATA%\memopad\settings.json に JSON で保存する。
+/// 永続化する設定。%APPDATA%\MemoPad\settings.json に JSON で保存する。
 /// 色は "#RRGGBB" の文字列で持ち、空文字ならテーマ既定の色を使う。
 /// </summary>
 public sealed class AppSettings
@@ -19,7 +19,7 @@ public sealed class AppSettings
     /// <summary>"Light" / "Dark" / "System"</summary>
     public string Theme { get; set; } = "System";
 
-    // --- memopad の追加機能：背景色・文字色
+    // --- MemoPad の追加機能：背景色・文字色
     public string BackgroundColor { get; set; } = "";
     public string ForegroundColor { get; set; } = "";
 

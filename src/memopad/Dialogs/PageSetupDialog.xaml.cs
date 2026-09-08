@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using Memopad.Services;
@@ -10,10 +10,10 @@ public partial class PageSetupDialog : Window
 {
     private readonly AppSettings _settings;
 
-    public PageSetupDialog(Window owner, AppSettings settings)
+    public PageSetupDialog(IntPtr owner, AppSettings settings)
     {
         InitializeComponent();
-        Owner = owner;
+        new System.Windows.Interop.WindowInteropHelper(this).Owner = owner;
         _settings = settings;
 
         PortraitRadio.IsChecked = !settings.PrintLandscape;
@@ -26,7 +26,7 @@ public partial class PageSetupDialog : Window
         FooterBox.Text = settings.PrintFooter;
     }
 
-    public static void Show(Window owner, AppSettings settings) => new PageSetupDialog(owner, settings).ShowDialog();
+    public static void Show(IntPtr owner, AppSettings settings) => new PageSetupDialog(owner, settings).ShowDialog();
 
     private static string Fmt(double v) => v.ToString("0.#", CultureInfo.InvariantCulture);
 
@@ -39,7 +39,7 @@ public partial class PageSetupDialog : Window
     {
         if (!TryMargin(LeftBox, out var l) || !TryMargin(RightBox, out var r) || !TryMargin(TopBox, out var t) || !TryMargin(BottomBox, out var b))
         {
-            MessageBox.Show(this, "余白は 0 〜 100 の数値（mm）で指定してください。", "memopad - ページ設定", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, "余白は 0 〜 100 の数値（mm）で指定してください。", "MemoPad - ページ設定", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
         _settings.PrintLandscape = LandscapeRadio.IsChecked == true;

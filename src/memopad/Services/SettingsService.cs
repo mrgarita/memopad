@@ -18,7 +18,7 @@ public static class SettingsService
     });
 
     public static string SettingsDirectory =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "memopad");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MemoPad");
 
     public static string SettingsPath => Path.Combine(SettingsDirectory, "settings.json");
 

@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -21,10 +21,10 @@ public partial class ColorChangeDialog : Window
     private string _foreground;
     private Result? _result;
 
-    public ColorChangeDialog(Window owner, AppSettings settings)
+    public ColorChangeDialog(IntPtr owner, AppSettings settings)
     {
         InitializeComponent();
-        Owner = owner;
+        new System.Windows.Interop.WindowInteropHelper(this).Owner = owner;
         _settings = settings;
         _background = settings.BackgroundColor;
         _foreground = settings.ForegroundColor;
@@ -40,7 +40,7 @@ public partial class ColorChangeDialog : Window
         Refresh();
     }
 
-    public static Result? Ask(Window owner, AppSettings settings)
+    public static Result? Ask(IntPtr owner, AppSettings settings)
     {
         var dialog = new ColorChangeDialog(owner, settings);
         dialog.ShowDialog();

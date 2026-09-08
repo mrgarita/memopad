@@ -33,6 +33,7 @@
       <li><a href="#fb5">FB-5：タブをクリックしても切り替わらない（v0.5.1）</a></li>
       <li><a href="#fb6">FB-6〜8：表示の細かな崩れ 3 件（v0.5.2）</a></li>
       <li><a href="#fb11">FB-11：起動がメモ帳よりワンテンポ遅い（v0.7.0）</a></li>
+      <li><a href="#winforms">Windows Forms への作り直しと MemoPad への改名（v0.8.0）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -76,11 +77,11 @@
   <div class="table-wrap">
   <table>
     <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
-    <tr><td>FB-11</td><td>性能</td><td>メモ帳に比べて起動がワンテンポ遅い。軽いエディタとしての使い勝手に関わるので、メモ帳並みに短縮したい</td><td>v0.7.0</td><td><span class="tag should">一部対応</span></td></tr>
-    <tr><td>FB-12</td><td>変更</td><td>FB-11 が達成できたら、名称を memopad から <strong>MemoPad</strong> に改め、アイコンをユーザー提供の新デザインに差し替える</td><td>—</td><td><span class="tag">保留</span></td></tr>
+    <tr><td>FB-11</td><td>性能</td><td>メモ帳に比べて起動がワンテンポ遅い。軽いエディタとしての使い勝手に関わるので、メモ帳並みに短縮したい</td><td>v0.7.0 → v0.8.0</td><td><span class="tag must">対応済み</span></td></tr>
+    <tr><td>FB-12</td><td>変更</td><td>FB-11 が達成できたら、名称を memopad から <strong>MemoPad</strong> に改め、アイコンをユーザー提供の新デザインに差し替える</td><td>v0.8.0</td><td><span class="tag must">対応済み</span></td></tr>
   </table>
   </div>
-  <p>FB-11 は WPF のまま可能な対策を v0.7.0 に入れたが、ウィンドウが出るまでの時間はメモ帳の約 200 ms に対して約 500 ms のままで、「メモ帳並み」には届いていない（詳細は <a href="#fb11">9 節</a>）。空の WPF ウィンドウでも約 400 ms かかることが分かったため、メモ帳並みにするにはメイン ウィンドウを Windows Forms で作り直す必要がある。FB-12 は FB-11 の達成が条件なので、その判断待ち。</p>
+  <p>FB-11 はまず WPF のままできる対策を v0.7.0 で入れたが、約 520 ms → 505 ms にしかならず「メモ帳並み」には届かなかった。空の WPF ウィンドウでも約 400 ms かかることが計測で分かったため、メイン ウィンドウを Windows Forms に作り直して v0.8.0 で 221 ms（メモ帳は 211 ms）にした（詳細は <a href="#fb11">8 節</a>と<a href="#winforms">9 節</a>）。これを受けて FB-12 の改名とアイコン差し替えも v0.8.0 で行った。</p>
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
   <h2 id="fb1">2. FB-1：IME 入力のレスポンスが悪い（v0.2.0）</h2>
@@ -377,8 +378,8 @@
   </div>
 
 
-  <h2 id="fb11">9. FB-11：起動がメモ帳よりワンテンポ遅い（v0.7.0）</h2>
-  <h3>9.1 現象と測り方</h3>
+  <h2 id="fb11">8. FB-11：起動がメモ帳よりワンテンポ遅い（v0.7.0）</h2>
+  <h3>8.1 現象と測り方</h3>
   <p>メモ帳を起動するとすぐウィンドウが出るのに、memopad は一呼吸置いてから出る。FB-1 と同じく、まず数値にした。<code>docs/tools/measure-startup.ps1</code> は対象を起動し、別プロセスから 1 ms 間隔で (1) 対象プロセスの可視ウィンドウが現れるまで、(2) 画面のピクセル（本文中央とタイトル行）の色が変わらなくなるまで、を測る。8 回起動して 1 回目（コールド）を除いた中央値を採る。</p>
   <div class="table-wrap">
   <table>
@@ -389,7 +390,7 @@
   </div>
   <p>ウィンドウが出るまでで 2.5 倍以上、300 ms 以上の差がある。これが「ワンテンポ」の正体。</p>
 
-  <h3>9.2 起動処理の内訳</h3>
+  <h3>8.2 起動処理の内訳</h3>
   <p>環境変数 <code>MEMOPAD_PERF=1</code> で有効になる診断ログ（<code>Services/PerfLog.cs</code>）に、プロセス起動からの経過時間を段階ごとに記録する <code>Mark</code> を足した。温まった状態（2 回目以降）の v0.6.0 の内訳は次のとおり。</p>
   <figure>
     <svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="12" role="img" aria-label="v0.6.0 の起動処理の内訳（プロセス起動からの累計時間）">
@@ -424,11 +425,11 @@
       </g>
       <line x1="519" y1="20" x2="519" y2="300" stroke="#c0392b" stroke-width="2" /><text x="523" y="30" fill="#c0392b">ウィンドウ表示（約 536 ms）</text>
     </svg>
-    <figcaption>図 9-1：v0.6.0 の起動処理の内訳。橙は v0.7.0 で短縮できた段階、青は Windows Forms 側、灰は WPF と .NET の固定費</figcaption>
+    <figcaption>図 8-1：v0.6.0 の起動処理の内訳。橙は v0.7.0 で短縮できた段階、青は Windows Forms 側、灰は WPF と .NET の固定費</figcaption>
   </figure>
   <p>特定の 1 か所が遅いのではなく、WPF の固定費が薄く広く積み上がっている。dotnet-trace で JIT イベントを数えると、起動中に <strong>1,523 メソッド</strong>が JIT コンパイルされていた（P/Invoke の呼び出しスタブ約 560、ジェネリック型の実体化約 470、memopad 自身のコード約 150）。同梱の .NET ランタイムは事前コンパイル（ReadyToRun）済みだが、スタブと実体化は実行時に作られる。</p>
 
-  <h3>9.3 試したことと効果</h3>
+  <h3>8.3 試したことと効果</h3>
   <div class="table-wrap">
   <table>
     <tr><th>試したこと</th><th>効果（ウィンドウ表示まで）</th><th>採否</th></tr>
@@ -444,7 +445,7 @@
   </table>
   </div>
 
-  <h3>9.4 v0.7.0 の結果</h3>
+  <h3>8.4 v0.7.0 の結果</h3>
   <div class="table-wrap">
   <table>
     <tr><th>対象</th><th>ウィンドウ表示まで（中央値）</th><th>描画完了まで（中央値）</th></tr>
@@ -455,7 +456,7 @@
   </div>
   <p>描画完了は 50 ms 早くなったが、ウィンドウが出るまでは 16 ms しか縮まらず、体感はほぼ変わらない。<strong>WPF のまま「メモ帳並み」にはできなかった。</strong></p>
 
-  <h3>9.5 WPF の下限と Windows Forms との比較</h3>
+  <h3>8.5 WPF の下限と Windows Forms との比較</h3>
   <p>どこまで縮められるかを知るため、最小構成のアプリを同じ条件（self-contained 発行、同じ端末）で測った。</p>
   <figure>
     <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="12" role="img" aria-label="ウィンドウが表示されるまでの時間の比較">
@@ -474,15 +475,140 @@
       <rect x="260" y="160" width="417" height="20" fill="#c0392b" /><text x="683" y="174" fill="#333">521 ms</text>
       <line x1="424" y1="12" x2="424" y2="190" stroke="#5aa469" stroke-dasharray="4,3" />
     </svg>
-    <figcaption>図 9-2：ウィンドウが表示されるまでの時間（2 回目以降の中央値）。緑の点線がメモ帳の水準</figcaption>
+    <figcaption>図 8-2：ウィンドウが表示されるまでの時間（2 回目以降の中央値）。緑の点線がメモ帳の水準</figcaption>
   </figure>
   <ul>
     <li><strong>WPF は空に近いウィンドウでも約 400 ms かかる。</strong>ランタイム起動 60 ms ＋ WPF Application 初期化 80 ms ＋ XAML／テンプレート／HWND 生成／Direct3D／初回描画で、memopad の機能を削っても 400 ms を下回れない。メモ帳の 200 ms は WPF の構造上届かない。</li>
     <li><strong>Windows Forms なら約 160 ms で、メモ帳より速い。</strong>本文の RichEdit はすでに Windows Forms のコントロールなので、メイン ウィンドウ（タイトル行のタブ、メニュー、検索バー、ステータスバー）を Windows Forms で作り直せば、起動はメモ帳並みになる見込み。ダイアログ類は WPF のまま残しても、開くときに初めて WPF を初期化すればよい。</li>
   </ul>
   <div class="note">
-    <strong>今後の選択肢</strong>：(A) v0.7.0 の水準（約 500 ms）で受け入れる。(B) メイン ウィンドウを Windows Forms で作り直す（v0.8.0、規模が大きく、ダーク テーマとタイトル行のタブは自前で描く必要がある）。FB-12（MemoPad への改名と新アイコン）は FB-11 の達成が条件のため、この判断とあわせて決める。
+    <strong>選択と結果</strong>：(A) v0.7.0 の水準（約 500 ms）で受け入れる、(B) メイン ウィンドウを Windows Forms で作り直す、の 2 案を出し、ユーザーは (B) を選んだ。作り直した v0.8.0 でウィンドウ表示は 221 ms になり、メモ帳（211 ms）と並んだ。作業の中身は次の 9 節に書く。
   </div>
+
+
+  <h2 id="winforms">9. Windows Forms への作り直しと MemoPad への改名（v0.8.0）</h2>
+  <h3>9.1 方針：本文はそのまま、ガワだけ載せ替える</h3>
+  <p>本文の編集領域はもともと Windows Forms のコントロール（RichEdit を継承した <code>Views/PlainTextEdit.cs</code>）で、v0.2.0 以降それを WPF の <code>WindowsFormsHost</code> に埋めて使っていた。つまり <strong>いちばん重要な部分は最初から Windows Forms</strong> で、WPF はその周り（タイトル行・メニュー・検索バー・ステータスバー）を描くためだけに 400 ms を払っていたことになる。そこで周りだけを Windows Forms に載せ替えた。</p>
+  <figure>
+    <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="12" role="img" aria-label="v0.7.0 と v0.8.0 の構成の違い">
+      <title>v0.7.0 と v0.8.0 の構成の違い</title>
+      <text x="20" y="24" font-weight="bold" fill="#333">v0.7.0（WPF がガワ）</text>
+      <rect x="20" y="36" width="330" height="230" fill="none" stroke="#c0392b" stroke-width="2" rx="6" />
+      <text x="30" y="56" fill="#c0392b">WPF Window（WindowChrome）</text>
+      <rect x="34" y="66" width="302" height="34" fill="#f6d7d3" stroke="#c0392b" /><text x="44" y="88" fill="#333">タイトル行（ListBox のタブ＋ボタン）</text>
+      <rect x="34" y="106" width="302" height="30" fill="#f6d7d3" stroke="#c0392b" /><text x="44" y="126" fill="#333">Menu（Fluent テーマ）</text>
+      <rect x="34" y="142" width="302" height="76" fill="#dce9f7" stroke="#3b7dd8" />
+      <text x="44" y="162" fill="#333">WindowsFormsHost</text>
+      <rect x="46" y="170" width="278" height="38" fill="#c9dcf2" stroke="#3b7dd8" /><text x="56" y="194" fill="#333">RichEdit（PlainTextEdit）</text>
+      <rect x="34" y="224" width="302" height="30" fill="#f6d7d3" stroke="#c0392b" /><text x="44" y="244" fill="#333">StatusBar</text>
+
+      <text x="410" y="24" font-weight="bold" fill="#333">v0.8.0（Windows Forms がガワ）</text>
+      <rect x="410" y="36" width="330" height="230" fill="none" stroke="#3b7dd8" stroke-width="2" rx="6" />
+      <text x="420" y="56" fill="#3b7dd8">Form（WM_NCCALCSIZE で枠を自前化）</text>
+      <rect x="424" y="66" width="302" height="34" fill="#dce9f7" stroke="#3b7dd8" /><text x="434" y="88" fill="#333">TitleBar（TabButton＋ボタン）</text>
+      <rect x="424" y="106" width="302" height="30" fill="#dce9f7" stroke="#3b7dd8" /><text x="434" y="126" fill="#333">MenuStrip（FluentMenuRenderer）</text>
+      <rect x="424" y="142" width="302" height="76" fill="#c9dcf2" stroke="#3b7dd8" />
+      <text x="434" y="186" fill="#333">RichEdit（PlainTextEdit、そのまま流用）</text>
+      <rect x="424" y="224" width="302" height="30" fill="#dce9f7" stroke="#3b7dd8" /><text x="434" y="244" fill="#333">StatusBarPanel</text>
+      <text x="20" y="288" fill="#666">赤＝WPF、青＝Windows Forms。ダイアログ（フォント・色変更・配色パターン・行へ移動・ページ設定・保存確認・バージョン情報）は WPF のまま残し、初めて開くときに読み込む。</text>
+    </svg>
+    <figcaption>図 9-1：ガワを WPF から Windows Forms に載せ替えた。本文の RichEdit は v0.2.0 のまま使い回している</figcaption>
+  </figure>
+
+  <h3>9.2 作ったもの</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>ファイル</th><th>役割</th></tr>
+    <tr><td><code>Program.cs</code></td><td>入口。<code>App.xaml</code> をやめ、WPF に触れずに設定を読んでフォームを出す</td></tr>
+    <tr><td><code>Views/MainForm.cs</code></td><td>メイン ウィンドウ。<code>WM_NCCALCSIZE</code> で標準のタイトル バーと枠を外し、<code>WM_NCHITTEST</code> でリサイズとドラッグ移動を自分で答える</td></tr>
+    <tr><td><code>Views/TitleBar.cs</code></td><td>タイトル行。タブ（<code>TabButton</code>）と＋・最小化・最大化・閉じるを並べる</td></tr>
+    <tr><td><code>Views/FluentMenuRenderer.cs</code></td><td>MenuStrip を Windows 11 風に描く（角丸のホバー、薄い枠線、チェックと右矢印は Segoe Fluent Icons）</td></tr>
+    <tr><td><code>Views/StatusBarPanel.cs</code></td><td>ステータスバー。改行コードとエンコードはクリックでメニューを出す</td></tr>
+    <tr><td><code>Views/MainForm.Menu.cs</code> / <code>MainForm.Find.cs</code></td><td>メニューと右クリック メニュー／検索・置換バー</td></tr>
+    <tr><td><code>Services/WpfHost.cs</code></td><td>WPF のダイアログを遅延初期化する。起動時は読み込まず、最初にダイアログを開くときだけ WPF を立ち上げる</td></tr>
+    <tr><td><code>Services/ThemeService.cs</code></td><td>Fluent テーマ（<code>ThemeMode</code>）の代わりに、ライト／ダークの配色を <code>ThemePalette</code> として自前で持つ</td></tr>
+  </table>
+  </div>
+  <p>消したのは <code>App.xaml</code>、<code>MainWindow.xaml</code>（と分離コード）、<code>EditorView.xaml</code>、<code>Commands.cs</code>、値コンバーター 2 つ。ダイアログ 7 種は WPF のまま、オーナーだけ <code>Window</code> からウィンドウ ハンドルに変えて流用した。</p>
+
+
+  <div class="grid2">
+    <figure>
+      <img src="../img/step3/v080_main.png" alt="v0.8.0 のメイン画面（ライト）" loading="lazy">
+      <figcaption>図 9-2：v0.8.0 のメイン画面。タブ→メニュー→本文の並びと寸法は v0.3.0 のまま</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v080_dark.png" alt="v0.8.0 のダーク テーマ" loading="lazy">
+      <figcaption>図 9-3：ダーク テーマ。Fluent テーマの代わりに配色を自前で持つ</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v080_tabs.png" alt="2 つのタブと未保存の印" loading="lazy">
+      <figcaption>図 9-4：タブは Button を継承したコントロール。未保存は●、右端に閉じる×</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v080_about.png" alt="MemoPad についてダイアログ" loading="lazy">
+      <figcaption>図 9-5：ダイアログは WPF のまま。名称とアイコンを新しくした（FB-12）</figcaption>
+    </figure>
+  </div>
+
+  <h3>9.3 つまずいた点</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>症状</th><th>原因と対処</th></tr>
+    <tr><td>タブが支援技術（スクリーン リーダー）から見えない</td><td>最初はタイトル行を 1 枚のコントロールに自前描画し、<code>AccessibleObject</code> の子として公開したが、UI Automation には名前の無い枠としてしか出なかった（Windows Forms の素の <code>Control</code> は子要素を UI Automation へ渡さない）。タブとボタンを <code>Button</code> を継承した実体のあるコントロールに変え、<code>AccessibleName</code> と <code>AccessibleRole</code> を付けたら、名前・位置・クリックがそのまま伝わるようになった。<a href="#fb5">FB-5</a> で作ったタブ クリックの確認スクリプトもこれで動く</td></tr>
+    <tr><td>選択中のタブだけ×が消える</td><td>タブの背景を×より後に描いていた。タブをすべて描いてから×を描く順に変えた</td></tr>
+    <tr><td>ステータスバーのメニューを閉じると落ちる</td><td><code>Closed</code> イベントの中で <code>ContextMenuStrip</code> を <code>Dispose</code> していた。後始末が破棄済みのオブジェクトに触れて例外になる。<code>BeginInvoke</code> でメッセージを処理し終えてから捨てるようにした</td></tr>
+    <tr><td>エンコードのメニューが画面からはみ出す</td><td>項目の左端を基準に右へ開いていた。右端を基準に左へ開くようにした</td></tr>
+    <tr><td>最大化するとウィンドウが画面外へはみ出す</td><td><code>WM_NCCALCSIZE</code> で枠を外すと、最大化時は見えない枠の分だけ外へ出る。<code>GetSystemMetricsForDpi</code> で枠の太さを取り、その分だけ内側に寄せた</td></tr>
+    <tr><td>撮影スクリプトでメニューの ESC が効かない</td><td>Windows Forms のメニューは ESC 1 回ではメニュー モードを抜けない（1 回目でドロップダウン、2 回目で選択解除）。スクリプト側を ESC 2 回に直した。あわせて、撮影前にマウス カーソルを画面の隅へ寄せてツールチップの写り込みを防ぐようにした</td></tr>
+  </table>
+  </div>
+
+  <h3>9.4 結果</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>対象</th><th>ウィンドウ表示まで（中央値）</th><th>描画完了まで（中央値）</th></tr>
+    <tr><td>メモ帳（Windows 11 の Store 版）</td><td>211 ms</td><td>467 ms</td></tr>
+    <tr><td>MemoPad v0.6.0（WPF）</td><td>521 ms</td><td>669 ms</td></tr>
+    <tr><td>MemoPad v0.7.0（WPF＋短縮策）</td><td>505 ms</td><td>619 ms</td></tr>
+    <tr><td><strong>MemoPad v0.8.0（Windows Forms）</strong></td><td><strong>221 ms</strong></td><td><strong>332 ms</strong></td></tr>
+  </table>
+  </div>
+  <p>ウィンドウが出るまでは 505 ms → 221 ms と 2.3 倍速くなり、メモ帳（211 ms）に並んだ。本文が描き終わるまでは 332 ms で、メモ帳（467 ms）より速い。step1 で洗い出した機能はすべて動くことを、撮影スクリプト（<code>docs/tools/capture-memopad.ps1</code>）とタブ クリックの確認スクリプトで確かめている。</p>
+
+
+  <figure>
+    <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="12" role="img" aria-label="ウィンドウが表示されるまでの時間の推移">
+      <title>ウィンドウが表示されるまでの時間の推移</title>
+      <g fill="#333" text-anchor="end">
+        <text x="250" y="34">メモ帳</text>
+        <text x="250" y="69">MemoPad v0.8.0（Windows Forms）</text>
+        <text x="250" y="104">MemoPad v0.7.0（WPF＋短縮策）</text>
+        <text x="250" y="139">MemoPad v0.6.0（WPF）</text>
+      </g>
+      <rect x="260" y="20" width="169" height="20" fill="#5aa469" /><text x="435" y="34" fill="#333">211 ms</text>
+      <rect x="260" y="55" width="177" height="20" fill="#5aa469" /><text x="443" y="69" fill="#333">221 ms</text>
+      <rect x="260" y="90" width="404" height="20" fill="#c0392b" /><text x="670" y="104" fill="#333">505 ms</text>
+      <rect x="260" y="125" width="417" height="20" fill="#c0392b" /><text x="683" y="139" fill="#333">521 ms</text>
+      <line x1="429" y1="12" x2="429" y2="155" stroke="#5aa469" stroke-dasharray="4,3" />
+      <text x="260" y="180" fill="#666">同じ端末で 10 回ずつ起動し、1 回目（コールド）を除いた中央値。緑の点線がメモ帳の水準</text>
+    </svg>
+    <figcaption>図 9-6：ウィンドウが表示されるまでの時間。v0.8.0 でメモ帳の水準に並んだ</figcaption>
+  </figure>
+
+  <h3>9.5 FB-12：MemoPad への改名と新しいアイコン</h3>
+  <p>FB-11 が達成できたので、名称を <strong>memopad</strong> から <strong>MemoPad</strong> に改め、アイコンをユーザー提供の新デザイン（クリーム色の文書に緑の罫線）に差し替えた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>対象</th><th>変更</th></tr>
+    <tr><td>実行ファイル</td><td><code>memopad.exe</code> → <code>MemoPad.exe</code>（<code>AssemblyName</code>）</td></tr>
+    <tr><td>画面の表示</td><td>タイトル バー、メニューの「MemoPad について」、各ダイアログの見出しとメッセージ</td></tr>
+    <tr><td>設定の保存先</td><td><code>%APPDATA%\MemoPad\settings.json</code>（Windows のパスは大文字小文字を区別しないので、これまでの設定はそのまま引き継がれる）</td></tr>
+    <tr><td>インストーラ</td><td>アプリ名・ショートカット・関連付けの表示名、出力ファイル名 <code>MemoPad-setup-0.8.0.exe</code></td></tr>
+    <tr><td>アイコン</td><td><code>src/memopad/memopad.ico</code>（16〜256 px の 6 サイズ）と、紹介ページ用の PNG・favicon</td></tr>
+  </table>
+  </div>
+  <p>リポジトリ名・フォルダー名・名前空間（<code>Memopad</code>）はそのままにした。GitHub の URL が変わると既存のリンクが切れるうえ、識別子は英語のままという方針に沿うため。</p>
 
   <h2 id="notes">10. つまずいた点のメモ</h2>
   <ul>
@@ -497,6 +623,8 @@
     <li><strong>起動時間は「どこか 1 か所」ではなく積み上げで決まる。</strong>段階ごとの経過時間を記録して初めて、WPF の固定費が全体の 8 割を占めると分かった。最小構成のアプリで下限を測るのが早道だった。</li>
     <li><strong>複合 ReadyToRun は初回起動を測ってから採用を決める。</strong>温まった状態の数字だけ見ると速いが、新規コピー（インストール直後相当）の初回起動は 3 秒以上悪化した。</li>
     <li><strong>dotnet-trace は対象を強制終了するとトレースが途中で切れる。</strong>JIT イベントの集計はできたが、CPU サンプリングはスタックが解決できず使えなかった。対象が自分で終了する形にする。</li>
+    <li><strong>速くするより先に、どこまで速くできるかの下限を測る。</strong>最小構成の WPF（約 400 ms）と Windows Forms（約 160 ms）を作って比べたことで、「WPF のままでは無理」と早く結論でき、作り直しの判断材料になった。</li>
+    <li><strong>自前描画はアクセシビリティを落とす。</strong>1 枚のコントロールに描いたタブは、見た目は同じでも支援技術からは何も見えない。実体のあるコントロール（<code>Button</code> 継承）にすると標準の仕組みに乗る。</li>
   </ul>
 </main>
 <footer class="site">
