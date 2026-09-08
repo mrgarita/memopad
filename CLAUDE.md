@@ -5,7 +5,7 @@
 
 ## リポジトリの状態
 
-step3（フィードバック対応）を進行中。5 回目までのフィードバックを v0.2.0〜v0.8.0 で対応済み
+step3（フィードバック対応）を進行中。6 回目までのフィードバックを v0.2.0〜v0.9.0 で対応済み
 （一覧は `docs/site/step3/index.html` 1 節）。「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#。メイン ウィンドウは Windows Forms、ダイアログは WPF）、
@@ -87,10 +87,14 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   8〜9 節）。Visual Studio 2022 が無い端末でも `dotnet` CLI だけでビルドできる構成
   （`memopad.sln` があるので Visual Studio でも開ける）。選定理由は `docs/site/step2/index.html` 1 節
 - **メイン ウィンドウの自前描画**：標準のタイトル バーは `WM_NCCALCSIZE` で外し、`WM_NCHITTEST` で
-  リサイズとドラッグ移動を自分で答える。タイトル行のタブとボタンは `Button` を継承した実体のある
-  コントロールにする（素の `Control` に自前描画すると UI Automation から見えず、支援技術と
-  `docs\tools\test-tabclick.ps1` の確認が効かなくなる）。配色は `Services/ThemeService.cs` の
-  `ThemePalette`、メニューの見た目は `Views/FluentMenuRenderer.cs`
+  リサイズとドラッグ移動を自分で答える。**タイトル行やウィンドウの縁を覆う子コントロールは、
+  `Views/ChromeHitTest.cs` の `TryPassToFrame` を `WndProc` で呼んで当たり判定を親へ譲る**
+  （子が HTCLIENT と答えると親の答えが使われず、移動もリサイズもできなくなる。v0.8.0 の不具合。
+  新しく縁に届くコントロールを足すときは同じ 3 行を入れる）。タイトル行のタブとボタンは `Button` を
+  継承した実体のあるコントロールにする（素の `Control` に自前描画すると UI Automation から見えず、
+  支援技術と `docs\tools\test-tabclick.ps1` の確認が効かなくなる）。配色は `Services/ThemeService.cs` の
+  `ThemePalette`、メニューの見た目は `Views/FluentMenuRenderer.cs`（項目の字下げはチェック欄
+  `ShowImageMargin` の有無で決まる。`ToolStripMenuItem.Padding` の左右は効かない）
 - **本文のエディタ**：Win32 の RichEdit（Windows Forms の `RichTextBox` を継承した
   `Views/PlainTextEdit.cs`）。WPF の TextBox は入力から表示まで
   約 50 ms かかりメモ帳（約 19 ms）より遅かったため v0.2.0 で置き換えた（経緯は

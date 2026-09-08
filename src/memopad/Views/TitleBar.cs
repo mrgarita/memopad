@@ -100,6 +100,13 @@ internal sealed class TitleBarButton : Button
         TextRenderer.DrawText(g, Glyph, GlyphFont, ClientRectangle, color, UiStyle.CenterFlags);
     }
 
+    protected override void WndProc(ref Message m)
+    {
+        // ボタンの端がウィンドウの縁に重なるところ（右上隅など）はリサイズを優先する
+        if (ChromeHitTest.TryPassToFrame(this, ref m)) return;
+        base.WndProc(ref m);
+    }
+
     protected override void OnMouseEnter(EventArgs e)
     {
         _hot = true;
@@ -226,6 +233,12 @@ internal sealed class TabButton : Button
         TextRenderer.DrawText(g, Tab.Document.TabTitle, TextFont, textRect, _palette.Text, UiStyle.TabTextFlags);
     }
 
+    protected override void WndProc(ref Message m)
+    {
+        if (ChromeHitTest.TryPassToFrame(this, ref m)) return;
+        base.WndProc(ref m);
+    }
+
     protected override void OnMouseEnter(EventArgs e) { _hot = true; Invalidate(); base.OnMouseEnter(e); }
     protected override void OnMouseLeave(EventArgs e) { _hot = false; Invalidate(); base.OnMouseLeave(e); }
 
@@ -267,8 +280,9 @@ internal sealed class TabButton : Button
 /// （メモ帳と同じくタブをタイトル行に載せる。v0.8.0 で WPF の WindowChrome から Windows Forms に置き換え）。
 ///
 /// タブやボタンは実体のあるコントロールなので、支援技術から名前と位置が見え、クリックもそのまま届く。
-/// 何も無いところは親フォームが WM_NCHITTEST で HTCAPTION と答えるため、ドラッグ移動・ダブルクリックでの
-/// 最大化・右クリックのシステム メニューは Windows がそのまま面倒を見る。
+/// 何も無いところは <see cref="ChromeHitTest"/> で当たり判定を親フォームへ譲り、親が HTCAPTION と
+/// 答える。これでドラッグ移動・ダブルクリックでの最大化・右クリックのシステム メニューは
+/// Windows がそのまま面倒を見る（v0.8.0 では譲っていなかったため移動も最大化もできなかった）。
 /// </summary>
 public sealed class TitleBar : Control
 {
@@ -356,6 +370,13 @@ public sealed class TitleBar : Control
 
     /// <summary>指定した位置（このコントロール内の座標）にタブやボタンがあるか。親のヒット テストが使う。</summary>
     public bool HasInteractiveChildAt(Point point) => GetChildAtPoint(point) is not null;
+
+    protected override void WndProc(ref Message m)
+    {
+        // タブやボタンが無いところは、移動とリサイズの判定を親フォームへ譲る
+        if (ChromeHitTest.TryPassToFrame(this, ref m)) return;
+        base.WndProc(ref m);
+    }
 
     /// <summary>タブの一覧と選択中のタブを反映する。</summary>
     public void SetTabs(IReadOnlyList<DocumentTab> tabs, DocumentTab? selected)

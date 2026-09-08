@@ -74,6 +74,10 @@ public sealed class FluentMenuRenderer : ToolStripRenderer
         // ショートカット表示（右寄せで描かれる）は薄い色にする
         var shortcut = (e.TextFormat & TextFormatFlags.Right) == TextFormatFlags.Right;
         e.TextColor = !e.Item.Enabled ? Palette.MutedText : shortcut ? Palette.MutedText : Palette.Text;
+        // 既定のレイアウトでは文字が項目の上に寄って見えるので、項目の高さいっぱいの矩形に上下中央で描く
+        var r = e.TextRectangle;
+        e.TextRectangle = new Rectangle(r.X, 0, r.Width, e.Item.Height);
+        e.TextFormat |= TextFormatFlags.VerticalCenter;
         base.OnRenderItemText(e);
     }
 

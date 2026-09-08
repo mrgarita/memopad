@@ -23,12 +23,18 @@ public sealed partial class MainForm
     private ToolStripMenuItem _themeDarkItem = null!;
     private ToolStripMenuItem _themeSystemItem = null!;
 
-    /// <summary>ポップアップ内の項目の余白（Fluent のメニュー項目の高さに合わせる）。</summary>
+    /// <summary>
+    /// ポップアップ内の項目の余白（Fluent のメニュー項目の高さに合わせる）。
+    /// 左右はメニューの内部レイアウトが決めるので、効くのは上下（＝項目の高さ）だけ。
+    /// </summary>
     private Padding ItemPadding => new(S(4), S(5), S(4), S(5));
+
+    /// <summary>チェックが付き得る項目の目印。左のチェック欄を出すかの判定に使う。</summary>
+    private static readonly object CheckableTag = new();
 
     private MenuStrip BuildMenu()
     {
-        var menu = new MenuStrip
+        var menu = new ChromeMenuStrip
         {
             Dock = DockStyle.Top,
             AutoSize = false,
@@ -85,8 +91,8 @@ public sealed partial class MainForm
         menu.Items.Add(_editMenu);
 
         // 表示
-        _statusBarItem = Item("ステータス バー(&S)", ToggleStatusBar);
-        _wordWrapItem = Item("右端で折り返す(&W)", ToggleWordWrap);
+        _statusBarItem = Item("ステータス バー(&S)", ToggleStatusBar, checkable: true);
+        _wordWrapItem = Item("右端で折り返す(&W)", ToggleWordWrap, checkable: true);
         menu.Items.Add(TopMenu("表示(&V)",
             SubMenu("ズーム(&Z)",
                 Item("拡大(&I)", () => SetZoom(_zoomPercent + ZoomStep), display: "Ctrl+プラス記号 (+)"),
@@ -96,9 +102,9 @@ public sealed partial class MainForm
             _wordWrapItem));
 
         // 書式：MemoPad の追加機能（色変更）とフォント・テーマ
-        _themeLightItem = Item("ライト(&L)", () => SetTheme("Light"));
-        _themeDarkItem = Item("ダーク(&D)", () => SetTheme("Dark"));
-        _themeSystemItem = Item("システム設定を使用する(&S)", () => SetTheme("System"));
+        _themeLightItem = Item("ライト(&L)", () => SetTheme("Light"), checkable: true);
+        _themeDarkItem = Item("ダーク(&D)", () => SetTheme("Dark"), checkable: true);
+        _themeSystemItem = Item("システム設定を使用する(&S)", () => SetTheme("System"), checkable: true);
         menu.Items.Add(TopMenu("書式(&O)",
             Item("フォント(&F)...", ChooseFont),
             new ToolStripSeparator(),
@@ -129,28 +135,36 @@ public sealed partial class MainForm
         return item;
     }
 
-    private ToolStripMenuItem Item(string text, Action action, Keys shortcut = Keys.None, string? display = null)
+    private ToolStripMenuItem Item(string text, Action action, Keys shortcut = Keys.None, string? display = null, bool checkable = false)
     {
         var item = new ToolStripMenuItem(text) { Padding = ItemPadding };
+        if (checkable) item.Tag = CheckableTag;
         if (shortcut != Keys.None) item.ShortcutKeys = shortcut;
         if (display is not null) item.ShortcutKeyDisplayString = display;
         item.Click += (_, _) => action();
         return item;
     }
 
-    /// <summary>ポップアップの見た目（レンダラー・余白・角丸）を整える。</summary>
+    /// <summary>ポップアップの見た目（レンダラー・余白・角丸・チェック欄）を整える。</summary>
     private void PrepareDropDown(ToolStripMenuItem item)
     {
         var dropDown = item.DropDown;
         dropDown.Renderer = _renderer;
         dropDown.Padding = new Padding(S(4));
         dropDown.Font = Font;
+        // メモ帳と同じで、チェックが付く項目のある menu だけ左にチェック欄を空ける。
+        // 無い menu（ファイル・編集など）で欄を空けると、字下げが全角 2 文字分ほどになって右へ寄りすぎる
+        if (dropDown is ToolStripDropDownMenu menu)
+        {
+            menu.ShowImageMargin = item.DropDownItems.OfType<ToolStripMenuItem>().Any(i => ReferenceEquals(i.Tag, CheckableTag));
+        }
         item.DropDownOpening += (_, _) => ThemeService.ApplySmallRoundedCorners(dropDown.Handle);
     }
 
-    private ContextMenuStrip NewPopupMenu()
+    /// <summary><paramref name="checkable"/> が true なら左にチェック欄を空ける。</summary>
+    private ContextMenuStrip NewPopupMenu(bool checkable = false)
     {
-        var menu = new ContextMenuStrip { Renderer = _renderer, Font = Font, Padding = new Padding(S(4)), ImageScalingSize = new Size(S(16), S(16)) };
+        var menu = new ContextMenuStrip { Renderer = _renderer, Font = Font, Padding = new Padding(S(4)), ImageScalingSize = new Size(S(16), S(16)), ShowImageMargin = checkable };
         menu.Opening += (_, _) => ThemeService.ApplySmallRoundedCorners(menu.Handle);
         // Closed の中で破棄すると、その後の後始末が破棄済みオブジェクトに触れて例外になる。
         // メッセージを処理し終えてから捨てる

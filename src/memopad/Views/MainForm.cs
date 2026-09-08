@@ -62,7 +62,7 @@ public sealed partial class MainForm : Form
         Size = new Size(S((int)Settings.WindowWidth), S((int)Settings.WindowHeight));
         Icon = LoadAppIcon(32);
 
-        _editorHost = new Panel { Dock = DockStyle.Fill, BackColor = _palette.Window };
+        _editorHost = new ChromePanel { Dock = DockStyle.Fill, BackColor = _palette.Window };
         _findBar = BuildFindBar();
         _menu = BuildMenu();
         _statusBar = new StatusBarPanel
@@ -250,6 +250,12 @@ public sealed partial class MainForm : Form
         }
         return 0;
     }
+
+    /// <summary>
+    /// その位置（クライアント座標）がタイトル行の空きかウィンドウの縁か。
+    /// 子コントロールが <see cref="ChromeHitTest"/> から呼び、true なら当たり判定を親（このフォーム）へ譲る。
+    /// </summary>
+    internal bool IsWindowFrameAt(Point clientPoint) => HitTestChrome(clientPoint) != 0;
 
     private void ToggleMaximize() =>
         WindowState = WindowState == FormWindowState.Maximized ? FormWindowState.Normal : FormWindowState.Maximized;
@@ -741,7 +747,7 @@ public sealed partial class MainForm : Form
     private void ShowLineEndingMenu(Point screenPoint)
     {
         if (Current is not { } tab) return;
-        var menu = NewPopupMenu();
+        var menu = NewPopupMenu(checkable: true);
         foreach (var kind in Enum.GetValues<LineEndingKind>())
         {
             var item = new ToolStripMenuItem(kind.DisplayName()) { Checked = tab.Document.LineEnding == kind, Padding = ItemPadding };
@@ -759,7 +765,7 @@ public sealed partial class MainForm : Form
     private void ShowEncodingMenu(Point screenPoint)
     {
         if (Current is not { } tab) return;
-        var menu = NewPopupMenu();
+        var menu = NewPopupMenu(checkable: true);
         foreach (var kind in Enum.GetValues<TextEncodingKind>())
         {
             var item = new ToolStripMenuItem(kind.DisplayName()) { Checked = tab.Document.Encoding == kind, Padding = ItemPadding };

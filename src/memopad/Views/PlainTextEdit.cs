@@ -126,6 +126,8 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
 
     protected override void WndProc(ref WinForms.Message m)
     {
+        // 本文はウィンドウの左右いっぱいに広がるので、縁のリサイズ判定は親フォームへ譲る
+        if (ChromeHitTest.TryPassToFrame(this, ref m)) return;
         switch (m.Msg)
         {
             case WM_MOUSEWHEEL when (WinForms.Control.ModifierKeys & WinForms.Keys.Control) != 0:

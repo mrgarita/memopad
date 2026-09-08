@@ -97,6 +97,13 @@ public sealed class StatusBarPanel : Control
         return x + pad + w + pad;
     }
 
+    protected override void WndProc(ref Message m)
+    {
+        // 下端と左右の端はウィンドウの縁なので、リサイズの判定を親フォームへ譲る
+        if (ChromeHitTest.TryPassToFrame(this, ref m)) return;
+        base.WndProc(ref m);
+    }
+
     protected override void OnMouseMove(MouseEventArgs e)
     {
         string? tip = null;

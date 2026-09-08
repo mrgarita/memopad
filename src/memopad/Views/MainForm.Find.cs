@@ -22,7 +22,7 @@ public sealed partial class MainForm
 
     private Panel BuildFindBar()
     {
-        var bar = new Panel { Dock = DockStyle.Top, Visible = false, BackColor = _palette.Window };
+        var bar = new ChromePanel { Dock = DockStyle.Top, Visible = false, BackColor = _palette.Window };
         _findLabel = new Label { Text = "検索:", AutoSize = true };
         _findText = new TextBox { BorderStyle = BorderStyle.FixedSingle };
         _findText.KeyDown += (_, e) =>
