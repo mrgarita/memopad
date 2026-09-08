@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -29,7 +29,9 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        PerfLog.Mark("MainWindow ctor 開始");
         InitializeComponent();
+        PerfLog.Mark("MainWindow XAML を読み込み");
 
         Width = Settings.WindowWidth;
         Height = Settings.WindowHeight;
@@ -40,15 +42,19 @@ public partial class MainWindow : Window
         UpdateThemeMenu();
         UpdateTabBrushes();
         LoadAppIcon();
+        PerfLog.Mark("メニュー・アイコンを初期化");
 
         // 起動時は常に新規の空タブから始める（セッション復元は作らない方針）
         AddTab(new Document());
+        PerfLog.Mark("最初のタブを追加");
     }
 
     protected override void OnSourceInitialized(EventArgs e)
     {
+        PerfLog.Mark("HWND を生成（SourceInitialized）");
         base.OnSourceInitialized(e);
         ThemeService.MakeOpaque(this, Settings.Theme);
+        PerfLog.Mark("MakeOpaque 完了");
     }
 
     // =====================================================================

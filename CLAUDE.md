@@ -94,7 +94,13 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   生成ファイルを掴んで 1 回おきに失敗することがあるので、失敗したら `dotnet build-server shutdown`
   →`src\memopad\obj` を削除→`-nodeReuse:false -p:UseSharedCompilation=false` で再ビルドする。動作確認とスクリーンショットは `docs\tools\capture-memopad.ps1`
   （`-ExePath` と `-OutDir` を絶対パスで指定。実行中はマウス／キーボードに触らない）。
-  入力→表示の遅延は環境変数 `MEMOPAD_PERF=1` の診断ログ（`Services/PerfLog.cs`）で調べられる
+  入力→表示の遅延と起動の段階別時間は環境変数 `MEMOPAD_PERF=1` の診断ログ（`Services/PerfLog.cs`）で
+  調べられる。起動時間の比較は `docs\tools\measure-startup.ps1`（`-Target notepad` または exe のパス）
+- **起動時間**：WPF は空のウィンドウでも約 400 ms かかり、メモ帳（約 200 ms）には届かない（v0.7.0 の調査、
+  `docs/site/step3/index.html` 9 節）。v0.7.0 では WPF の描画をソフトウェア（`RenderMode.SoftwareOnly`）にし、
+  設定 JSON をソース ジェネレーターで変換し、`Services/StartupWarmup.cs` でアセンブリを別スレッドで先読みする。
+  複合 ReadyToRun（`PublishReadyToRunComposite`）は初回起動が 3 秒以上悪化するので使わない。メモ帳並みにするには
+  メイン ウィンドウを Windows Forms で作り直す必要があり、ユーザーの判断待ち
 - **インストーラ**：Inno Setup 6（winget で導入済み）。`installer\build-installer.ps1`
   で self-contained 発行→ `installer\output\memopad-setup-<version>.exe`
 - **色の機能**：「色変更」ダイアログ（`Dialogs/ColorChangeDialog`、PICO-8 の 16 色＋カラーピッカー。

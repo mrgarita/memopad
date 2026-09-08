@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
 using WinForms = System.Windows.Forms;
 
@@ -92,6 +92,7 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
 
     protected override void OnHandleCreated(EventArgs e)
     {
+        Services.PerfLog.Mark("RichEdit の HWND を生成");
         // プレーン テキスト モードは本文が空のときにしか切り替えられないので、基底クラスが本文を復元する前に送る
         SendMessageW(Handle, EM_SETTEXTMODE, (IntPtr)(TM_PLAINTEXT | TM_MULTILEVELUNDO | TM_MULTICODEPAGE), IntPtr.Zero);
         SendMessageW(Handle, EM_SETUNDOLIMIT, (IntPtr)1000, IntPtr.Zero);
@@ -99,6 +100,13 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
         ApplyWrap();
         ApplyScrollBarTheme();
         ApplyInset();
+        Services.PerfLog.Mark("RichEdit の初期化を完了");
+    }
+
+    protected override void CreateHandle()
+    {
+        Services.PerfLog.Mark("RichEdit CreateHandle 開始（msftedit.dll 読み込み）");
+        base.CreateHandle();
     }
 
     protected override void OnResize(EventArgs e)

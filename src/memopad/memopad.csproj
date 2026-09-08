@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -12,13 +12,16 @@
     <!-- アイコンはユーザー提供のデザイン（緑の文書に白い罫線）。tmp/app-icon-final.ico を v0.6.0 で採用 -->
     <ApplicationIcon>memopad.ico</ApplicationIcon>
     <RootNamespace>Memopad</RootNamespace>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <Product>memopad</Product>
     <Description>背景色と文字色を変えられるメモ帳</Description>
     <Copyright>mrgarita</Copyright>
     <!-- WPF0001：.NET 9 の Fluent テーマ（ThemeMode）は実験的 API 扱いのため警告を抑止する -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
     <SatelliteResourceLanguages>ja</SatelliteResourceLanguages>
+    <!-- 発行時にアプリ本体も事前コンパイル（ReadyToRun）し、起動時の JIT を減らす（v0.7.0）。
+         フレームワークまで一体化する複合（Composite）は初回起動が大きく遅くなるので使わない -->
+    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>

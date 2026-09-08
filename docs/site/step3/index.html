@@ -32,6 +32,7 @@
       <li><a href="#fb4">FB-4：目に優しい配色 16 パターン（v0.5.0）</a></li>
       <li><a href="#fb5">FB-5：タブをクリックしても切り替わらない（v0.5.1）</a></li>
       <li><a href="#fb6">FB-6〜8：表示の細かな崩れ 3 件（v0.5.2）</a></li>
+      <li><a href="#fb11">FB-11：起動がメモ帳よりワンテンポ遅い（v0.7.0）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -71,6 +72,15 @@
     <tr><td>FB-10</td><td>公開</td><td>GitHub Pages の公開、README.md の追加、アプリの紹介ページの作成</td><td>v0.6.0</td><td><span class="tag must">対応済み</span></td></tr>
   </table>
   </div>
+  <p>5 回目のフィードバック（2026-09-08）。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-11</td><td>性能</td><td>メモ帳に比べて起動がワンテンポ遅い。軽いエディタとしての使い勝手に関わるので、メモ帳並みに短縮したい</td><td>v0.7.0</td><td><span class="tag should">一部対応</span></td></tr>
+    <tr><td>FB-12</td><td>変更</td><td>FB-11 が達成できたら、名称を memopad から <strong>MemoPad</strong> に改め、アイコンをユーザー提供の新デザインに差し替える</td><td>—</td><td><span class="tag">保留</span></td></tr>
+  </table>
+  </div>
+  <p>FB-11 は WPF のまま可能な対策を v0.7.0 に入れたが、ウィンドウが出るまでの時間はメモ帳の約 200 ms に対して約 500 ms のままで、「メモ帳並み」には届いていない（詳細は <a href="#fb11">9 節</a>）。空の WPF ウィンドウでも約 400 ms かかることが分かったため、メモ帳並みにするにはメイン ウィンドウを Windows Forms で作り直す必要がある。FB-12 は FB-11 の達成が条件なので、その判断待ち。</p>
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
   <h2 id="fb1">2. FB-1：IME 入力のレスポンスが悪い（v0.2.0）</h2>
@@ -366,7 +376,115 @@
     <strong>確認のしかたを変えた点</strong>：3 件ともユーザーの環境（表示スケール 150 %、大きめのフォント設定）で見えた崩れで、既定設定で撮る撮影スクリプトでは出なかった。確認用の撮影は、設定を退避しない版（ユーザーの設定のまま起動して撮る）も併用する。また撮影スクリプトは、前面ウィンドウが自分で起動した memopad でなければキーを送らずに中断するようにした（ユーザーが操作中に別アプリへキーが飛ぶのを防ぐ）。
   </div>
 
-  <h2 id="notes">8. つまずいた点のメモ</h2>
+
+  <h2 id="fb11">9. FB-11：起動がメモ帳よりワンテンポ遅い（v0.7.0）</h2>
+  <h3>9.1 現象と測り方</h3>
+  <p>メモ帳を起動するとすぐウィンドウが出るのに、memopad は一呼吸置いてから出る。FB-1 と同じく、まず数値にした。<code>docs/tools/measure-startup.ps1</code> は対象を起動し、別プロセスから 1 ms 間隔で (1) 対象プロセスの可視ウィンドウが現れるまで、(2) 画面のピクセル（本文中央とタイトル行）の色が変わらなくなるまで、を測る。8 回起動して 1 回目（コールド）を除いた中央値を採る。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>対象</th><th>ウィンドウ表示まで</th><th>描画完了まで</th></tr>
+    <tr><td>メモ帳（Windows 11 の Store 版）</td><td>約 200 ms</td><td>約 300 ms</td></tr>
+    <tr><td>memopad v0.6.0</td><td>約 520〜550 ms</td><td>約 650 ms</td></tr>
+  </table>
+  </div>
+  <p>ウィンドウが出るまでで 2.5 倍以上、300 ms 以上の差がある。これが「ワンテンポ」の正体。</p>
+
+  <h3>9.2 起動処理の内訳</h3>
+  <p>環境変数 <code>MEMOPAD_PERF=1</code> で有効になる診断ログ（<code>Services/PerfLog.cs</code>）に、プロセス起動からの経過時間を段階ごとに記録する <code>Mark</code> を足した。温まった状態（2 回目以降）の v0.6.0 の内訳は次のとおり。</p>
+  <figure>
+    <svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="12" role="img" aria-label="v0.6.0 の起動処理の内訳（プロセス起動からの累計時間）">
+      <title>v0.6.0 の起動処理の内訳</title>
+      <g stroke="#bbb" stroke-width="1">
+        <line x1="50" y1="20" x2="50" y2="300" />
+        <line x1="137.5" y1="20" x2="137.5" y2="300" stroke-dasharray="3,3" />
+        <line x1="225" y1="20" x2="225" y2="300" stroke-dasharray="3,3" />
+        <line x1="312.5" y1="20" x2="312.5" y2="300" stroke-dasharray="3,3" />
+        <line x1="400" y1="20" x2="400" y2="300" stroke-dasharray="3,3" />
+        <line x1="487.5" y1="20" x2="487.5" y2="300" stroke-dasharray="3,3" />
+        <line x1="575" y1="20" x2="575" y2="300" stroke-dasharray="3,3" />
+        <line x1="662.5" y1="20" x2="662.5" y2="300" stroke-dasharray="3,3" />
+        <line x1="750" y1="20" x2="750" y2="300" stroke-dasharray="3,3" />
+      </g>
+      <g fill="#666" text-anchor="middle">
+        <text x="50" y="316">0</text><text x="137.5" y="316">100</text><text x="225" y="316">200</text><text x="312.5" y="316">300</text>
+        <text x="400" y="316">400</text><text x="487.5" y="316">500</text><text x="575" y="316">600</text><text x="662.5" y="316">700</text><text x="750" y="316">800 ms</text>
+      </g>
+      <g>
+        <rect x="50" y="30" width="52.5" height="18" fill="#8e8e8e" /><text x="108" y="43" fill="#333">.NET ランタイム起動（60 ms）</text>
+        <rect x="102.5" y="55" width="70.9" height="18" fill="#8e8e8e" /><text x="180" y="68" fill="#333">WPF Application の初期化（81 ms）</text>
+        <rect x="173.4" y="80" width="27.1" height="18" fill="#d9822b" /><text x="207" y="93" fill="#333">設定 JSON の読み込み（31 ms）→ v0.7.0 で 18 ms</text>
+        <rect x="200.5" y="105" width="41.1" height="18" fill="#8e8e8e" /><text x="248" y="118" fill="#333">Fluent テーマの適用（47 ms）</text>
+        <rect x="241.6" y="130" width="92.8" height="18" fill="#8e8e8e" /><text x="341" y="143" fill="#333">MainWindow の XAML 読み込み（106 ms）</text>
+        <rect x="334.4" y="155" width="50" height="18" fill="#3b7dd8" /><text x="391" y="168" fill="#333">最初のタブ：Windows Forms と RichEdit の生成（57 ms）</text>
+        <rect x="384.4" y="180" width="43.7" height="18" fill="#8e8e8e" /><text x="435" y="193" fill="#333">レイアウトとテンプレート適用（50 ms）</text>
+        <rect x="428.1" y="205" width="36.7" height="18" fill="#8e8e8e" /><text x="472" y="218" fill="#333">WindowChrome の初期化（42 ms）</text>
+        <rect x="464.8" y="230" width="70" height="18" fill="#d9822b" /><text x="541" y="243" fill="#333">Direct3D デバイス生成と表示（80 ms）→ v0.7.0 で 4 ms</text>
+        <rect x="534.8" y="255" width="60" height="18" fill="#8e8e8e" /><text x="601" y="268" fill="#333">Show の完了（69 ms）</text>
+        <rect x="594.8" y="280" width="57.7" height="18" fill="#8e8e8e" /><text x="659" y="293" fill="#333">最初の描画（66 ms）</text>
+      </g>
+      <line x1="519" y1="20" x2="519" y2="300" stroke="#c0392b" stroke-width="2" /><text x="523" y="30" fill="#c0392b">ウィンドウ表示（約 536 ms）</text>
+    </svg>
+    <figcaption>図 9-1：v0.6.0 の起動処理の内訳。橙は v0.7.0 で短縮できた段階、青は Windows Forms 側、灰は WPF と .NET の固定費</figcaption>
+  </figure>
+  <p>特定の 1 か所が遅いのではなく、WPF の固定費が薄く広く積み上がっている。dotnet-trace で JIT イベントを数えると、起動中に <strong>1,523 メソッド</strong>が JIT コンパイルされていた（P/Invoke の呼び出しスタブ約 560、ジェネリック型の実体化約 470、memopad 自身のコード約 150）。同梱の .NET ランタイムは事前コンパイル（ReadyToRun）済みだが、スタブと実体化は実行時に作られる。</p>
+
+  <h3>9.3 試したことと効果</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>試したこと</th><th>効果（ウィンドウ表示まで）</th><th>採否</th></tr>
+    <tr><td>アプリ本体の ReadyToRun 発行（<code>PublishReadyToRun</code>）</td><td>約 10 ms 短縮</td><td>採用（無害）</td></tr>
+    <tr><td>フレームワークまで一体で事前コンパイルする複合 ReadyToRun（<code>PublishReadyToRunComposite</code>）</td><td>温まった状態で約 40 ms 短縮。ただしインストール直後の初回起動が 1.2 秒 → 4.3 秒に悪化（100 MB 超の一体イメージをウイルス対策がスキャンする）、容量 +20 MB</td><td>不採用</td></tr>
+    <tr><td>Fluent テーマを外す（旧来の Aero2 テーマ）</td><td>約 60 ms 短縮。見た目（ダーク テーマ、Windows 11 風のメニュー）を失う</td><td>不採用</td></tr>
+    <tr><td>ランタイムのオプション（TieredPGO 無効、並行 GC 無効）</td><td>差なし</td><td>—</td></tr>
+    <tr><td>WPF の描画をソフトウェアにする（<code>RenderMode.SoftwareOnly</code>）</td><td>Direct3D デバイスの生成（約 80 ms）が消え、描画完了が約 50 ms 早まる。memopad の WPF 部分はタイトル行・メニュー・ステータスバーだけで本文は GDI の RichEdit なので、見た目・速度に差は出ない</td><td>採用</td></tr>
+    <tr><td>設定 JSON をソース ジェネレーターで変換（<code>JsonSerializerContext</code>）</td><td>31 ms → 18 ms</td><td>採用</td></tr>
+    <tr><td>Windows Forms／msftedit.dll／System.Drawing／Fluent のアセンブリを別スレッドで先読み（<code>Services/StartupWarmup.cs</code>）</td><td>約 10 ms 短縮（CPU の空いているコアで並列に読み込む）</td><td>採用</td></tr>
+    <tr><td>フォント（Yu Gothic UI、Segoe Fluent Icons）の別スレッド先読み</td><td>差なし</td><td>不採用</td></tr>
+    <tr><td>メニュー項目の遅延生成</td><td>メニュー部分の XAML 読み込みは 11 ms しかなく、作り込む価値なし</td><td>不採用</td></tr>
+  </table>
+  </div>
+
+  <h3>9.4 v0.7.0 の結果</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>対象</th><th>ウィンドウ表示まで（中央値）</th><th>描画完了まで（中央値）</th></tr>
+    <tr><td>メモ帳</td><td>205 ms</td><td>約 300 ms</td></tr>
+    <tr><td>memopad v0.6.0</td><td>521 ms</td><td>669 ms</td></tr>
+    <tr><td>memopad v0.7.0</td><td>505 ms</td><td>619 ms</td></tr>
+  </table>
+  </div>
+  <p>描画完了は 50 ms 早くなったが、ウィンドウが出るまでは 16 ms しか縮まらず、体感はほぼ変わらない。<strong>WPF のまま「メモ帳並み」にはできなかった。</strong></p>
+
+  <h3>9.5 WPF の下限と Windows Forms との比較</h3>
+  <p>どこまで縮められるかを知るため、最小構成のアプリを同じ条件（self-contained 発行、同じ端末）で測った。</p>
+  <figure>
+    <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="12" role="img" aria-label="ウィンドウが表示されるまでの時間の比較">
+      <title>ウィンドウが表示されるまでの時間の比較</title>
+      <g fill="#333" text-anchor="end">
+        <text x="250" y="34">メモ帳</text>
+        <text x="250" y="69">最小構成の Windows Forms（RichEdit＋メニュー＋ステータスバー）</text>
+        <text x="250" y="104">最小構成の WPF（メニュー＋テキスト ボックスだけ）</text>
+        <text x="250" y="139">memopad v0.7.0</text>
+        <text x="250" y="174">memopad v0.6.0</text>
+      </g>
+      <rect x="260" y="20" width="164" height="20" fill="#5aa469" /><text x="430" y="34" fill="#333">205 ms</text>
+      <rect x="260" y="55" width="130" height="20" fill="#5aa469" /><text x="396" y="69" fill="#333">162 ms</text>
+      <rect x="260" y="90" width="318" height="20" fill="#c0392b" /><text x="584" y="104" fill="#333">398 ms</text>
+      <rect x="260" y="125" width="404" height="20" fill="#c0392b" /><text x="670" y="139" fill="#333">505 ms</text>
+      <rect x="260" y="160" width="417" height="20" fill="#c0392b" /><text x="683" y="174" fill="#333">521 ms</text>
+      <line x1="424" y1="12" x2="424" y2="190" stroke="#5aa469" stroke-dasharray="4,3" />
+    </svg>
+    <figcaption>図 9-2：ウィンドウが表示されるまでの時間（2 回目以降の中央値）。緑の点線がメモ帳の水準</figcaption>
+  </figure>
+  <ul>
+    <li><strong>WPF は空に近いウィンドウでも約 400 ms かかる。</strong>ランタイム起動 60 ms ＋ WPF Application 初期化 80 ms ＋ XAML／テンプレート／HWND 生成／Direct3D／初回描画で、memopad の機能を削っても 400 ms を下回れない。メモ帳の 200 ms は WPF の構造上届かない。</li>
+    <li><strong>Windows Forms なら約 160 ms で、メモ帳より速い。</strong>本文の RichEdit はすでに Windows Forms のコントロールなので、メイン ウィンドウ（タイトル行のタブ、メニュー、検索バー、ステータスバー）を Windows Forms で作り直せば、起動はメモ帳並みになる見込み。ダイアログ類は WPF のまま残しても、開くときに初めて WPF を初期化すればよい。</li>
+  </ul>
+  <div class="note">
+    <strong>今後の選択肢</strong>：(A) v0.7.0 の水準（約 500 ms）で受け入れる。(B) メイン ウィンドウを Windows Forms で作り直す（v0.8.0、規模が大きく、ダーク テーマとタイトル行のタブは自前で描く必要がある）。FB-12（MemoPad への改名と新アイコン）は FB-11 の達成が条件のため、この判断とあわせて決める。
+  </div>
+
+  <h2 id="notes">10. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
@@ -376,6 +494,9 @@
     <li><strong>Fluent の MenuItem は高さを縛ると消える。</strong>Menu に <code>Height=30</code> を付けただけで項目が描画されなくなった。テンプレートを差し替えるのが確実。</li>
     <li><strong>撮影スクリプトはプログラムからの操作が多く、マウス操作の不具合を見逃す。</strong>タブの切り替えは UI Automation の Invoke や SelectedItem の設定では動いてしまう。ユーザーが実際に行う操作（マウス クリック）そのものを再現する確認を、機能ごとに 1 つは持つ。</li>
     <li><strong>表示スケールを決め打ちしない。</strong>この端末は 150 % で、125 % と思い込んで換算した値が合わなかった。<code>GetDpiForSystem</code> で確かめてから換算する。</li>
+    <li><strong>起動時間は「どこか 1 か所」ではなく積み上げで決まる。</strong>段階ごとの経過時間を記録して初めて、WPF の固定費が全体の 8 割を占めると分かった。最小構成のアプリで下限を測るのが早道だった。</li>
+    <li><strong>複合 ReadyToRun は初回起動を測ってから採用を決める。</strong>温まった状態の数字だけ見ると速いが、新規コピー（インストール直後相当）の初回起動は 3 秒以上悪化した。</li>
+    <li><strong>dotnet-trace は対象を強制終了するとトレースが途中で切れる。</strong>JIT イベントの集計はできたが、CPU サンプリングはスタックが解決できず使えなかった。対象が自分で終了する形にする。</li>
   </ul>
 </main>
 <footer class="site">

@@ -1,4 +1,4 @@
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Threading;
 using Memopad.Models;
 using Memopad.Services;
@@ -19,9 +19,12 @@ public partial class EditorView : UserControl
 
     public EditorView(Document document)
     {
+        PerfLog.Mark("EditorView ctor 開始");
         InitializeComponent();
+        PerfLog.Mark("EditorView XAML を読み込み");
         Document = document;
         Host.Child = _edit;
+        PerfLog.Mark("RichEdit を WindowsFormsHost に設定");
         _edit.TextChanged += Edit_TextChanged;
         _edit.SelectionChanged += Edit_SelectionChanged;
         if (PerfLog.Enabled) AttachPerfProbes();

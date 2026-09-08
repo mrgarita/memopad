@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 
 namespace Memopad.Services;
@@ -14,6 +14,17 @@ public static class PerfLog
     private static readonly string Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "memopad-perf.log");
 
     public static double Now => Clock.Elapsed.TotalMilliseconds;
+
+    /// <summary>プロセス起動（exe のロード）からの経過時間。起動時間の内訳を調べるときに使う。</summary>
+    public static double SinceProcessStart =>
+        (DateTime.Now - Process.GetCurrentProcess().StartTime).TotalMilliseconds;
+
+    /// <summary>起動処理の段階を記録する（MEMOPAD_PERF=1 のときだけ）。</summary>
+    public static void Mark(string stage)
+    {
+        if (!Enabled) return;
+        Write($"起動 {SinceProcessStart,7:F0} ms  {stage}");
+    }
 
     public static void Write(string message)
     {
