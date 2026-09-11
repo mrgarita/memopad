@@ -11,6 +11,9 @@ namespace Memopad.Views;
 /// </summary>
 public sealed class FluentMenuRenderer : ToolStripRenderer
 {
+    /// <summary>ポップアップ内の表題の字下げ（論理 px）。メモ帳のメニューに合わせた控えめな量。</summary>
+    private const int TextIndent = 5;
+
     private Font? _glyphFont;
     private int _glyphDpi;
 
@@ -74,9 +77,12 @@ public sealed class FluentMenuRenderer : ToolStripRenderer
         // ショートカット表示（右寄せで描かれる）は薄い色にする
         var shortcut = (e.TextFormat & TextFormatFlags.Right) == TextFormatFlags.Right;
         e.TextColor = !e.Item.Enabled ? Palette.MutedText : shortcut ? Palette.MutedText : Palette.Text;
-        // 既定のレイアウトでは文字が項目の上に寄って見えるので、項目の高さいっぱいの矩形に上下中央で描く
+        // 既定のレイアウトでは文字が項目の上に寄って見えるので、項目の高さいっぱいの矩形に上下中央で描く。
+        // 左寄せの表題は、メモ帳と同じく少しだけ字下げする（チェック欄が無いメニューだと左に付きすぎるため。
+        // ToolStripMenuItem の Padding や ToolStripDropDownMenu の Padding では左右の位置は動かせない）
         var r = e.TextRectangle;
-        e.TextRectangle = new Rectangle(r.X, 0, r.Width, e.Item.Height);
+        var indent = shortcut || !e.Item.IsOnDropDown ? 0 : S(e.Item.Owner!, TextIndent);
+        e.TextRectangle = new Rectangle(r.X + indent, 0, Math.Max(0, r.Width - indent), e.Item.Height);
         e.TextFormat |= TextFormatFlags.VerticalCenter;
         base.OnRenderItemText(e);
     }

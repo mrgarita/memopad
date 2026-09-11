@@ -33,11 +33,18 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
     [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
     private static extern int SetWindowTheme(IntPtr hWnd, string? subAppName, string? subIdList);
 
+    [DllImport("ole32.dll")]
+    private static extern int RegisterDragDrop(IntPtr hWnd, IOleDropTarget target);
+
+    [DllImport("ole32.dll")]
+    private static extern int RevokeDragDrop(IntPtr hWnd);
+
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT { public int Left, Top, Right, Bottom; }
 
     private bool _wordWrap = true;
     private bool _darkScrollBars;
+    private FileDropTarget? _dropTarget;
 
     public PlainTextEdit()
     {
@@ -47,8 +54,9 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
         ScrollBars = WinForms.RichTextBoxScrollBars.Both;   // 必要なときだけ出る
         HideSelection = false;                               // 検索バーへフォーカスが移っても選択を見せる
         DetectUrls = false;
-        EnableAutoDragDrop = false;                          // 自前の OLE ドロップを止め、ファイルのドロップを受ける
-        AllowDrop = true;
+        EnableAutoDragDrop = false;                          // RichEdit 自身のドラッグ＆ドロップは使わない
+        // ファイルのドロップは FileDropTarget で受ける（AllowDrop = true にすると RichEdit にも
+        // ドロップが渡り、開いた直後の文書が「編集済み」になってしまう）
         AutoWordSelection = false;
         // 日本語など別スクリプトの文字は RichEdit の自動フォント選択（フォント バインディング）で適切なフォントに切り替える
         LanguageOption = WinForms.RichTextBoxLanguageOptions.AutoFont | WinForms.RichTextBoxLanguageOptions.DualFont;
@@ -97,6 +105,7 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
         ApplyWrap();
         ApplyScrollBarTheme();
         ApplyInset();
+        RegisterFileDropTarget();
         Services.PerfLog.Mark("RichEdit の初期化を完了");
     }
 
@@ -112,16 +121,25 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
         if (IsHandleCreated) ApplyInset();
     }
 
-    protected override void OnDragEnter(WinForms.DragEventArgs e)
+    protected override void OnHandleDestroyed(EventArgs e)
     {
-        e.Effect = e.Data?.GetDataPresent(WinForms.DataFormats.FileDrop) == true ? WinForms.DragDropEffects.Copy : WinForms.DragDropEffects.None;
-        base.OnDragEnter(e);
+        if (IsHandleCreated) RevokeDragDrop(Handle);
+        base.OnHandleDestroyed(e);
     }
 
-    protected override void OnDragDrop(WinForms.DragEventArgs e)
+    /// <summary>
+    /// RichEdit が自分で登録しているドロップ先を外し、ファイルだけを受け取る自前のものに差し替える。
+    /// RichEdit に処理させると、ファイルを開いた直後の文書が「編集済み」になってしまうため
+    /// （経緯は <see cref="FileDropTarget"/>）。
+    /// </summary>
+    private void RegisterFileDropTarget()
     {
-        if (e.Data?.GetData(WinForms.DataFormats.FileDrop) is string[] files) FilesDropped?.Invoke(files);
-        base.OnDragDrop(e);
+        WinForms.Application.OleRequired();
+        RevokeDragDrop(Handle);
+        // ドロップの処理中に開くと、ファイルが大きいときにドラッグ元を待たせてしまうので、
+        // メッセージを処理し終えてから開く
+        _dropTarget ??= new FileDropTarget(files => BeginInvoke(() => FilesDropped?.Invoke(files)));
+        RegisterDragDrop(Handle, _dropTarget);
     }
 
     protected override void WndProc(ref WinForms.Message m)

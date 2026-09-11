@@ -5,7 +5,7 @@
 
 ## リポジトリの状態
 
-step3（フィードバック対応）を進行中。6 回目までのフィードバックを v0.2.0〜v0.9.0 で対応済み
+step3（フィードバック対応）を進行中。7 回目までのフィードバックを v0.2.0〜v0.9.1 で対応済み
 （一覧は `docs/site/step3/index.html` 1 節）。「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#。メイン ウィンドウは Windows Forms、ダイアログは WPF）、
@@ -96,7 +96,9 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   `ThemePalette`、メニューの見た目は `Views/FluentMenuRenderer.cs`（項目の字下げはチェック欄
   `ShowImageMargin` の有無で決まる。`ToolStripMenuItem.Padding` の左右は効かない）
 - **本文のエディタ**：Win32 の RichEdit（Windows Forms の `RichTextBox` を継承した
-  `Views/PlainTextEdit.cs`）。WPF の TextBox は入力から表示まで
+  `Views/PlainTextEdit.cs`）。**ファイルのドロップは `Views/FileDropTarget.cs` を
+  `RegisterDragDrop` で登録して自前で受ける**（RichEdit に処理させると、開いた直後の文書が
+  「編集済み」になる。v0.9.1 で修正）。WPF の TextBox は入力から表示まで
   約 50 ms かかりメモ帳（約 19 ms）より遅かったため v0.2.0 で置き換えた（経緯は
   `docs/site/step3/index.html` 2 節）。v0.8.0 でホストが Windows Forms になったため、
   ショートカットは `MainForm.ProcessCmdKey` とメニューの `ShortcutKeys` がそのまま効く
