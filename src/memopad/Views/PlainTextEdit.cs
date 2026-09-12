@@ -20,6 +20,8 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
     private const int EM_SETTARGETDEVICE = 0x0448;
     private const int EM_SETUNDOLIMIT = 0x0452;
     private const int EM_SETTEXTMODE = 0x0459;
+    private const int EM_SHOWSCROLLBAR = 0x0460;
+    private const int SB_HORZ = 0;
     private const int TM_PLAINTEXT = 1;
     private const int TM_MULTILEVELUNDO = 8;
     private const int TM_MULTICODEPAGE = 32;
@@ -45,6 +47,7 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
     private bool _wordWrap = true;
     private bool _darkScrollBars;
     private FileDropTarget? _dropTarget;
+    private SmoothWheelScroller? _wheel;   // 起動を遅らせないよう、最初にホイールを回したときに作る
 
     public PlainTextEdit()
     {
@@ -52,6 +55,10 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
         AcceptsTab = true;
         BorderStyle = WinForms.BorderStyle.None;
         ScrollBars = WinForms.RichTextBoxScrollBars.Both;   // 必要なときだけ出る
+        // 折り返しは WrapText（EM_SETTARGETDEVICE）で切り替える。Windows Forms の WordWrap を true のままにすると
+        // 横スクロールバー（WS_HSCROLL）とカーソルに合わせた横送り（ES_AUTOHSCROLL）が付かず、
+        // 折り返さないときに長い行の右端から先が見えなくなる
+        WordWrap = false;
         HideSelection = false;                               // 検索バーへフォーカスが移っても選択を見せる
         DetectUrls = false;
         EnableAutoDragDrop = false;                          // RichEdit 自身のドラッグ＆ドロップは使わない
@@ -127,6 +134,12 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
         base.OnHandleDestroyed(e);
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _wheel?.Dispose();
+        base.Dispose(disposing);
+    }
+
     /// <summary>
     /// RichEdit が自分で登録しているドロップ先を外し、ファイルだけを受け取る自前のものに差し替える。
     /// RichEdit に処理させると、ファイルを開いた直後の文書が「編集済み」になってしまうため
@@ -152,6 +165,11 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
                 // RichEdit 自身のズームは使わず、アプリのズーム（ステータスバーの % と連動）に回す
                 ZoomWheel?.Invoke((short)((long)m.WParam >> 16));
                 return;
+            case WM_MOUSEWHEEL when (WinForms.Control.ModifierKeys & WinForms.Keys.Shift) == 0:
+                // RichEdit 自身のホイール処理は、末尾が改行だと最後の空行まで届かないので自前で動かす
+                (_wheel ??= new SmoothWheelScroller(this)).Scroll((short)((long)m.WParam >> 16));
+                m.Result = IntPtr.Zero;
+                return;
             case WM_CONTEXTMENU:
                 ContextMenuRequested?.Invoke();
                 return;
@@ -161,6 +179,10 @@ public sealed class PlainTextEdit : WinForms.RichTextBox
 
     private void ApplyWrap()
     {
+        // 折り返すときは横スクロールバーを使わない。RichEdit は「折り返しなし→あり」に切り替えても
+        // 横スクロールバーを自分では片付けず、表示の高さの計算が狂うので、先に明示的に隠す
+        // （折り返さないときは、長い行があるときだけ RichEdit が出す）
+        SendMessageW(Handle, EM_SHOWSCROLLBAR, (IntPtr)SB_HORZ, (IntPtr)(_wordWrap ? 0 : 1));
         // lParam=0 でウィンドウ幅に折り返し、1 で折り返しなし（横スクロール）
         SendMessageW(Handle, EM_SETTARGETDEVICE, IntPtr.Zero, (IntPtr)(_wordWrap ? 0 : 1));
     }
