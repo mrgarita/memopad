@@ -5,12 +5,12 @@
 
 ## リポジトリの状態
 
-step3（フィードバック対応）を進行中。8 回目までのフィードバックを v0.2.0〜v0.9.2 で対応済み
-（一覧は `docs/site/step3/index.html` 1 節）。**9 回目（2026-09-12）の FB-19「大きなファイルを開くと
-固まり、その後の操作でも固まる」に対応中。ユーザーの判断で GitHub Releases のインストーラは
-v0.6.0〜v0.9.1 をすべて削除し、配布を一時停止している**（サイトとソース コードの公開は継続。
-紹介ページ・README・備忘録にお知らせを掲載済み。ローカルの `installer/output/` に全バージョンの
-インストーラが残っているので、修正後に再アップロードできる）。「正」となるのは
+step3（フィードバック対応）を進行中。9 回目までのフィードバックを v0.2.0〜v0.10.0 で対応済み
+（一覧は `docs/site/step3/index.html` 1 節）。**FB-19「大きなファイルを開くと固まり、その後の操作でも
+固まる」は v0.10.0 で本文のエディタを Scintilla に替えて解消した**（最長の無応答 43,456 ms → 34 ms）。
+**GitHub Releases のインストーラは v0.6.0〜v0.9.1 をすべて削除して配布を一時停止中**（サイトとソース
+コードの公開は継続。紹介ページ・README・備忘録にお知らせを掲載済み）。**ユーザーが v0.10.0 を確認して
+OK が出たら配布を再開する**（ローカルの `installer/output/` に全バージョンのインストーラがある）。「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#。メイン ウィンドウは Windows Forms、ダイアログは WPF）、
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
@@ -99,17 +99,24 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   支援技術と `docs\tools\test-tabclick.ps1` の確認が効かなくなる）。配色は `Services/ThemeService.cs` の
   `ThemePalette`、メニューの見た目は `Views/FluentMenuRenderer.cs`（項目の字下げはチェック欄
   `ShowImageMargin` の有無で決まる。`ToolStripMenuItem.Padding` の左右は効かない）
-- **本文のエディタ**：Win32 の RichEdit（Windows Forms の `RichTextBox` を継承した
-  `Views/PlainTextEdit.cs`）。**ファイルのドロップは `Views/FileDropTarget.cs` を
-  `RegisterDragDrop` で登録して自前で受ける**（RichEdit に処理させると、開いた直後の文書が
-  「編集済み」になる。v0.9.1 で修正）。**マウス ホイールのスクロールは `Views/SmoothWheelScroller.cs` が
-  自前で行う**（RichEdit 標準のホイール処理は、末尾が改行のとき最後の空行の 1 行手前で止まる。v0.9.2 で修正。
-  上限はスクロールバーの一番下と同じ `nMax − nPage`）。**折り返しは `EM_SETTARGETDEVICE` で切り替え、
-  Windows Forms の `WordWrap` は false に固定する**（true だと横スクロールバーと横送りのスタイルが付かない。
-  `WordWrap` を切り替えるとハンドルが作り直されて元に戻す履歴が消える。v0.9.2 で修正）。WPF の TextBox は入力から表示まで
-  約 50 ms かかりメモ帳（約 19 ms）より遅かったため v0.2.0 で置き換えた（経緯は
-  `docs/site/step3/index.html` 2 節）。v0.8.0 でホストが Windows Forms になったため、
-  ショートカットは `MainForm.ProcessCmdKey` とメニューの `ShortcutKeys` がそのまま効く
+- **本文のエディタ**：**Scintilla**（NuGet の `Scintilla5.NET`。`Views/PlainTextEdit.cs` が
+  `ScintillaNET.Scintilla` を継承）。v0.2.0〜v0.9.2 は Win32 の RichEdit だったが、**日本語と英字が
+  混ざった行のレイアウトが極端に遅く**、10 MB・12 万行のファイルで 43 秒固まり、その後もリサイズのたびに
+  28 秒固まるため v0.10.0 で置き換えた（FB-19）。原因は GDI への文字幅の問い合わせで、RichEdit でも
+  Win32 の Edit でも Windows App SDK の WinUI でも避けられない。Scintilla は同じ計算を空き時間に
+  細切れで行うので画面が止まらない（最長の無応答 34 ms。詳細は `docs/site/step3/index.html` 15 節）。
+  - **改行はエディタ内部で LF に統一する**（`EolMode = Eol.Lf`、読み込み時に `EditorView` が変換。
+    保存時に `TextFileService` がファイルの改行コードへ戻す）
+  - **「編集済み」は Scintilla の保存ポイント**（`SetSavePoint` と `SavePointLeft`／`SavePointReached`）で
+    判定する。`TextChanged` で判定すると、コントロールの初期化でも変更とみなされ新規タブが編集済みになる
+  - **ファイルのドロップは `Views/FileDropTarget.cs` を `RegisterDragDrop` で登録して自前で受ける**
+    （エディタに任せるとファイル名が本文に貼り付けられる。v0.9.1 の FB-16 と同じ理由）
+  - ホイールで最終行まで届くこと（FB-17）と折り返しオフの横スクロール（FB-18）は Scintilla 標準で満たす。
+    自前の `SmoothWheelScroller.cs` は不要になったので削除した
+  - ズームはフォント サイズを倍率で計算する（Scintilla の `Zoom` は整数ポイントの増減なので % と合わない）
+  - **既知の問題：本文が UI Automation に出ない**（`ControlType.Pane`・パターンなし）。RichEdit は
+    `ControlType.Document` ＋ TextPattern/ValuePattern で読めていたので支援技術に対する回帰。
+    Scintilla の `SCI_SETACCESSIBILITY` は GTK 版だけの機能で Windows では効かない。別課題として対応予定
 - **ビルドと確認**：`dotnet build src\memopad\memopad.csproj`。前回のビルド サーバーが `obj` の
   生成ファイルを掴んで 1 回おきに失敗することがあるので、失敗したら `dotnet build-server shutdown`
   →`src\memopad\obj` を削除→`-nodeReuse:false -p:UseSharedCompilation=false` で再ビルドする。動作確認とスクリーンショットは `docs\tools\capture-memopad.ps1`

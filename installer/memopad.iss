@@ -38,7 +38,11 @@ Name: "desktopicon"; Description: "デスクトップにショートカットを
 Name: "txtassoc"; Description: "「プログラムから開く」の候補に MemoPad を追加する(&O)"; GroupDescription: "関連付け:"
 
 [Files]
-Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Scintilla のパッケージは arm64／x86 版のネイティブ DLL も持ち込むが、
+; 配布するのは x64 だけなので除く（実際に使うのは exe と同じ場所に置かれた x64 版）
+Source: "publish\*"; DestDir: "{app}"; Excludes: "runtimes\win-arm64\*,runtimes\win-x86\*"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 同梱している Scintilla のライセンス表記（v0.10.0 で本文のエディタに採用）
+Source: "..\LICENSE-Scintilla.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

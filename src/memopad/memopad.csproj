@@ -16,7 +16,7 @@
     <!-- アイコンはユーザー提供のデザイン（クリーム色の文書に緑の罫線）。v0.8.0 で差し替え -->
     <ApplicationIcon>memopad.ico</ApplicationIcon>
     <RootNamespace>Memopad</RootNamespace>
-    <Version>0.9.2</Version>
+    <Version>0.10.0</Version>
     <Product>MemoPad</Product>
     <Description>背景色と文字色を変えられるメモ帳</Description>
     <Copyright>mrgarita</Copyright>
@@ -38,6 +38,10 @@
   <ItemGroup>
     <!-- ANSI（Shift_JIS, cp932）の読み書きに必要 -->
     <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.11" />
+    <!-- 本文のエディタ。v0.10.0 で RichEdit から Scintilla に替えた（FB-19）。
+         RichEdit は日本語と英字が混ざる行のレイアウトが極端に遅く、大きなファイルで画面が固まる。
+         Scintilla は同じ計算を空き時間に細切れで行うので止まらない（docs/site/step3 の 15 節） -->
+    <PackageReference Include="Scintilla5.NET" Version="7.0.0" />
   </ItemGroup>
 
 </Project>

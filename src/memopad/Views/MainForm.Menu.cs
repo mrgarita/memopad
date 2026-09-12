@@ -245,7 +245,8 @@ public sealed partial class MainForm
     {
         if (Current is not { } tab) return;
         var (line, _) = tab.Editor.GetCaretPosition();
-        var lineCount = tab.Editor.Text.AsSpan().Count('\n') + 1;
+        // 全文を読まずにエディタから行数をもらう（大きなファイルでも一瞬で済む）
+        var lineCount = tab.Editor.GetLineCount();
         var result = AskGoToLine(line, lineCount);
         if (result is { } target) tab.Editor.GoToLine(target);
     }

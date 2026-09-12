@@ -559,6 +559,8 @@ public sealed partial class MainForm : Form
             return false;
         }
         tab.Document.FilePath = path;
+        // 保存した時点の内容をエディタにも覚えさせる（ここまで元に戻すと「編集なし」に戻る）
+        tab.Editor.MarkClean();
         tab.Document.IsDirty = false;
         Settings.PushRecentFile(path);
         UpdateTitle();

@@ -22,8 +22,9 @@ Windows 標準の「メモ帳」の使い勝手はそのままに、**背景色�
 | 色変更 | 背景色と文字色を 1 つのダイアログで選ぶ。PICO-8 の 16 色＋カラーピッカー、プレビュー付き |
 | 配色パターン | 目に優しい 16 パターン（ライト 8・ダーク 8）をカードから選ぶと、背景色と文字色が一度に変わる |
 | メモ帳の機能 | タブ、検索・置換、行へ移動、ズーム、右端で折り返す、日付と時刻、ページ設定と印刷、エンコード／改行コードの切り替え、未保存の確認 |
-| 入力レスポンス | 本文に Windows 標準の RichEdit を使い、入力から表示までメモ帳と同等（約 20 ms）。IME も快適 |
-| 起動の速さ | ウィンドウが出るまで約 0.2 秒。同じ端末のメモ帳と同等（v0.8.0 で Windows Forms に作り直して短縮） |
+| 入力レスポンス | 入力から表示まで画面の 1 フレーム以内（約 17 ms）。メモ帳と同等で、IME も快適 |
+| 大きなファイル | 10 MB・12 万行の日本語ファイルでも画面が止まらない（v0.10.0 で本文を Scintilla に変更） |
+| 起動の速さ | ウィンドウが出るまで約 0.26 秒。同じ端末のメモ帳（約 0.20 秒）と同程度 |
 | テーマ | ライト／ダーク／システム設定に追従 |
 
 ## SmartScreen の警告について
@@ -59,7 +60,7 @@ dotnet build src\memopad\memopad.csproj
 
 | パス | 内容 |
 |---|---|
-| `src/memopad/` | アプリ本体（C#／.NET 9。メイン ウィンドウは Windows Forms、ダイアログは WPF） |
+| `src/memopad/` | アプリ本体（C#／.NET 9。メイン ウィンドウは Windows Forms、ダイアログは WPF、本文は Scintilla） |
 | `installer/` | Inno Setup のスクリプトとビルド スクリプト |
 | `docs/index.html` | 紹介ページ（GitHub Pages） |
 | `docs/site/` | 制作の備忘録（step1〜step3） |
@@ -80,5 +81,8 @@ dotnet build src\memopad\memopad.csproj
 
 ## 謝辞
 
+- 本文のエディタに [Scintilla](https://www.scintilla.org/)（Neil Hodgson ほか）を使わせてもらっています。
+  .NET 向けのラッパーは [Scintilla5.NET](https://github.com/desjarlais/Scintilla.NET)（MIT License）。
+  Scintilla のライセンスは同梱の `LICENSE-Scintilla.txt` を参照してください
 - 16 色パレットは [PICO-8](https://www.lexaloffle.com/pico-8.php)（Lexaloffle Games）の配色を使わせてもらっています
 - Windows およびメモ帳は Microsoft の製品です

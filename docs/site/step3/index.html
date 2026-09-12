@@ -39,7 +39,7 @@
       <li><a href="#fb16">FB-16：ドラッグ＆ドロップで開くと編集済みになる（v0.9.1）</a></li>
       <li><a href="#fb17">FB-17：ホイールで最後の行まで届かない（v0.9.2）</a></li>
       <li><a href="#fb18">FB-18：折り返しなしで横にスクロールできない（v0.9.2）</a></li>
-      <li><a href="#fb19">FB-19：大きなファイルで固まる／配布の一時停止（対応中）</a></li>
+      <li><a href="#fb19">FB-19：大きなファイルで固まる（v0.10.0 で本文を Scintilla に変更）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -123,11 +123,11 @@
   <div class="table-wrap">
   <table>
     <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
-    <tr><td>FB-19</td><td>不具合</td><td>10 MB／12 万行の日本語ファイルを開くと、「右端で折り返す」のオン・オフに関わらず非常に長い時間固まる（一応は開く）。さらに一度固まったあとは、新規タブ・ウィンドウ移動・最大化など操作の種別に関わらずそのつど固まるようになる</td><td>調査中</td><td><span class="tag maybe">対応中</span></td></tr>
+    <tr><td>FB-19</td><td>不具合</td><td>10 MB／12 万行の日本語ファイルを開くと、「右端で折り返す」のオン・オフに関わらず非常に長い時間固まる（一応は開く）。さらに一度固まったあとは、新規タブ・ウィンドウ移動・最大化など操作の種別に関わらずそのつど固まるようになる</td><td>v0.10.0</td><td><span class="tag must">対応済み</span></td></tr>
     <tr><td>FB-20</td><td>対処</td><td>固まる現象を抱えたままの版はエディタとして機能を満たしていないため、公開中のインストーラの配布を一旦停止する（サイトの公開は継続）</td><td>—</td><td><span class="tag must">対応済み</span></td></tr>
   </table>
   </div>
-  <p>FB-19 は 8 回目のフィードバックの確認中にこちらでも把握していたもので、そのときは「折り返しオンで約 44 秒、オフなら約 3 秒」と報告していた。実機ではオフでも長時間かかり、報告した数字が実際と違っていた。対処として先に配布を止め、そのうえで原因調査と修正に入る（<a href="#fb19">15 節</a>）。</p>
+  <p>FB-19 は 8 回目のフィードバックの確認中にこちらでも把握していたもので、そのときは「折り返しオンで約 44 秒、オフなら約 3 秒」と報告していた。実機ではオフでも長時間かかり、報告した数字が実際と違っていた。対処として先に配布を止め、そのうえで原因を調べた。原因は本文に使っていた RichEdit が、日本語と英字の混ざった行の文字幅を GDI に何度も問い合わせることだった。RichEdit の設定でも、Win32 の Edit コントロールでも、Windows App SDK の WinUI でも避けられなかったため、v0.10.0 で本文のエディタを <strong>Scintilla</strong> に差し替えた。最長の無応答は 43,456 ms → 34 ms になった（<a href="#fb19">15 節</a>）。</p>
 
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
@@ -984,7 +984,7 @@
     <li>縦・横のスクロールバーが両方出たときの右下の角は、ライト テーマで薄い灰色、ダーク テーマで少し明るい濃い灰色になり、浮いて見えない。</li>
   </ul>
 
-  <h2 id="fb19">15. FB-19：大きなファイルで固まる／配布の一時停止（対応中）</h2>
+  <h2 id="fb19">15. FB-19：大きなファイルで固まる（v0.10.0 で本文を Scintilla に変更）</h2>
   <h3>15.1 現象</h3>
   <p>v0.9.2 を実際に使ってもらったところ、次の報告を受けた（2026-09-12）。</p>
   <ul>
@@ -1009,14 +1009,195 @@
   </div>
   <p>修正が済んで同じファイルが実用的な時間で開けることを確かめたら、あらためて配布を再開する。</p>
 
-  <h3>15.3 調査の方針</h3>
-  <p>これから確かめることの見込みは次のとおり（結果はこの節に追記する）。</p>
+  <h3>15.3 測り直し：報告した数字が違っていた</h3>
+  <p>まず実機と同じ手順（アプリにファイルのパスを渡して起動する）で測り直した。<code>docs/tools/measure-openfile.ps1</code> を作り、
+  ウィンドウが出てから <code>WM_NULL</code> に答えられるようになるまでを外から測る。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>操作</th><th>MemoPad v0.9.2 折り返しオン</th><th>同 折り返しオフ</th><th>メモ帳</th></tr>
+    <tr><td>開く（応答が戻るまで）</td><td>43.5 秒</td><td>87.3 秒</td><td><strong>0.41 秒</strong></td></tr>
+    <tr><td>最大化</td><td>28.6 秒</td><td>55.7 秒</td><td>0 秒</td></tr>
+    <tr><td>元のサイズへ</td><td>28.6 秒</td><td>55.7 秒</td><td>0 秒</td></tr>
+  </table>
+  </div>
+  <p><a href="#fb17-check">13.4</a> で「折り返しなしなら約 3 秒」と書いたのは誤りで、<strong>折り返しなしのほうが倍遅い</strong>。
+  前回はアプリの外から測る手順ではなく、別の条件で測った数字をそのまま載せてしまっていた。
+  また、1 回のリサイズで 28.6 秒＝全文のレイアウト 2 回分かかっている。余白を付ける <code>EM_SETRECT</code> を
+  <code>OnResize</code> のたびに呼んでおり、<code>WM_SIZE</code> による再計算に加えてもう 1 回走っていた。</p>
+
+  <h3>15.4 原因：日本語と英字が混ざった行の「文字幅の問い合わせ」</h3>
+  <p>本文のスレッドの命令ポインタを 2 ms ごとに拾い、どのモジュールで時間を使っているかを集計した
+  （<code>SuspendThread</code>→<code>GetThreadContext</code>→<code>ResumeThread</code>。win32u.dll のエクスポート表を解析して関数名まで対応付けた）。
+  30,000 行の読み込み中に 432 サンプル。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>関数</th><th>割合</th><th>内容</th></tr>
+    <tr><td><code>NtGdiGetWidthTable</code></td><td>55.3 %</td><td>GDI の文字幅テーブルの取得</td></tr>
+    <tr><td><code>NtGdiGetCharWidthW</code></td><td>28.0 %</td><td>1 文字ずつの幅の取得</td></tr>
+    <tr><td><code>NtGdiGetCharSet</code></td><td>6.0 %</td><td>文字セットの問い合わせ</td></tr>
+    <tr><td>MsftEdit.dll 自身</td><td>7.2 %</td><td>RichEdit 本体の処理</td></tr>
+  </table>
+  </div>
+  <p>つまり <strong>時間のほとんどは RichEdit ではなく、GDI へ文字幅を尋ねるシステム コール</strong>だった。
+  どういうときに遅いのかを、行の中身を変えながら 30,000 行で測って絞り込んだ。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>1 行の中身（30,000 行）</th><th>読み込み</th></tr>
+    <tr><td>英数字だけ</td><td>147 ms</td></tr>
+    <tr><td>日本語だけ</td><td>228 ms</td></tr>
+    <tr><td><strong>日本語＋英字の混在</strong></td><td><strong>7,224 ms</strong></td></tr>
+  </table>
+  </div>
+  <p><strong>日本語と英字が同じ行に混ざると、GDI の文字幅キャッシュが効かなくなって 30〜50 倍遅くなる。</strong>
+  行数に比例して増える（7,500 行 1.8 秒 → 120,000 行 29 秒）。今回のファイルは「空白＋行番号＋日本語＋英字」で、
+  日本語の実文書ではごくありふれた形なので、まともに直撃していた。</p>
+  <p>RichEdit 側の設定で回避できないか、次をすべて試したが効果はなかった。</p>
   <ul>
-    <li>実機と同じ手順（アプリからファイルを開く）で、折り返しオン・オフそれぞれの所要時間を測り直す。前回の計測が何を測っていたのかを確かめる。</li>
-    <li>「固まったあと、別の操作でも固まる」のがどこで起きているかを突き止める。ウィンドウを作り直すたび、または描画のたびに全文のレイアウトを計算し直していないか。</li>
-    <li>RichEdit に大きな文書を入れる方法（<code>EM_STREAMIN</code>／テキストの直接設定）や、レイアウト計算を止めておく指定（<code>WM_SETREDRAW</code>、<code>EM_SETEVENTMASK</code>）の効果を比べる。</li>
-    <li>メモ帳が同じファイルをどれくらいで開くかを測り、目標値にする。</li>
+    <li>自動フォント選択を切る（<code>EM_SETLANGOPTIONS</code> = 0。適用されていることを読み戻して確認）</li>
+    <li>フォントの文字セット指定 4 種（DEFAULT／SHIFT_JIS／ANSI／OEM）</li>
+    <li><code>EM_SETEDITSTYLE</code> の <code>SES_EMULATESYSEDIT</code>・<code>SES_DRAFTMODE</code>・<code>SES_NOEALINEHEIGHTADJUST</code> ほか 8 種</li>
+    <li><code>EM_SETTYPOGRAPHYOPTIONS</code>（<code>TO_SIMPLELINEBREAK</code> ほか）</li>
+    <li>プレーン／リッチ テキスト モード、単一／複数コードページ、<code>EM_STREAMIN</code> と <code>Text</code> の比較</li>
+    <li>フォント 7 種・サイズ 3 種・ウィンドウ幅 6 種</li>
+    <li>旧版の RichEdit（<code>riched20.dll</code> の <code>RichEdit20W</code>）→ 26.8 秒で同じ</li>
   </ul>
+
+  <h3>15.5 メモ帳が速い理由と、Windows App SDK を抱える案</h3>
+  <p>メモ帳の本文は <code>RichEditD2DPT</code> というウィンドウ クラスだった。これは Windows App SDK の
+  <code>WinUIEdit.dll</code>（DirectWrite 描画の新しい RichEdit）が提供するもので、<code>msftedit.dll</code> には無い。
+  「Windows App SDK を同梱すれば使えるのでは」と考えて実際に試した。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>試したこと</th><th>結果</th></tr>
+    <tr><td><code>WinUIEdit.dll</code> を <code>LoadLibrary</code></td><td>読み込めるが <code>RichEditD2DPT</code> は登録されない</td></tr>
+    <tr><td><code>DllGetVersion</code> を呼ぶ／エクスポート 24 個を確認</td><td>クラスを登録する関数は無い</td></tr>
+    <tr><td><code>CreateWindowEx("RichEditD2DPT", …)</code></td><td>失敗（err=1407 クラスが存在しない）</td></tr>
+    <tr><td>Windows App SDK 1.8 を参照し、XAML Islands で WinUI を初期化</td><td>初期化後も登録されない。WinUI の TextBox／RichEditBox を置いても、その名前の子ウィンドウはできない</td></tr>
+  </table>
+  </div>
+  <p>メモ帳の速さは <code>NotepadTextBox</code> というメモ帳独自の実装によるもので、公開された部品ではなかった。
+  しかも、同じ 10.4 MB のファイルを WinUI のコントロールに入れると次のとおりで、<strong>そもそも速くならない</strong>。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>方式</th><th>10.4 MB・12 万行</th></tr>
+    <tr><td>WinUI 3 TextBox</td><td>28.4 秒（時間の 92 % は WinUIEdit.dll の中）</td></tr>
+    <tr><td>WinUI 3 RichEditBox</td><td>52.4 秒</td></tr>
+    <tr><td>現行 RichEdit（比較）</td><td>29.0 秒</td></tr>
+  </table>
+  </div>
+  <p>配布物も 153.6 MB → 251.8 MB（ファイル数 265 → 585）に増え、WinUI の初期化で起動も約 190 ms 延びる。
+  <a href="#fb11">FB-11</a> で 505 ms → 221 ms にした成果を失ううえ、肝心の問題が直らないので、この案は捨てた。</p>
+
+  <h3>15.6 見方を変える：問題は「合計時間」ではなく「止まっている時間」</h3>
+  <p>メモ帳をよく観察すると、縦スクロールの範囲が「行数 × 1 行の高さ」ちょうど（120,001 × 42 = 5,040,042）で、
+  開いた直後から最後まで変わらなかった。つまりメモ帳は<strong>全行を測らずに見積もり、画面に出た行だけ測っている</strong>。
+  だから折り返しがオンでも一瞬で開ける。</p>
+  <figure>
+    <svg viewBox="0 0 720 230" role="img" aria-label="全部まとめて計算する方式と、空き時間に細切れで計算する方式の比較図" style="width:100%;height:auto;background:#fff">
+      <text x="10" y="22" font-size="15" font-weight="700" fill="#1f2328">これまで（RichEdit / Edit / WinUI）：一度に全部計算する</text>
+      <rect x="10" y="34" width="520" height="30" fill="#e57373" stroke="#b71c1c"/>
+      <text x="270" y="54" font-size="13" text-anchor="middle" fill="#fff">レイアウト計算（この間ずっと操作できない）</text>
+      <rect x="530" y="34" width="180" height="30" fill="#c8e6c9" stroke="#4caf50"/>
+      <text x="620" y="54" font-size="13" text-anchor="middle" fill="#1b5e20">操作できる</text>
+      <text x="10" y="96" font-size="13" fill="#59636e">→ 43 秒の無応答。リサイズのたびに再発</text>
+
+      <text x="10" y="140" font-size="15" font-weight="700" fill="#1f2328">v0.10.0（Scintilla）：空き時間に細切れで計算する</text>
+      <g fill="#e57373" stroke="#b71c1c">
+        <rect x="10" y="152" width="16" height="30"/><rect x="42" y="152" width="16" height="30"/>
+        <rect x="74" y="152" width="16" height="30"/><rect x="106" y="152" width="16" height="30"/>
+        <rect x="138" y="152" width="16" height="30"/><rect x="170" y="152" width="16" height="30"/>
+        <rect x="202" y="152" width="16" height="30"/><rect x="234" y="152" width="16" height="30"/>
+        <rect x="266" y="152" width="16" height="30"/><rect x="298" y="152" width="16" height="30"/>
+        <rect x="330" y="152" width="16" height="30"/><rect x="362" y="152" width="16" height="30"/>
+        <rect x="394" y="152" width="16" height="30"/><rect x="426" y="152" width="16" height="30"/>
+        <rect x="458" y="152" width="16" height="30"/><rect x="490" y="152" width="16" height="30"/>
+      </g>
+      <g fill="#c8e6c9" stroke="#4caf50">
+        <rect x="26" y="152" width="16" height="30"/><rect x="58" y="152" width="16" height="30"/>
+        <rect x="90" y="152" width="16" height="30"/><rect x="122" y="152" width="16" height="30"/>
+        <rect x="154" y="152" width="16" height="30"/><rect x="186" y="152" width="16" height="30"/>
+        <rect x="218" y="152" width="16" height="30"/><rect x="250" y="152" width="16" height="30"/>
+        <rect x="282" y="152" width="16" height="30"/><rect x="314" y="152" width="16" height="30"/>
+        <rect x="346" y="152" width="16" height="30"/><rect x="378" y="152" width="16" height="30"/>
+        <rect x="410" y="152" width="16" height="30"/><rect x="442" y="152" width="16" height="30"/>
+        <rect x="474" y="152" width="16" height="30"/><rect x="506" y="152" width="16" height="30"/>
+      </g>
+      <rect x="522" y="152" width="188" height="30" fill="#c8e6c9" stroke="#4caf50"/>
+      <text x="616" y="172" font-size="13" text-anchor="middle" fill="#1b5e20">操作できる</text>
+      <text x="10" y="214" font-size="13" fill="#59636e">→ 合計時間は同じでも、途切れずに操作できる（最長の無応答 34 ms）</text>
+    </svg>
+    <figcaption>図 15-1：同じ計算でも、まとめて行うか空き時間に分けて行うかで「固まる／固まらない」が変わる</figcaption>
+  </figure>
+  <p>そこで計測の指標を「合計時間」から<strong>「操作を受け付けない時間の最長」</strong>に変え、
+  <code>docs/tools/measure-freeze.ps1</code> で測り直した。この指標で候補を比べると次のようになる。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>本文のコントロール</th><th>読み込み中の最長の無応答</th><th>最大化</th><th>元のサイズ</th></tr>
+    <tr><td>メモ帳（参考）</td><td>0 ms</td><td>0 ms</td><td>0 ms</td></tr>
+    <tr><td><strong>Scintilla</strong></td><td><strong>0〜22 ms</strong></td><td>0 ms</td><td>0 ms</td></tr>
+    <tr><td>Win32 の Edit コントロール</td><td>3,800〜28,000 ms</td><td>同左</td><td>同左</td></tr>
+    <tr><td>RichEdit（v0.9.2）</td><td>43,456 ms</td><td>19,944 ms</td><td>20,006 ms</td></tr>
+  </table>
+  </div>
+  <p>Win32 の Edit コントロールも候補だった（折り返しオフなら 0.2 秒で開ける）が、折り返しオンだと
+  フォント次第で 3.8〜28 秒の無応答が残り、多段階の「元に戻す」も自前で作る必要があった。
+  Scintilla は折り返しの計算自体には時間がかかる（Consolas で 11〜33 秒）ものの、それを空き時間に分けて進めるので
+  <strong>一度も画面が止まらない</strong>。</p>
+
+  <h3>15.7 v0.10.0：本文を Scintilla に差し替えた</h3>
+  <p>採用前に、これまでのフィードバックで作り込んだ 2 つを実測して確かめた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>確認</th><th>RichEdit（現行）</th><th>Edit</th><th>Scintilla</th></tr>
+    <tr><td>起動：ウィンドウ表示（同一条件・中央値）</td><td>148.5 ms</td><td>119.5 ms</td><td>167 ms</td></tr>
+    <tr><td>入力→表示（<a href="#fb1">FB-1</a>。20 回の中央値）</td><td>16.9 ms</td><td>16.8 ms</td><td>16.7 ms</td></tr>
+  </table>
+  </div>
+  <p>入力レスポンスは 3 つとも計測の下限（画面の 1 フレーム＝16.7 ms）に張り付いており、差は無い。
+  起動は配布版で 229 ms → 256 ms（同じ端末のメモ帳は 202 ms）で、約 30 ms の増加に収まった。</p>
+  <p>実装で押さえた点は次のとおり。</p>
+  <ul>
+    <li><strong>改行はエディタ内部で LF に統一</strong>（<code>EolMode = Eol.Lf</code>）。読み込み時に変換し、保存時に
+      <code>TextFileService</code> がファイルの改行コードへ戻す。RichEdit のときと同じ約束なので周りのコードは変えていない。</li>
+    <li><strong>「編集済み」は Scintilla の保存ポイントで判定する</strong>（<code>SetSavePoint</code> と
+      <code>SavePointLeft</code>／<code>SavePointReached</code>）。本文が変わったかどうかで判定すると、
+      コントロールの初期化でも「変更あり」とみなされ、新規タブが最初から編集済みになってしまう。</li>
+    <li><strong>ホイールで最終行まで届くこと（<a href="#fb17">FB-17</a>）と、折り返しオフの横スクロール（<a href="#fb18">FB-18</a>）は
+      Scintilla の標準機能で満たせた</strong>ので、v0.9.2 で自作した <code>SmoothWheelScroller.cs</code> は削除した。</li>
+    <li>ズームはフォント サイズを倍率で計算する（Scintilla の <code>Zoom</code> は整数ポイントの増減なので % 表示と合わない）。</li>
+    <li>ファイルのドロップは、これまでと同じく <code>FileDropTarget</code> を <code>RegisterDragDrop</code> で登録して自前で受ける
+      （<a href="#fb16">FB-16</a> と同じ理由）。</li>
+    <li>「行へ移動」の行数は全文を走査せずエディタから受け取るようにした（大きなファイルでも一瞬で済む）。</li>
+  </ul>
+  <figure>
+    <img src="../img/step3/v100_bigfile.png" alt="10.4 MB・12 万行の日本語ファイルを開いた MemoPad v0.10.0 の画面" loading="lazy">
+    <figcaption>図 15-2：v0.10.0 で 10.4 MB・12 万行（504 万文字）の日本語ファイルを開いたところ。待たされずに操作できる</figcaption>
+  </figure>
+
+  <h3 id="fb19-check">15.8 確かめ方</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>確認</th><th>v0.9.2</th><th>v0.10.0</th></tr>
+    <tr><td>10.4 MB・12 万行を開く：最長の無応答</td><td>43,456 ms</td><td><strong>34 ms</strong></td></tr>
+    <tr><td>同：最大化／元のサイズ</td><td>19,944 / 20,006 ms</td><td><strong>0 / 0 ms</strong></td></tr>
+    <tr><td>起動：ウィンドウ表示（配布版・10 回の中央値）</td><td>229 ms</td><td>256 ms</td></tr>
+    <tr><td>ホイールで最後の空行まで（<code>docs/tools/test-scroll.ps1</code>）</td><td>OK</td><td>OK</td></tr>
+    <tr><td>折り返しオフの横スクロール（同上）</td><td>OK</td><td>OK</td></tr>
+    <tr><td>多段階の元に戻す／やり直し（<code>docs/tools/test-editing.ps1</code>）</td><td>OK</td><td>OK</td></tr>
+    <tr><td>保存の往復（CRLF／LF の維持、日本語）</td><td>OK</td><td>OK（10 項目すべて）</td></tr>
+    <tr><td>タブのクリック切り替え（<code>docs/tools/test-tabclick.ps1</code>）</td><td>OK</td><td>OK</td></tr>
+    <tr><td>インストーラの大きさ</td><td>51.2 MB</td><td>54.3 MB（+3.1 MB）</td></tr>
+  </table>
+  </div>
+  <div class="warn">
+    <strong>残った課題：</strong>本文が UI Automation に出なくなった（<code>ControlType.Pane</code>・パターンなし）。
+    RichEdit は <code>ControlType.Document</code> ＋ TextPattern／ValuePattern で読めていたので、
+    スクリーン リーダーなどの支援技術に対しては後退している。Scintilla の <code>SCI_SETACCESSIBILITY</code> は
+    GTK 版だけの機能で Windows では効かない。独自のアクセシブル オブジェクトを返す・<code>WM_GETOBJECT</code> を
+    自前で処理する・UI Automation の問い合わせに答えず MSAA へ橋渡しさせる、の 3 つを試したが出せなかった。
+    UI Automation プロバイダー（<code>IRawElementProviderSimple</code>／<code>ITextProvider</code>）の自前実装が要るため、
+    別の課題として扱う。
+  </div>
 
   <h2 id="notes">16. つまずいた点のメモ</h2>
   <ul>

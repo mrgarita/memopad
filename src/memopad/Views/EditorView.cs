@@ -5,8 +5,9 @@ using WinForms = System.Windows.Forms;
 namespace Memopad.Views;
 
 /// <summary>
-/// タブ 1 つ分の編集領域。エディタ（RichEdit）をタブごとに持つことで、元に戻す履歴とカーソル位置をタブ単位で保てる。
+/// タブ 1 つ分の編集領域。エディタをタブごとに持つことで、元に戻す履歴とカーソル位置をタブ単位で保てる。
 /// MainForm からは本文・選択範囲・編集操作をこのクラス経由で扱う（v0.8.0 で WPF の UserControl から純粋なクラスに変更）。
+/// 本文のコントロールは v0.10.0 で RichEdit から Scintilla に替えた（<see cref="PlainTextEdit"/>）。
 /// </summary>
 public sealed class EditorView
 {
@@ -21,6 +22,11 @@ public sealed class EditorView
         _edit.Dock = WinForms.DockStyle.Fill;
         _edit.TextChanged += Edit_TextChanged;
         _edit.SelectionChanged += Edit_SelectionChanged;
+        // 「編集済み」はエディタの保存ポイントで判定する（文字が変わったかどうかで見ると、
+        // コントロールの初期化でも変更とみなされ、新規タブが最初から編集済みになってしまう）
+        _edit.SavePointLeft += (_, _) => { if (!_loading) Document.IsDirty = true; };
+        _edit.SavePointReached += (_, _) => { if (!_loading) Document.IsDirty = false; };
+        _edit.HandleCreated += (_, _) => _edit.MarkClean();
         if (PerfLog.Enabled) AttachPerfProbes();
     }
 
@@ -45,7 +51,7 @@ public sealed class EditorView
     public string SelectedText
     {
         get => _edit.SelectedText;
-        set => _edit.SelectedText = value;
+        set => _edit.ReplaceSelectedText(value);
     }
 
     /// <summary>範囲を選択し、見える位置までスクロールする。</summary>
@@ -68,8 +74,8 @@ public sealed class EditorView
     public void Redo() { if (_edit.CanRedo) _edit.Redo(); }
     public void Cut() => _edit.Cut();
     public void Copy() => _edit.Copy();
-    public void Paste() { if (WinForms.Clipboard.ContainsText()) _edit.SelectedText = WinForms.Clipboard.GetText(); }
-    public void Delete() { if (_edit.SelectionLength > 0) _edit.SelectedText = ""; }
+    public void Paste() { if (WinForms.Clipboard.ContainsText()) _edit.Paste(); }
+    public void Delete() { if (_edit.SelectionLength > 0) _edit.ReplaceSelectedText(""); }
 
     /// <summary>ファイルから読み込んだ本文を設定する。元に戻す履歴は捨て、変更なしの状態にする。</summary>
     public void LoadText(string text)
@@ -77,8 +83,10 @@ public sealed class EditorView
         _loading = true;
         try
         {
-            _edit.Text = text;
+            // エディタ内部の改行は LF に統一する（保存時に TextFileService がファイルの改行コードへ戻す）
+            _edit.Text = NormalizeToLf(text);
             _edit.ClearUndo();
+            _edit.MarkClean();
             _edit.Select(0, 0);
         }
         finally
@@ -90,60 +98,43 @@ public sealed class EditorView
         CaretChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>CRLF・CR 混在のテキストを LF にそろえる。</summary>
+    private static string NormalizeToLf(string text)
+    {
+        if (text.IndexOf('\r') < 0) return text;
+        return text.Replace("\r\n", "\n").Replace('\r', '\n');
+    }
+
     /// <summary>フォント・色・折り返し・ズーム・スクロールバーのテーマを反映する。</summary>
     public void ApplyAppearance(AppSettings settings, int zoomPercent)
     {
-        var style = System.Drawing.FontStyle.Regular;
-        if (settings.FontBold) style |= System.Drawing.FontStyle.Bold;
-        if (settings.FontItalic) style |= System.Drawing.FontStyle.Italic;
-        var current = _edit.Font;
-        if (current.Name != settings.FontFamily || Math.Abs(current.SizeInPoints - settings.FontSize) > 0.01 || current.Style != style)
-        {
-            _edit.Font = new System.Drawing.Font(settings.FontFamily, (float)Math.Max(1, settings.FontSize), style, System.Drawing.GraphicsUnit.Point);
-        }
-        _edit.ZoomFactor = Math.Clamp(zoomPercent / 100f, 1f / 64, 64f);
+        var back = ColorText.TryParse(settings.BackgroundColor) ?? ThemeService.EditorBackground(settings.Theme);
+        var fore = ColorText.TryParse(settings.ForegroundColor) ?? ThemeService.EditorForeground(settings.Theme);
+        _edit.ApplyTextAppearance(settings.FontFamily, settings.FontSize, settings.FontBold, settings.FontItalic,
+                                  back, fore, zoomPercent);
         _edit.WrapText = settings.WordWrap;
-
-        _edit.BackColor = ColorText.TryParse(settings.BackgroundColor) ?? ThemeService.EditorBackground(settings.Theme);
-        _edit.ForeColor = ColorText.TryParse(settings.ForegroundColor) ?? ThemeService.EditorForeground(settings.Theme);
         _edit.DarkScrollBars = ThemeService.IsDark(settings.Theme);
     }
 
     /// <summary>カーソル位置を「論理行, 列」で返す（折り返しの見た目の行ではなく、改行で数えた行）。</summary>
-    public (int Line, int Column) GetCaretPosition()
-    {
-        var text = _edit.Text;
-        var index = Math.Min(_edit.SelectionStart, text.Length);
-        var head = text.AsSpan(0, index);
-        var line = head.Count('\n') + 1;
-        var lineStart = head.LastIndexOf('\n') + 1;
-        return (line, index - lineStart + 1);
-    }
+    public (int Line, int Column) GetCaretPosition() => _edit.GetCaretPosition();
 
     /// <summary>文字数（ステータスバーの「N 文字」）。メモ帳に合わせ、改行は 1 つにつき 1 文字と数える。</summary>
     public int GetCharacterCount() => _edit.TextLength;
 
+    /// <summary>論理行の数（「行へ移動」ダイアログの上限に使う）。</summary>
+    public int GetLineCount() => _edit.Lines.Count;
+
     /// <summary>指定した論理行の先頭へカーソルを移動する。</summary>
-    public void GoToLine(int line)
-    {
-        var text = _edit.Text;
-        var current = 1;
-        var index = 0;
-        while (current < line && index < text.Length)
-        {
-            var next = text.IndexOf('\n', index);
-            if (next < 0) break;
-            index = next + 1;
-            current++;
-        }
-        Select(index, 0);
-        _edit.Focus();
-    }
+    public void GoToLine(int line) => _edit.GoToLine(line);
+
+    /// <summary>保存が済んだ時点の内容を「編集なし」として記録する。</summary>
+    public void MarkClean() => _edit.MarkClean();
 
     private void Edit_SelectionChanged(object? sender, EventArgs e)
     {
         if (_loading || _statusPending) return;
-        // 連続入力中に毎回全文を読まないよう、入力が途切れたタイミングで 1 回だけ通知する
+        // 連続入力中に毎回更新しないよう、入力が途切れたタイミングで 1 回だけ通知する
         _statusPending = true;
         Later(() =>
         {
@@ -155,7 +146,6 @@ public sealed class EditorView
     private void Edit_TextChanged(object? sender, EventArgs e)
     {
         if (_loading) return;
-        Document.IsDirty = true;
         if (_contentPending) return;
         _contentPending = true;
         Later(() =>
