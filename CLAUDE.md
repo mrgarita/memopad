@@ -5,8 +5,12 @@
 
 ## リポジトリの状態
 
-step3（フィードバック対応）を進行中。7 回目までのフィードバックを v0.2.0〜v0.9.1 で対応済み
-（一覧は `docs/site/step3/index.html` 1 節）。「正」となるのは
+step3（フィードバック対応）を進行中。8 回目までのフィードバックを v0.2.0〜v0.9.2 で対応済み
+（一覧は `docs/site/step3/index.html` 1 節）。**9 回目（2026-09-12）の FB-19「大きなファイルを開くと
+固まり、その後の操作でも固まる」に対応中。ユーザーの判断で GitHub Releases のインストーラは
+v0.6.0〜v0.9.1 をすべて削除し、配布を一時停止している**（サイトとソース コードの公開は継続。
+紹介ページ・README・備忘録にお知らせを掲載済み。ローカルの `installer/output/` に全バージョンの
+インストーラが残っているので、修正後に再アップロードできる）。「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#。メイン ウィンドウは Windows Forms、ダイアログは WPF）、
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
@@ -98,7 +102,11 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
 - **本文のエディタ**：Win32 の RichEdit（Windows Forms の `RichTextBox` を継承した
   `Views/PlainTextEdit.cs`）。**ファイルのドロップは `Views/FileDropTarget.cs` を
   `RegisterDragDrop` で登録して自前で受ける**（RichEdit に処理させると、開いた直後の文書が
-  「編集済み」になる。v0.9.1 で修正）。WPF の TextBox は入力から表示まで
+  「編集済み」になる。v0.9.1 で修正）。**マウス ホイールのスクロールは `Views/SmoothWheelScroller.cs` が
+  自前で行う**（RichEdit 標準のホイール処理は、末尾が改行のとき最後の空行の 1 行手前で止まる。v0.9.2 で修正。
+  上限はスクロールバーの一番下と同じ `nMax − nPage`）。**折り返しは `EM_SETTARGETDEVICE` で切り替え、
+  Windows Forms の `WordWrap` は false に固定する**（true だと横スクロールバーと横送りのスタイルが付かない。
+  `WordWrap` を切り替えるとハンドルが作り直されて元に戻す履歴が消える。v0.9.2 で修正）。WPF の TextBox は入力から表示まで
   約 50 ms かかりメモ帳（約 19 ms）より遅かったため v0.2.0 で置き換えた（経緯は
   `docs/site/step3/index.html` 2 節）。v0.8.0 でホストが Windows Forms になったため、
   ショートカットは `MainForm.ProcessCmdKey` とメニューの `ShortcutKeys` がそのまま効く

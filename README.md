@@ -6,7 +6,14 @@ Windows 標準の「メモ帳」の使い勝手はそのままに、**背景色�
 
 - 紹介ページ：https://mrgarita.github.io/memopad/
 - 制作の備忘録（機能の洗い出し・実装・フィードバック対応の記録）：https://mrgarita.github.io/memopad/site/
-- ダウンロード：[Releases](https://github.com/mrgarita/memopad/releases/latest) の `MemoPad-setup-<バージョン>.exe`
+
+> **【お知らせ】インストーラの配布を一時停止しています（2026-09-12）**
+>
+> 大きなテキスト ファイル（10 MB／12 万行程度の日本語ファイル）を開くと読み込みに非常に長い時間がかかり、
+> その後もウィンドウ操作やタブ追加のたびに画面が固まる不具合が見つかりました。エディタとして満たすべき
+> 動作に達していないと判断し、GitHub Releases に置いていたインストーラ（v0.6.0〜v0.9.1）をすべて
+> 取り下げています。紹介ページ・備忘録・ソース コードの公開は続けます。修正できしだい配布を再開します。
+> 経過は[備忘録の該当箇所](https://mrgarita.github.io/memopad/site/step3/index.html#fb19)に記録します。
 
 ## 特長
 

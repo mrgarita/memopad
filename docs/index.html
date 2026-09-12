@@ -17,6 +17,8 @@
   .btn.primary { background: var(--accent); color: #fff; }
   .btn.secondary { background: #fff; color: var(--accent); }
   .btn:hover { opacity: 0.9; text-decoration: none; }
+  .btn.paused { background: #f2f2f2; color: #666; border-color: #c9c9c9; cursor: default; }
+  .btn.paused:hover { opacity: 1; }
   .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 12px 0; }
   .feature { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; background: #fff; }
   .feature h3 { margin: 0 0 6px; font-size: 1.05rem; }
@@ -51,11 +53,20 @@
       <h1>MemoPad</h1>
       <p class="tagline">Windows の「メモ帳」の使い勝手はそのままに、<strong>背景色・文字色・フォント</strong>を自由に変えられるテキスト エディタ。</p>
       <div class="actions">
-        <a class="btn primary" href="https://github.com/mrgarita/memopad/releases/latest">最新版をダウンロード</a>
+        <a class="btn paused" href="#download">ダウンロードは一時停止中</a>
         <a class="btn secondary" href="./site/index.html">制作の備忘録を読む</a>
       </div>
       <small class="muted">Windows 10 / 11（64 ビット）。インストーラ形式（.NET ランタイム同梱、追加のインストール不要）。</small>
     </div>
+  </div>
+
+  <div class="warn">
+    <strong>【お知らせ】インストーラの配布を一時停止しています（2026-09-12）</strong><br>
+    大きなテキスト ファイル（10 MB／12 万行程度の日本語ファイル）を開くと、読み込みに非常に長い時間がかかり、
+    その後もウィンドウの操作やタブの追加のたびに画面が固まる不具合が見つかりました。エディタとして満たすべき動作に
+    達していないと判断し、GitHub Releases に置いていたインストーラ（v0.6.0〜v0.9.1）をすべて取り下げています。
+    このページと<a href="./site/index.html">制作の備忘録</a>、ソース コードの公開は続けます。
+    修正できしだい、あらためて配布を再開します。経過は<a href="./site/step3/index.html#fb19">備忘録の該当箇所</a>に記録していきます。
   </div>
 
   <h2 id="features">特長</h2>
@@ -98,8 +109,15 @@
   </div>
 
   <h2 id="download">ダウンロードとインストール</h2>
+  <div class="warn">
+    <strong>現在、インストーラは配布していません。</strong><br>
+    上のお知らせのとおり、大きなファイルを開くと固まる不具合のため、GitHub Releases のインストーラ
+    （<code>MemoPad-setup-&lt;バージョン&gt;.exe</code>）はすべて取り下げました。すでにインストールしてお使いの方は、
+    大きなファイル（数 MB 以上のテキスト）を開かないようご注意ください。修正版ができしだい、ここで再開をお知らせします。
+  </div>
+  <p>配布を再開したときの手順は次のとおりです（参考）。</p>
   <ol>
-    <li><a href="https://github.com/mrgarita/memopad/releases/latest">Releases</a> から <code>MemoPad-setup-&lt;バージョン&gt;.exe</code> をダウンロードします。</li>
+    <li><a href="https://github.com/mrgarita/memopad/releases">Releases</a> から <code>MemoPad-setup-&lt;バージョン&gt;.exe</code> をダウンロードします。</li>
     <li>実行してインストールします（管理者権限なしでユーザー単位にインストールできます）。「テキスト文書を MemoPad で開く」の関連付けはインストール時に選べます。</li>
     <li>スタート メニューの MemoPad から起動します。設定は <code>%APPDATA%\MemoPad\settings.json</code> に保存されます。</li>
   </ol>

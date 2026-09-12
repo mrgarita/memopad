@@ -37,6 +37,9 @@
       <li><a href="#fb13">FB-13：タイトル行でウィンドウを動かせない（v0.9.0）</a></li>
       <li><a href="#fb15">FB-14・FB-15：メニューの見た目（v0.9.0／v0.9.1）</a></li>
       <li><a href="#fb16">FB-16：ドラッグ＆ドロップで開くと編集済みになる（v0.9.1）</a></li>
+      <li><a href="#fb17">FB-17：ホイールで最後の行まで届かない（v0.9.2）</a></li>
+      <li><a href="#fb18">FB-18：折り返しなしで横にスクロールできない（v0.9.2）</a></li>
+      <li><a href="#fb19">FB-19：大きなファイルで固まる／配布の一時停止（対応中）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -105,6 +108,26 @@
   </table>
   </div>
   <p>v0.9.0 では字下げを浅くしすぎて、文字がポップアップの左端に寄っていた。メモ帳と同じ控えめな字下げに直した（<a href="#fb15">11 節</a>）。FB-16 は RichEdit が自分でもドロップを処理してしまうのが原因で、ドロップ先を自前のものに差し替えて直した（<a href="#fb16">12 節</a>）。</p>
+
+  <p>8 回目のフィードバック（2026-09-11、v0.9.1 の確認時）。メニューの字下げと、ドラッグ＆ドロップで開いた直後の状態は OK との確認をもらった。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-17</td><td>不具合</td><td>長いファイルをマウス ホイールでスクロールすると、最後の改行まで届かない（メモ帳では届く）。些細なことだが気になる</td><td>v0.9.2</td><td><span class="tag must">対応済み</span></td></tr>
+    <tr><td>FB-18</td><td>不具合</td><td>（FB-17 の確認中に発見）「右端で折り返す」をオフにしても横スクロールバーが出ず、長い行の右端から先が見えない</td><td>v0.9.2</td><td><span class="tag must">対応済み</span></td></tr>
+  </table>
+  </div>
+  <p>FB-17 は Windows 標準の RichEdit のホイール処理の癖が原因で、ホイールだけ MemoPad が自前で送るようにした（<a href="#fb17">13 節</a>）。FB-18 は確認の途中で見つけた v0.2.0 からの不具合で、了承をもらって同じ版で直した（<a href="#fb18">14 節</a>）。「起動時間が増えないか」という確認の依頼には、修正前後の起動時間と大きなファイルの読み込み時間を実測して、変わらないことを示した（<a href="#fb17-check">13.4</a>）。</p>
+
+  <p>9 回目のフィードバック（2026-09-12、v0.9.2 を試用して）。FB-17・FB-18 の修正自体は問題なかったが、大きなファイルで固まる現象がそれ以上に重い問題として上がった。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-19</td><td>不具合</td><td>10 MB／12 万行の日本語ファイルを開くと、「右端で折り返す」のオン・オフに関わらず非常に長い時間固まる（一応は開く）。さらに一度固まったあとは、新規タブ・ウィンドウ移動・最大化など操作の種別に関わらずそのつど固まるようになる</td><td>調査中</td><td><span class="tag maybe">対応中</span></td></tr>
+    <tr><td>FB-20</td><td>対処</td><td>固まる現象を抱えたままの版はエディタとして機能を満たしていないため、公開中のインストーラの配布を一旦停止する（サイトの公開は継続）</td><td>—</td><td><span class="tag must">対応済み</span></td></tr>
+  </table>
+  </div>
+  <p>FB-19 は 8 回目のフィードバックの確認中にこちらでも把握していたもので、そのときは「折り返しオンで約 44 秒、オフなら約 3 秒」と報告していた。実機ではオフでも長時間かかり、報告した数字が実際と違っていた。対処として先に配布を止め、そのうえで原因調査と修正に入る（<a href="#fb19">15 節</a>）。</p>
 
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
@@ -800,7 +823,202 @@
   </table>
   </div>
 
-  <h2 id="notes">13. つまずいた点のメモ</h2>
+  <h2 id="fb17">13. FB-17：ホイールで最後の行まで届かない（v0.9.2）</h2>
+  <h3>13.1 現象</h3>
+  <p>「長いファイルをマウス ホイールでスクロールしたとき、最後の改行までスクロールされなかった。メモ帳では問題なく最後の改行まで届く。些細なことだが気になる」というフィードバック（再現用のファイルも受け取った）。
+  ファイルの末尾が改行で終わっていると、その改行のあとに空の行が 1 行あり、カーソルもそこへ置ける。メモ帳はホイールでこの空行が見える位置まで送れるが、
+  MemoPad は最後の文字の行が画面の下端に来たところで止まり、それ以上回しても動かなかった。</p>
+  <div class="grid2">
+    <figure>
+      <img src="../img/step3/v092_wheel_before.png" alt="ホイールで送り切っても 45 行目が下端に来たところで止まっている" loading="lazy">
+      <figcaption>図 13-1：v0.9.1。ホイールを回し続けても 45 行目（最後の行）が下端で止まり、その下の空行は画面の外のまま</figcaption>
+    </figure>
+    <figure>
+      <img src="../img/step3/v092_wheel_after.png" alt="45 行目の下に空行が見えるところまで送れている" loading="lazy">
+      <figcaption>図 13-2：v0.9.2。45 行目の下の空行まで送れる（メモ帳と同じ）</figcaption>
+    </figure>
+  </div>
+
+  <h3>13.2 原因：RichEdit のホイール処理は末尾の空行を数えない</h3>
+  <p>ホイールで一番下まで送ったときの位置を、スクロールバーの ▼（1 行ずつ送る）や「一番下へ」（<code>SB_BOTTOM</code>）と比べた。
+  値はスクロール位置（px。表示スケール 150 %、1 行 26 px）。ファイルの末尾の形を 3 通りに変えると、<strong>ホイールだけが、最後の改行のあとの空行 1 行分手前で止まる</strong>ことが分かった。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>ファイルの末尾</th><th>ホイール（40 ノッチ）</th><th>▼ で 1 行ずつ</th><th>一番下へ（SB_BOTTOM）</th></tr>
+    <tr><td>改行 1 つ（受け取ったファイル）</td><td><strong>901</strong>（26 px 手前）</td><td>927</td><td>927</td></tr>
+    <tr><td>改行なし</td><td>901</td><td>901</td><td>901</td></tr>
+    <tr><td>改行 2 つ</td><td><strong>927</strong>（26 px 手前）</td><td>953</td><td>953</td></tr>
+  </table>
+  </div>
+  <p>MemoPad の本文は Windows 標準の RichEdit（<code>msftedit.dll</code>、この端末では 10.0.26100）で、ホイールの処理も RichEdit 自身が行っていた
+  （1 ノッチで 3 行を約 0.3 秒かけて動かす、なめらかスクロール）。メモ帳の本文も RichEdit 系の部品だが、読み込んでいるモジュールを調べると、
+  <strong>アプリに同梱した新しい RichEdit（<code>riched20.dll</code> 16.0、Office 系）</strong>だった。こちらではこの癖が直っている。
+  Office の DLL は再配布できないので、MemoPad の側で対処する。</p>
+  <figure>
+    <svg viewBox="0 0 760 270" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Yu Gothic UI, sans-serif" font-size="12" role="img" aria-label="ホイールで送り切ったときに止まる位置の違い">
+      <title>ホイールで送り切ったときに止まる位置（v0.9.1 と v0.9.2）</title>
+      <text x="20" y="24" font-weight="bold" fill="#333">v0.9.1（RichEdit 自身のホイール処理）</text>
+      <rect x="40" y="44" width="300" height="30" fill="#fff" stroke="#ccc" /><text x="54" y="64" fill="#333">42 行目 …</text>
+      <rect x="40" y="74" width="300" height="30" fill="#fff" stroke="#ccc" /><text x="54" y="94" fill="#333">43 行目 …</text>
+      <rect x="40" y="104" width="300" height="30" fill="#fff" stroke="#ccc" /><text x="54" y="124" fill="#333">44 行目 …</text>
+      <rect x="40" y="134" width="300" height="30" fill="#fff" stroke="#ccc" /><text x="54" y="154" fill="#333">45 行目（最後の文字の行）</text>
+      <rect x="40" y="164" width="300" height="30" fill="#f2f2f2" stroke="#aaa" stroke-dasharray="4 3" /><text x="54" y="184" fill="#999">（末尾の改行のあとの空行）</text>
+      <rect x="34" y="40" width="312" height="128" fill="none" stroke="#c0392b" stroke-width="3" rx="4" />
+      <text x="352" y="104" fill="#c0392b">画面</text>
+      <text x="352" y="188" fill="#999">画面の外</text>
+      <text x="34" y="220" fill="#c0392b">→ 最後の文字の行が下端に来たところで止まる</text>
+      <text x="34" y="240" fill="#c0392b">（▼ や PageDown なら空行まで届く）</text>
+
+      <text x="410" y="24" font-weight="bold" fill="#333">v0.9.2（MemoPad が自前で送る）</text>
+      <rect x="430" y="44" width="300" height="30" fill="#f2f2f2" stroke="#ccc" /><text x="444" y="64" fill="#999">42 行目 …</text>
+      <rect x="430" y="74" width="300" height="30" fill="#fff" stroke="#ccc" /><text x="444" y="94" fill="#333">43 行目 …</text>
+      <rect x="430" y="104" width="300" height="30" fill="#fff" stroke="#ccc" /><text x="444" y="124" fill="#333">44 行目 …</text>
+      <rect x="430" y="134" width="300" height="30" fill="#fff" stroke="#ccc" /><text x="444" y="154" fill="#333">45 行目（最後の文字の行）</text>
+      <rect x="430" y="164" width="300" height="30" fill="#fff" stroke="#3b7dd8" stroke-dasharray="4 3" /><text x="444" y="184" fill="#3b7dd8">（末尾の改行のあとの空行）</text>
+      <rect x="424" y="70" width="312" height="128" fill="none" stroke="#3b7dd8" stroke-width="3" rx="4" />
+      <text x="742" y="134" fill="#3b7dd8">画面</text>
+      <text x="424" y="220" fill="#3b7dd8">→ スクロールバーで一番下へ送ったときと</text>
+      <text x="424" y="240" fill="#3b7dd8">　同じ位置（nMax − nPage）まで届く</text>
+    </svg>
+    <figcaption>図 13-3：RichEdit 自身のホイール処理は、末尾の空行を 1 行分数えずに止まる。v0.9.2 ではスクロールバーと同じ上限まで送る</figcaption>
+  </figure>
+
+  <h3>13.3 直し方：ホイールだけ MemoPad が自前でなめらかに送る</h3>
+  <p><code>Views/SmoothWheelScroller.cs</code> を追加し、<code>PlainTextEdit</code> が <code>WM_MOUSEWHEEL</code>（Ctrl・Shift を押していないもの）を
+  RichEdit に渡さず、このクラスに回すようにした。Ctrl＋ホイールのズームと Shift＋ホイールは今までどおり。</p>
+  <ul>
+    <li><strong>送る量：</strong>1 ノッチで「マウスの設定の行数」（既定 3 行）×画面の一番上の行の高さ。行の高さは RichEdit から実測するので、ズームの倍率もそのまま反映される。マウスの設定が「1 画面ずつ」なら 1 画面分。タッチパッドの細かい回転（120 未満）はその割合だけ送り、端数も次へ持ち越す。</li>
+    <li><strong>止める位置：</strong>スクロール位置（<code>EM_SETSCROLLPOS</code>）を直接動かし、上限はスクロールバーで一番下へ送ったときと同じ <code>nMax − nPage</code> に抑える。<code>EM_SETSCROLLPOS</code> は末尾を越えた位置も受け付けてしまうので、上限は自分で決める。12 万行・数百万 px の文書でも位置を 32 bit のまま正しく扱えることを、検証用の小さなアプリで先に確かめた。</li>
+    <li><strong>動き方：</strong>残りの距離に比例して進め（動き始めが速く、止まり際がゆるやか）、止まり際だけ最低の速さを設けて、1 ノッチを約 0.25 秒で動かし終える。途中でキー操作やスクロールバーなど、ほかの操作でスクロールされたら、そちらを優先してその場で止める。</li>
+    <li><strong>起動への影響：</strong>タイマーなどの部品は、最初にホイールを回したときに初めて作る。起動時の処理には何も足していない。</li>
+  </ul>
+  <div class="table-wrap">
+  <table>
+    <tr><th>項目</th><th>v0.9.1（RichEdit 自身）</th><th>v0.9.2（SmoothWheelScroller）</th></tr>
+    <tr><td>1 ノッチの量</td><td>3 行（78 px）</td><td>3 行（78 px）</td></tr>
+    <tr><td>動き始め</td><td>約 50 ms 後</td><td>約 15〜30 ms 後</td></tr>
+    <tr><td>動き終わり</td><td>約 0.32 秒（等速、約 30 コマ／秒）</td><td>約 0.25 秒（止まり際ゆるやか、約 60 コマ／秒）</td></tr>
+    <tr><td>末尾が改行のファイル</td><td>空行の 1 行手前で止まる</td><td><strong>空行まで届く</strong></td></tr>
+    <tr><td>上へ送り切ったとき</td><td>先頭から 1〜2 px ずれて止まることがある</td><td>先頭（0）で止まる</td></tr>
+    <tr><td>送っている途中で Ctrl+Home</td><td>先頭へ戻ったあとも残りの動きが続き、113 px の位置で止まる</td><td>先頭で止まる</td></tr>
+    <tr><td>タッチパッド相当（delta −1 を 120 回）</td><td>—</td><td>78 px（1 ノッチと同じ）</td></tr>
+  </table>
+  </div>
+
+  <h3 id="fb17-check">13.4 確かめ方</h3>
+  <p>実際のマウス入力（<code>mouse_event</code>）でホイールを回し、別プロセスから <code>GetScrollInfo</code> でスクロール位置を読んで確かめた。
+  表の値は「ホイールで送り切った位置 ／ スクロールバーの一番下の位置」。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>確認</th><th>v0.9.1</th><th>v0.9.2</th></tr>
+    <tr><td>受け取ったファイル（末尾に改行 1 つ）</td><td>901 ／ 927</td><td><strong>927 ／ 927</strong></td></tr>
+    <tr><td>末尾に改行なし／改行 2 つ</td><td>901 ／ 901、927 ／ 953</td><td>901 ／ 901、953 ／ 953</td></tr>
+    <tr><td>折り返しなし・長い行のファイル（横スクロールバーは v0.9.2 だけ出る、<a href="#fb18">14 節</a>）</td><td>1,525 ／ 1,551</td><td>1,577 ／ 1,577</td></tr>
+    <tr><td>12 万行：一番下から上へ 3、下へ 10 ノッチ</td><td>—</td><td>3,119,471 ／ 3,119,471</td></tr>
+    <tr><td>12 万行：先頭から 40 ノッチ</td><td>—</td><td>3,120 px（40 × 78 px どおり）</td></tr>
+    <tr><td>ズームを 1 段拡大してから 1 ノッチ</td><td>84 px</td><td>84 px</td></tr>
+    <tr><td>Ctrl＋ホイール（ズーム）、Shift＋ホイール</td><td colspan="2">修正前後で同じ動き</td></tr>
+  </table>
+  </div>
+  <p>「今回の修正で起動時間が増えないか」という確認の依頼があったので、修正前（v0.9.1）と修正後を配布版と同じ条件（self-contained・ReadyToRun）で発行し、
+  交互に計測した。どちらも差は計測のばらつきの範囲で、増えていない。大きなファイルの読み込みも変わらない。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>計測</th><th>v0.9.1</th><th>v0.9.2</th></tr>
+    <tr><td>起動：ウィンドウ表示（10 回の中央値、2 巡）</td><td>226.5 ms、223.5 ms</td><td>223 ms、219.5 ms</td></tr>
+    <tr><td>起動：描画完了（同上）</td><td>348 ms、333.5 ms</td><td>335.5 ms、336 ms</td></tr>
+    <tr><td>英数字 11.8 MB・12 万行を開き、UI が応答できるまで（5 回の中央値）</td><td>2,011 ms</td><td>2,017 ms</td></tr>
+  </table>
+  </div>
+  <div class="warn">
+    <strong>別に見つかった課題：</strong>日本語を含む 10.4 MB・12 万行のファイルを「右端で折り返す」オンで開くと、UI が約 44 秒応答しなくなる。
+    v0.9.1 でも同じで、今回の修正とは関係がない。このときは「折り返しなしなら約 3 秒」と報告したが、
+    実機で試すと折り返しのオン・オフに関わらず長時間かかることが分かり、<a href="#fb19">FB-19</a> として扱うことになった。
+  </div>
+
+  <h2 id="fb18">14. FB-18：折り返しなしで横にスクロールできない（v0.9.2）</h2>
+  <h3>14.1 現象</h3>
+  <p>FB-17 を確かめる途中で見つけた。「右端で折り返す」をオフにすると、長い行は右端で切れたまま横スクロールバーが出ない。
+  <kbd>End</kbd> でカーソルを行末（306 列目）へ動かしても表示が横に動かず、右端から先の文字を見る手段がなかった。
+  メモ帳は折り返しなしのとき横スクロールバーを出し、カーソルに合わせて横にも送る。本文を RichEdit に置き換えた v0.2.0 からの不具合で、
+  了承をもらって FB-18 として v0.9.2 で直した。</p>
+  <figure>
+    <img src="../img/step3/v092_hscroll_before.png" alt="カーソルは 306 列目にあるが、表示は行頭のままで横スクロールバーもない" loading="lazy">
+    <figcaption>図 14-1：v0.9.1。ステータスバーは「列 306」なのに表示は行頭のまま。横スクロールバーも出ない</figcaption>
+  </figure>
+  <figure>
+    <img src="../img/step3/v092_hscroll_after.png" alt="カーソルの位置まで横に送られ、下に横スクロールバーが出ている" loading="lazy">
+    <figcaption>図 14-2：v0.9.2。カーソルの位置まで横に送られ、下に横スクロールバー（右寄りのつまみ）が出る</figcaption>
+  </figure>
+
+  <h3>14.2 原因：Windows Forms の WordWrap が true のままだった</h3>
+  <p>Windows Forms の <code>RichTextBox</code> は、自分の <code>WordWrap</code> プロパティが true（既定）だと、ウィンドウを作るときに
+  横スクロールバー（<code>WS_HSCROLL</code>）と、カーソルに合わせて横に送る指定（<code>ES_AUTOHSCROLL</code>）を付けない。
+  MemoPad は折り返しを切り替えても元に戻す履歴が消えないよう、<code>WordWrap</code> を使わず RichEdit に直接 <code>EM_SETTARGETDEVICE</code> を送って切り替えている
+  （<code>WordWrap</code> を変えるとウィンドウが作り直され、履歴が消える）。そのため <code>WordWrap</code> は既定の true のまま残り、
+  折り返しを外しても横に送る手段がなかった。本文のウィンドウのスタイルを調べると、実際に 2 つとも付いていなかった。</p>
+
+  <h3>14.3 直し方</h3>
+  <ul>
+    <li><code>PlainTextEdit</code> のコンストラクター（ウィンドウを作る前）で <code>WordWrap = false</code> にして、2 つのスタイルが付くようにした。折り返しの切り替えはこれまでどおり <code>EM_SETTARGETDEVICE</code> で行うので、元に戻す履歴は残る。</li>
+    <li>ところが RichEdit は、「折り返しなし→あり」に切り替えても横スクロールバーを自分では片付けず、表示の高さの計算がスクロールバー 1 本分（26 px）ずれたままになった。折り返しを切り替えるときに <code>EM_SHOWSCROLLBAR</code> で横スクロールバーを明示的に隠す（折り返さないときは使える状態に戻す）ようにした。折り返さないときも、長い行が無ければ RichEdit が自動で隠す。</li>
+  </ul>
+
+  <h3>14.4 確かめ方</h3>
+  <p>横スクロールバーの有無は、本文の欄の高さ（出ていれば 1 本分低くなる）と縦のスクロール範囲で確かめた（150 %、単位は px）。
+  長い行は 300 文字 × 80 行、短い行は 1 行 15 文字前後 × 60 行の検証用ファイル。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>状態</th><th>横スクロールバー</th><th>本文の欄の高さ</th><th>縦の一番下</th></tr>
+    <tr><td>長い行・折り返しありで起動</td><td>なし</td><td>561</td><td>9,871</td></tr>
+    <tr><td>→ 表示メニューで折り返しなしへ</td><td>あり</td><td>535</td><td>1,577</td></tr>
+    <tr><td>→ 折り返しありへ戻す</td><td>なし</td><td>561</td><td>9,871（<code>EM_SHOWSCROLLBAR</code> を入れる前は 9,897 にずれていた）</td></tr>
+    <tr><td>長い行・折り返しなしで起動</td><td>あり</td><td>535</td><td>1,577</td></tr>
+    <tr><td>短い行だけ・折り返しなし／あり</td><td>なし</td><td>561</td><td>1,031</td></tr>
+  </table>
+  </div>
+  <ul>
+    <li><kbd>End</kbd> で 1 行目の末尾へ動かすと、横の位置が 0 → 2,705 に変わり、カーソルが見える位置まで送られる（v0.9.1 は 0 のまま）。</li>
+    <li>その状態でホイールを回しても、横の位置（2,705）は保たれる。</li>
+    <li>文字を入力してから折り返しを 2 回切り替え、<kbd>Ctrl</kbd>+<kbd>Z</kbd> で入力を取り消せる（ウィンドウが作り直されず、元に戻す履歴が残っている）。</li>
+    <li>縦・横のスクロールバーが両方出たときの右下の角は、ライト テーマで薄い灰色、ダーク テーマで少し明るい濃い灰色になり、浮いて見えない。</li>
+  </ul>
+
+  <h2 id="fb19">15. FB-19：大きなファイルで固まる／配布の一時停止（対応中）</h2>
+  <h3>15.1 現象</h3>
+  <p>v0.9.2 を実際に使ってもらったところ、次の報告を受けた（2026-09-12）。</p>
+  <ul>
+    <li>「右端で折り返す」<strong>オンでもオフでも</strong>、10.4 MB・12 万行の日本語ファイル（<code>big-ja-120k.txt</code>）を開くと長時間固まる（一応は開く）。
+      <a href="#fb17-check">13.4</a> で「折り返しなしなら約 3 秒」と報告した数字は、実機での体感と違っていた。</li>
+    <li>一度固まったあとは、<strong>操作の種別に関わらず</strong>そのつど固まるようになる。＋ボタンで新規タブ、ウィンドウの移動、最大化、いずれでも起きる。</li>
+  </ul>
+  <p>2 つ目の「一度固まるとその後も固まる」は、最初の読み込みだけの問題ではないことを示している。
+  レイアウトの計算結果が持ち越されず、画面を作り直すたびに大きな文書の計算をやり直している可能性が高い。</p>
+
+  <h3>15.2 対処：先に配布を止める</h3>
+  <p>ユーザーの判断は「固まるという現象を抱えた v0.9.2（以前のバージョンも含め）は、エディタとしての機能を満たしていない」というもの。
+  これを受けて、原因調査より先に配布の停止を行った。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>対象</th><th>対処</th></tr>
+    <tr><td>GitHub Releases のインストーラ（v0.6.0〜v0.9.1 の <code>MemoPad-setup-*.exe</code>）</td><td>すべて削除。リリース ページ自体と自動生成のソース zip は残し、本文に停止の理由を明記</td></tr>
+    <tr><td><a href="../../index.html">紹介ページ</a>・README</td><td>ダウンロードのボタンと手順をお知らせに差し替え</td></tr>
+    <tr><td>備忘録サイト（このページを含む）</td><td>公開を継続。経過はこの節に追記していく</td></tr>
+    <tr><td>ソース コード</td><td>公開を継続</td></tr>
+  </table>
+  </div>
+  <p>修正が済んで同じファイルが実用的な時間で開けることを確かめたら、あらためて配布を再開する。</p>
+
+  <h3>15.3 調査の方針</h3>
+  <p>これから確かめることの見込みは次のとおり（結果はこの節に追記する）。</p>
+  <ul>
+    <li>実機と同じ手順（アプリからファイルを開く）で、折り返しオン・オフそれぞれの所要時間を測り直す。前回の計測が何を測っていたのかを確かめる。</li>
+    <li>「固まったあと、別の操作でも固まる」のがどこで起きているかを突き止める。ウィンドウを作り直すたび、または描画のたびに全文のレイアウトを計算し直していないか。</li>
+    <li>RichEdit に大きな文書を入れる方法（<code>EM_STREAMIN</code>／テキストの直接設定）や、レイアウト計算を止めておく指定（<code>WM_SETREDRAW</code>、<code>EM_SETEVENTMASK</code>）の効果を比べる。</li>
+    <li>メモ帳が同じファイルをどれくらいで開くかを測り、目標値にする。</li>
+  </ul>
+
+  <h2 id="notes">16. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
@@ -819,6 +1037,11 @@
     <li><strong>ToolStripMenuItem の <code>Padding</code> は左右が効かない。</strong>メニュー項目の字下げを変えようと 4 → 13 → 40 px と変えても文字の位置は 1 px も動かなかった（効くのは上下＝項目の高さだけ）。左右はポップアップ側のアイコン欄（<code>ShowImageMargin</code>）と内部レイアウトが決めている。値を変えて撮影・実測する確認を挟まないと、効かない設定をそれらしいコメント付きで残してしまう。</li>
     <li><strong>RichEdit はドロップを自分でも処理する。</strong>Windows Forms の <code>DragDrop</code> イベントでファイルを開いても、そのあとに RichEdit 側の処理が走って変更通知が上がる。貼り付けられる中身が無くても通知だけは来るので、開いたばかりの文書が「編集済み」になった。ドロップ先（<code>IDropTarget</code>）ごと自前のものに差し替えるのが確実。</li>
     <li><strong>ドラッグ＆ドロップの不具合は本物のドラッグでないと再現しない。</strong>自前のウィンドウから <code>DoDragDrop</code> で送ったドロップは RichEdit に拒否されて素通りした。エクスプローラーが渡すデータ オブジェクトには複数の形式が入っていて、挙動がまったく違う。エクスプローラーの項目の位置を UI Automation で取り、実際のマウス操作でドラッグするのが確実。</li>
+    <li><strong>「メモ帳の RichEdit」と「Windows の RichEdit」は別物。</strong>メモ帳はアプリに同梱した Office 系の <code>riched20.dll</code>（16.0）を使っていて、MemoPad が使う Windows 標準の <code>msftedit.dll</code> とは版が違う。メモ帳で起きないからといって同じ部品で起きないとは限らない。プロセスが読み込んでいるモジュールの一覧で確かめる。</li>
+    <li><strong>ポインターを渡すメッセージは別プロセスから送れない。</strong><code>EM_SETSCROLLPOS</code> を PowerShell から送ると、ポインターが相手のプロセスでは無効で、MemoPad 側で値が壊れた（計測側の誤り）。Windows が中身を運んでくれるのは一部の標準メッセージだけ。小さな検証用アプリの中で試すのが確実。</li>
+    <li><strong>計測がアプリを遅くすることがある。</strong>読み込みの完了を知ろうと 1 ms ごとに <code>WM_GETTEXTLENGTH</code> を送ったら、UI スレッドが応答に追われ、読み込みが数十秒かかるように見えた。読み込み中はメッセージを送らず、画面の変化と <code>WM_NULL</code> の往復時間で見る。<code>GetPixel</code> を点ごとに呼ぶのも DWM 越しでは非常に遅いので、範囲をまとめて写し取って比べる。</li>
+    <li><strong>PowerShell の関数名は既存のエイリアスに負ける。</strong><code>SI</code>（Set-Item）や <code>Sc</code>（Set-Content）という名前の関数を作っても、呼ぶとエイリアスのほうが動く。検証スクリプトの関数名は長めに付ける。</li>
+    <li><strong>Windows Forms の <code>RichTextBox.WordWrap</code> はスクロールバーのスタイルまで決める。</strong>true のままだと横スクロールバーも横送りも付かない。折り返しを RichEdit へ直接指示して切り替える作りでは、見落としやすい。</li>
     <li><strong>自前描画はアクセシビリティを落とす。</strong>1 枚のコントロールに描いたタブは、見た目は同じでも支援技術からは何も見えない。実体のあるコントロール（<code>Button</code> 継承）にすると標準の仕組みに乗る。</li>
   </ul>
 </main>
