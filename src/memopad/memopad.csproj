@@ -16,7 +16,7 @@
     <!-- アイコンはユーザー提供のデザイン（クリーム色の文書に緑の罫線）。v0.8.0 で差し替え -->
     <ApplicationIcon>memopad.ico</ApplicationIcon>
     <RootNamespace>Memopad</RootNamespace>
-    <Version>0.10.0</Version>
+    <Version>0.10.1</Version>
     <Product>MemoPad</Product>
     <Description>背景色と文字色を変えられるメモ帳</Description>
     <Copyright>mrgarita</Copyright>

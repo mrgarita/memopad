@@ -10,9 +10,9 @@ step3（フィードバック対応）を進行中。10 回目までのフィー
 固まる」は v0.10.0 で本文のエディタを Scintilla に替えて解消した**（最長の無応答 43,456 ms → 34 ms）。
 **2026-09-13 にユーザーの確認（OK）を得て配布を再開した**。GitHub Releases に置くのは **v0.10.0 のみ**で、
 不具合のある v0.6.0〜v0.9.1 のインストーラは削除したまま（ローカルの `installer/output/` には全バージョンがある）。
-**FB-21「大きなファイルを開いた直後だけウィンドウ移動がカクつく」は原因を特定して保留中**
-（Scintilla が折り返しの計算を 10 ms ずつ空き時間に進めるため。ユーザーの指示で修正は未着手。
-`docs/site/step3/index.html` 15.9 節）。「正」となるのは
+**FB-21「大きなファイルを開いた直後だけウィンドウ移動がカクつく」は v0.10.1 で対応済み**
+（原因は Scintilla が折り返しの計算を 10 ms ずつ空き時間に進めること。対策 4 案を実測して
+「移動・リサイズ中だけ計算を止める」を採用。`docs/site/step3/index.html` 15.9・16 節）。「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#。メイン ウィンドウは Windows Forms、ダイアログは WPF）、
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
@@ -117,9 +117,13 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
     自前の `SmoothWheelScroller.cs` は不要になったので削除した
   - ズームはフォント サイズを倍率で計算する（Scintilla の `Zoom` は整数ポイントの増減なので % と合わない）
   - **折り返しオンのとき、Scintilla は全行の折り返し位置を「10 ms ずつ空き時間に」計算する**（Windows 版は
-    10 ms 間隔のタイマー）。12 万行で約 4 秒かかり、その間に行うウィンドウ移動・リサイズは 1 コマごとに
-    最大 10 ms 待たされてカクつく（FB-21）。固まらない代わりのトレードオフ。直すなら `Technology` を
-    DirectWrite にして `SCI_SETLAYOUTTHREADS` を使う・移動中だけ計算を止める、など（15.9 節）
+    10 ms 間隔のタイマー。番号 2）。12 万行で約 4 秒かかり、その間のウィンドウ移動・リサイズは 1 コマごとに
+    最大 10 ms 待たされてカクついた（FB-21）。**v0.10.1 で `WM_ENTERSIZEMOVE`〜`WM_EXITSIZEMOVE` の間だけ
+    そのタイマーを通さないようにした**（`PlainTextEdit.PauseIdleWork` と `MainForm.WndProc`）。
+    見えている範囲の折り返しは描画時に計算されるので表示は正しく、放すと計算は再開して最後まで終わる。
+    DirectWrite ＋ `SCI_SETLAYOUTTHREADS` も試したが、文字のにじみ方が変わり読み込みが 0.2 秒増えるので不採用（16 節）
+  - **既知の問題：折り返しの計算中（開いた直後の約 4 秒）に文字を打つと 1 文字 117〜133 ms かかる**
+    （計算が終われば 15.7 ms）。レイアウト結果を待つためで、別課題として扱う
   - **既知の問題：本文が UI Automation に出ない**（`ControlType.Pane`・パターンなし）。RichEdit は
     `ControlType.Document` ＋ TextPattern/ValuePattern で読めていたので支援技術に対する回帰。
     Scintilla の `SCI_SETACCESSIBILITY` は GTK 版だけの機能で Windows では効かない。別課題として対応予定
@@ -128,7 +132,8 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   →`src\memopad\obj` を削除→`-nodeReuse:false -p:UseSharedCompilation=false` で再ビルドする。動作確認とスクリーンショットは `docs\tools\capture-memopad.ps1`
   （`-ExePath` と `-OutDir` を絶対パスで指定。実行中はマウス／キーボードに触らない）。
   入力→表示の遅延と起動の段階別時間は環境変数 `MEMOPAD_PERF=1` の診断ログ（`Services/PerfLog.cs`）で
-  調べられる。起動時間の比較は `docs\tools\measure-startup.ps1`（`-Target notepad` または exe のパス）
+  調べられる。起動時間の比較は `docs\tools\measure-startup.ps1`（`-Target notepad` または exe のパス）、
+  入力→表示の遅延は `docs\tools\measure-input.ps1`（`-FilePath` で大きなファイルを開いた直後も測れる）
 - **起動時間**：v0.8.0 でウィンドウ表示まで 221 ms、描画完了まで 332 ms（同じ端末のメモ帳は 211 ms /
   467 ms）。WPF だった v0.7.0 は 505 ms で、空の WPF ウィンドウでも約 400 ms かかるのが下限だった
   （`docs/site/step3/index.html` 8〜9 節）。効いている対策は Windows Forms 化のほか、

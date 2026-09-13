@@ -24,6 +24,10 @@ public sealed class PlainTextEdit : Scintilla
     private const int WM_MOUSEWHEEL = 0x020A;
     private const int WM_GETOBJECT = 0x003D;
     private const int OBJID_CLIENT = -4;
+    private const int WM_TIMER = 0x0113;
+
+    /// <summary>Scintilla が空き時間の処理（折り返しの計算）に使うタイマーの番号。</summary>
+    private const int ScintillaIdleTimerId = 2;
 
     /// <summary>本文の左の余白（96 dpi のときの px）。メモ帳の見た目に合わせる。</summary>
     private const int LeftPadding = 8;
@@ -91,6 +95,20 @@ public sealed class PlainTextEdit : Scintilla
     /// <summary>支援技術から本文を差し替えられたときに使う（読み取りが主なので通常は呼ばれない）。</summary>
     private void ReplaceAllText(string text) => Text = text;
 
+
+    /// <summary>
+    /// true の間は Scintilla の空き時間の処理（折り返しの計算）を止める。
+    ///
+    /// Scintilla は折り返し位置の計算を 10 ms ずつに区切り、空き時間（10 ms 間隔のタイマー）で進める。
+    /// 12 万行では約 4 秒かかり、その間にウィンドウを動かすと、マウスの移動と計算が同じ順番待ちの列に
+    /// 交互に並んで 1 コマごとに最大 10 ms 待たされる（FB-21。実測でウィンドウ位置の更新間隔が
+    /// 16.7 ms → 71 ms に落ちた）。移動・リサイズのあいだだけ止めると 16.7 ms に戻る。
+    ///
+    /// 画面に見えている範囲の折り返しは描画のときに計算されるので、止めていても表示は正しい。
+    /// 止めた分の計算は、<see cref="MainForm"/> がフラグを下ろした時点で再開して最後まで終わる。
+    /// </summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool PauseIdleWork { get; set; }
 
     /// <summary>Ctrl＋ホイール（delta は WM_MOUSEWHEEL の値）。</summary>
     public event Action<int>? ZoomWheel;
@@ -251,6 +269,9 @@ public sealed class PlainTextEdit : Scintilla
         if (ChromeHitTest.TryPassToFrame(this, ref m)) return;
         switch (m.Msg)
         {
+            // 折り返しの計算（空き時間の処理）を止めているあいだは、そのタイマーを通さない（FB-21）
+            case WM_TIMER when PauseIdleWork && (int)m.WParam == ScintillaIdleTimerId:
+                return;
             // Scintilla は Windows では支援技術に何も返さない（アクセシビリティ対応は GTK 版だけ）。
             // 本文が読み上げソフトから読めなくなるので、Windows Forms のアクセシブル オブジェクトを自分で返す
             case WM_GETOBJECT when (int)m.LParam == OBJID_CLIENT && AccessibilityObject is { } acc:

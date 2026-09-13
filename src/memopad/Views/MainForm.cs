@@ -161,6 +161,8 @@ public sealed partial class MainForm : Form
 
     private const int WM_NCCALCSIZE = 0x0083;
     private const int WM_NCHITTEST = 0x0084;
+    private const int WM_ENTERSIZEMOVE = 0x0231;
+    private const int WM_EXITSIZEMOVE = 0x0232;
     private const int HTCAPTION = 2;
     private const int HTLEFT = 10;
     private const int HTRIGHT = 11;
@@ -187,6 +189,17 @@ public sealed partial class MainForm : Form
     {
         switch (m.Msg)
         {
+            // 移動・リサイズのあいだは本文の空き時間の処理（折り返しの計算）を止め、動きを優先する。
+            // 大きなファイルを開いた直後にウィンドウを動かすとカクついたため（FB-21。
+            // 詳細は PlainTextEdit.PauseIdleWork）。放したら再開して最後まで計算される
+            case WM_ENTERSIZEMOVE:
+                foreach (var t in _tabs) t.Editor.Edit.PauseIdleWork = true;
+                break;
+
+            case WM_EXITSIZEMOVE:
+                foreach (var t in _tabs) t.Editor.Edit.PauseIdleWork = false;
+                break;
+
             case WM_NCCALCSIZE:
                 // 標準のタイトル バーと枠を外し、ウィンドウ全体をクライアント領域にする。
                 // 最大化中は見えない枠の分だけ画面外にはみ出すので、その分を内側に寄せる

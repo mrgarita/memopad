@@ -41,6 +41,7 @@
       <li><a href="#fb18">FB-18：折り返しなしで横にスクロールできない（v0.9.2）</a></li>
       <li><a href="#fb19">FB-19：大きなファイルで固まる（v0.10.0 で本文を Scintilla に変更）</a></li>
       <li><a href="#fb19-after">FB-21：開いた直後だけウィンドウ移動がカクつく（原因の特定）</a></li>
+      <li><a href="#fb21">FB-21 の対策：移動・リサイズ中は折り返しの計算を止める（v0.10.1）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -134,10 +135,10 @@
   <div class="table-wrap">
   <table>
     <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
-    <tr><td>FB-21</td><td>確認</td><td>大きなファイルを開いた直後だけ、すぐにウィンドウを移動させるとカクカクする（3 秒ほど待てばスムーズ）。遅延読み込みの処理をそちらに回しているためではないか。まず原因が知りたい（すぐの修正は不要）</td><td>—</td><td><span class="tag skip">原因を特定（修正は保留）</span></td></tr>
+    <tr><td>FB-21</td><td>確認→不具合</td><td>大きなファイルを開いた直後だけ、すぐにウィンドウを移動させるとカクカクする（3 秒ほど待てばスムーズ）。遅延読み込みの処理をそちらに回しているためではないか。まず原因が知りたい（すぐの修正は不要）</td><td>v0.10.1</td><td><span class="tag must">対応済み</span></td></tr>
   </table>
   </div>
-  <p>推測のとおりだった。Scintilla は折り返し位置の計算を 10 ms ずつに区切って空き時間に進めるため、その約 4 秒の間はウィンドウの移動が計算と順番待ちになる。別プロセスからの計測で、忙しい区間（0.4〜4.2 秒）の応答時間の中央値が 9.7 ms＝ちょうど 1 回分の計算時間であること、折り返しオフではこの区間が存在しないことを確かめた（<a href="#fb19-after">15.9</a>）。</p>
+  <p>推測のとおりだった。Scintilla は折り返し位置の計算を 10 ms ずつに区切って空き時間に進めるため、その約 4 秒の間はウィンドウの移動が計算と順番待ちになる。別プロセスからの計測で、忙しい区間（0.4〜4.2 秒）の応答時間の中央値が 9.7 ms＝ちょうど 1 回分の計算時間であること、折り返しオフではこの区間が存在しないことを確かめた（<a href="#fb19-after">15.9</a>）。そのうえで対策 4 案を入力レスポンス・起動時間と合わせて実測し、<strong>「ウィンドウの移動・リサイズ中だけ計算を止める」案を v0.10.1 で採用した</strong>（ドラッグ中の位置の更新間隔 71.4 ms → 16.7 ms。入力・起動・見た目は変化なし。<a href="#fb21">16 節</a>）。</p>
 
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
@@ -1280,16 +1281,127 @@
     折り返しオフでこの区間がまったく無いのは、Scintilla が<strong>画面に出ている行の幅しか測らない</strong>ため。
   </div>
 
-  <h4>直すとしたら（今回は未実施）</h4>
-  <p>ユーザーの指示により原因の特定までとした。直す場合の候補は次のとおり。</p>
-  <ul>
-    <li><code>Technology</code> を DirectWrite に替え、<code>SCI_SETLAYOUTTHREADS</code> でレイアウトを別スレッドに回す（Scintilla 5.3 以降の機能。同梱しているのは 5.6.3）。UI スレッドの取り分が減る</li>
-    <li>ウィンドウの移動・リサイズの間（<code>WM_ENTERSIZEMOVE</code>〜<code>WM_EXITSIZEMOVE</code>）だけ折り返しの計算を止める</li>
-    <li>文字幅のキャッシュ（<code>SCI_SETPOSITIONCACHE</code>）を増やして 1 行あたりの計算を減らす</li>
-  </ul>
-  <p>いずれも入力レスポンス（<a href="#fb1">FB-1</a>）と起動時間（<a href="#fb11">FB-11</a>）に響きうるので、採用するなら実測してから決める。</p>
+  <h4>ここまでで分かったこと</h4>
+  <p>直す場合の候補は次の 4 つ。いずれも入力レスポンス（<a href="#fb1">FB-1</a>）と起動時間（<a href="#fb11">FB-11</a>）に
+  響きうるため、ユーザーの判断で<strong>実測してから決める</strong>ことにした（結果と採用した案は <a href="#fb21">16 節</a>）。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>案</th><th>ねらい</th></tr>
+    <tr><td>ⓐ 移動・リサイズ中だけ計算を止める</td><td>ドラッグしている間は計算を止め、放したら再開する。計算の総量は変えない</td></tr>
+    <tr><td>ⓑ DirectWrite ＋ レイアウトの別スレッド化（<code>SCI_SETLAYOUTTHREADS</code>）</td><td>計算そのものを別スレッドへ逃がす。Scintilla 5.3 以降の機能（同梱は 5.6.3）</td></tr>
+    <tr><td>ⓒ 文字幅キャッシュを増やす（<code>SCI_SETPOSITIONCACHE</code>）</td><td>同じ文字の幅を測り直す回数を減らす</td></tr>
+    <tr><td>ⓓ DirectWrite だけにする</td><td>文字幅の問い合わせ経路を GDI から変える</td></tr>
+  </table>
+  </div>
 
-  <h2 id="notes">16. つまずいた点のメモ</h2>
+  <h2 id="fb21">16. FB-21：開いた直後のウィンドウ移動がカクつく（v0.10.1）</h2>
+  <p>原因（<a href="#fb19-after">15.9</a>）が分かったところで、対策の 4 案を切り替えられるビルドを作り、
+  <strong>ドラッグの滑らかさ・入力レスポンス・起動時間・大きなファイルの読み込み</strong>を同じ端末で測って比べた。</p>
+
+  <h3>16.1 ドラッグの滑らかさ</h3>
+  <p>大きなファイルを開いた直後（＝折り返しの計算中）にタイトル行を 3 秒ドラッグし、マウスを 8 ms ごとに動かしながら、
+  ウィンドウの位置が実際に更新される間隔を測った。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>条件</th><th>3 秒間の更新回数</th><th>間隔の中央値</th><th>90 % 点</th><th>最大</th></tr>
+    <tr><td>参考：小さいファイル（計算が無い状態）</td><td class="center">161</td><td class="center">16.7 ms</td><td class="center">32.4 ms</td><td class="center">34.1 ms</td></tr>
+    <tr><td>現行 v0.10.0</td><td class="center">41</td><td class="center"><strong>71.4 ms</strong></td><td class="center">81.4 ms</td><td class="center">92.1 ms</td></tr>
+    <tr><td><strong>ⓐ 移動・リサイズ中だけ計算を止める</strong></td><td class="center">157</td><td class="center"><strong>16.7 ms</strong></td><td class="center">32.3 ms</td><td class="center">35.3 ms</td></tr>
+    <tr><td>ⓑ DirectWrite ＋ 別スレッド</td><td class="center">115</td><td class="center">16.9 ms</td><td class="center">62.3 ms</td><td class="center">72.5 ms</td></tr>
+    <tr><td>ⓐ＋ⓑ</td><td class="center">161</td><td class="center">16.7 ms</td><td class="center">32.1 ms</td><td class="center">34.2 ms</td></tr>
+    <tr><td>ⓒ 文字幅キャッシュ増</td><td class="center">42</td><td class="center">71.4 ms</td><td class="center">81.8 ms</td><td class="center">82.2 ms</td></tr>
+    <tr><td>ⓓ DirectWrite だけ</td><td class="center">41</td><td class="center">71.7 ms</td><td class="center">81.4 ms</td><td class="center">131.4 ms</td></tr>
+  </table>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 250" width="100%" style="max-width:720px;display:block;margin:0 auto" role="img" aria-label="大きなファイルを開いた直後にウィンドウをドラッグしたときの、位置の更新間隔">
+      <style>.b{font:13px "Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.v{font:12px "Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}</style>
+      <text x="10" y="18" class="b" font-weight="700">ドラッグ中にウィンドウの位置が更新される間隔（中央値・ms。短いほどなめらか）</text>
+      <g transform="translate(10,34)">
+        <text x="0" y="14" class="b">参考：小さいファイル（計算なし）</text>
+        <rect x="250" y="2" width="70" height="16" fill="#7a7a78"/><text x="326" y="14" class="v">16.7</text>
+        <text x="0" y="46" class="b">現行 v0.10.0</text>
+        <rect x="250" y="34" width="300" height="16" fill="#c0392b"/><text x="556" y="46" class="v">71.4</text>
+        <text x="0" y="78" class="b">ⓐ 移動中だけ計算を止める</text>
+        <rect x="250" y="66" width="70" height="16" fill="#0b5cad"/><text x="326" y="78" class="v">16.7</text>
+        <text x="0" y="110" class="b">ⓑ DirectWrite ＋ 別スレッド</text>
+        <rect x="250" y="98" width="71" height="16" fill="#0b5cad"/><text x="327" y="110" class="v">16.9</text>
+        <text x="0" y="142" class="b">ⓒ 文字幅キャッシュ増</text>
+        <rect x="250" y="130" width="300" height="16" fill="#c0392b"/><text x="556" y="142" class="v">71.4</text>
+        <text x="0" y="174" class="b">ⓓ DirectWrite だけ</text>
+        <rect x="250" y="162" width="301" height="16" fill="#c0392b"/><text x="557" y="174" class="v">71.7</text>
+        <line x1="250" y1="188" x2="250" y2="192" stroke="#59636e"/><line x1="250" y1="190" x2="600" y2="190" stroke="#59636e"/>
+        <text x="246" y="208" class="v">0</text><text x="313" y="208" class="v">16.7</text><text x="390" y="208" class="v">33</text><text x="460" y="208" class="v">50</text><text x="530" y="208" class="v">67</text>
+        <text x="250" y="228" class="v">※ 16.7 ms ＝ 画面の 1 コマ。3 秒間ドラッグし、マウスは 8 ms ごとに動かして計測</text>
+      </g>
+    </svg>
+    <figcaption>図 16-1：ⓐ は「計算が無い状態」と同じ 16.7 ms まで戻る。ⓒ・ⓓ は効果がない</figcaption>
+  </figure>
+
+  <h3>16.2 入力レスポンス・起動時間・読み込み</h3>
+  <p>「軽快さを損なわない」ことが第一なので、残りの 3 つも測った。入力レスポンスは
+  <code>docs/tools/measure-input.ps1</code>（今回追加。キーを送ってから画面のピクセルが変わるまでを外から測る）、
+  起動は <code>measure-startup.ps1</code>、読み込みは <code>measure-openfile.ps1</code>。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>案</th><th>入力→表示<br>（空文書・20 回の中央値）</th><th>起動：ウィンドウ表示／描画完了<br>（8 回の中央値）</th><th>大きなファイルを開く<br>（応答が戻るまで）</th><th>折り返しの計算が<br>終わるまで</th></tr>
+    <tr><td>現行 v0.10.0</td><td class="center">14.9 ms</td><td class="center">267 / 479 ms</td><td class="center">256 ms</td><td class="center">4.1 秒</td></tr>
+    <tr><td><strong>ⓐ</strong></td><td class="center">15.5 ms</td><td class="center">266 / 496 ms</td><td class="center">273 ms</td><td class="center">4.1 秒</td></tr>
+    <tr><td>ⓑ</td><td class="center">15.4 ms</td><td class="center">266 / 483 ms</td><td class="center">462 ms</td><td class="center"><strong>0.13 秒</strong></td></tr>
+    <tr><td>ⓐ＋ⓑ</td><td class="center">16.6 ms</td><td class="center">273 / 469 ms</td><td class="center">446 ms</td><td class="center">0.13 秒</td></tr>
+  </table>
+  </div>
+  <p>入力→表示は 4 つとも画面の 1 コマ（16.7 ms）以内で、差は計測のばらつきの範囲。起動時間も差が無い。
+  ⓑ だけは大きなファイルを開く時間が 256 ms → 462 ms に増える（DirectWrite の初期化の分）。</p>
+  <div class="note">
+    <strong>ⓑ の副作用：文字の見た目が変わる。</strong>同じ文章を GDI と DirectWrite で描いて画素を比べると、
+    文字の形と位置はほぼ同じだが、にじみ（アンチエイリアス）の出方が違う（サンプルした画素の 10.3 % で差、最大の色差 185）。
+    メモ帳と同じ見た目を保つ方針なので、これは採用のハードルになる。
+  </div>
+
+  <h3>16.3 採用：ⓐ（移動・リサイズ中だけ計算を止める）</h3>
+  <p>ドラッグは「計算が無い状態」と同じ数値まで完全に戻り、入力・起動・見た目・読み込み時間はどれも変わらない。
+  変更も小さく副作用が読みやすいので ⓐ を採用した。ⓑ は「計算そのものを 4.1 秒 → 0.13 秒に縮める」魅力があるが、
+  描画エンジンが変わる・読み込みが 0.2 秒増える・ドラッグは ⓐ ほど完全にならない、の 3 点で見送った。</p>
+  <p>実装は 2 か所だけ。Scintilla の空き時間の処理は <strong>10 ms 間隔のタイマー（番号 2）</strong>で回っているので、
+  そのタイマーだけを通さないようにする。</p>
+  <pre><code>// Views/PlainTextEdit.cs
+case WM_TIMER when PauseIdleWork &amp;&amp; (int)m.WParam == ScintillaIdleTimerId:
+    return;                       // 折り返しの計算を通さない（止めている間だけ）
+
+// Views/MainForm.cs
+case WM_ENTERSIZEMOVE:            // 移動・リサイズのループに入った
+    foreach (var t in _tabs) t.Editor.Edit.PauseIdleWork = true;
+    break;
+case WM_EXITSIZEMOVE:             // 放した
+    foreach (var t in _tabs) t.Editor.Edit.PauseIdleWork = false;
+    break;</code></pre>
+  <p>画面に見えている範囲の折り返しは<strong>描画のときに計算される</strong>ので、止めていても表示は正しい。
+  実際に右端をドラッグして幅を 1500 → 630 px に縮めても、本文は新しい幅で折り返されて表示された。
+  放した時点で計算は再開し、最後まで終わることも確かめた（3.6 秒で完了）。</p>
+
+  <h3 id="fb21-check">16.4 確かめ方</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>確認</th><th>v0.10.0</th><th>v0.10.1</th></tr>
+    <tr><td>開いた直後のドラッグ：位置の更新間隔（中央値）</td><td>71.4 ms</td><td><strong>16.7 ms</strong></td></tr>
+    <tr><td>同：3 秒間の更新回数</td><td>41 回</td><td><strong>159 回</strong></td></tr>
+    <tr><td>ドラッグ中に計算が止まっているか（<code>WM_NULL</code> の往復）</td><td>0.74 ms</td><td>0.01 ms</td></tr>
+    <tr><td>放したあとに計算が再開して終わるか</td><td>—</td><td>OK（3.6 秒で完了）</td></tr>
+    <tr><td>入力→表示（20 回の中央値）</td><td>14.9 ms</td><td>15.9 ms</td></tr>
+    <tr><td>起動：ウィンドウ表示／描画完了（8 回の中央値）</td><td>267 / 479 ms</td><td>260 / 445 ms</td></tr>
+    <tr><td>10.4 MB・12 万行を開く（応答が戻るまで）</td><td>256 ms</td><td>363 ms</td></tr>
+    <tr><td>多段階の元に戻す／やり直し・保存の往復（<code>test-editing.ps1</code>）</td><td>OK</td><td>OK（10 件すべて）</td></tr>
+    <tr><td>ホイールで最後の空行まで・折り返しオフの横スクロール（<code>test-scroll.ps1</code>）</td><td>OK</td><td>OK</td></tr>
+    <tr><td>タブのクリック切り替え（<code>test-tabclick.ps1</code>）</td><td>OK</td><td>OK</td></tr>
+  </table>
+  </div>
+  <div class="warn">
+    <strong>残った課題：折り返しの計算中に文字を打つと、1 文字出るのに 117〜133 ms かかる</strong>（計算が終われば 15.7 ms に戻る）。
+    ⓑ でも 118 ms で改善しなかった。レイアウトの結果が出るまで描画を待つ必要があるためで、別の課題として扱う。
+  </div>
+
+  <h2 id="notes">17. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
