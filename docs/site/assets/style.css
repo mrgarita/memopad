@@ -58,6 +58,15 @@ h2 {
   border-bottom: 2px solid var(--accent);
 }
 h3 { font-size: 1.1rem; margin: 28px 0 8px; }
+h4 { font-size: 1rem; margin: 22px 0 6px; color: var(--muted); }
+/* ユーザーからのフィードバックの引用 */
+blockquote {
+  margin: 14px 0;
+  padding: 8px 14px;
+  border-left: 4px solid var(--line);
+  background: #fff;
+  color: var(--fg);
+}
 p.lead { color: var(--muted); margin-top: 0; }
 a { color: var(--accent); }
 code, kbd {

@@ -5,12 +5,14 @@
 
 ## リポジトリの状態
 
-step3（フィードバック対応）を進行中。9 回目までのフィードバックを v0.2.0〜v0.10.0 で対応済み
+step3（フィードバック対応）を進行中。10 回目までのフィードバックを v0.2.0〜v0.10.0 で対応済み
 （一覧は `docs/site/step3/index.html` 1 節）。**FB-19「大きなファイルを開くと固まり、その後の操作でも
 固まる」は v0.10.0 で本文のエディタを Scintilla に替えて解消した**（最長の無応答 43,456 ms → 34 ms）。
-**GitHub Releases のインストーラは v0.6.0〜v0.9.1 をすべて削除して配布を一時停止中**（サイトとソース
-コードの公開は継続。紹介ページ・README・備忘録にお知らせを掲載済み）。**ユーザーが v0.10.0 を確認して
-OK が出たら配布を再開する**（ローカルの `installer/output/` に全バージョンのインストーラがある）。「正」となるのは
+**2026-09-13 にユーザーの確認（OK）を得て配布を再開した**。GitHub Releases に置くのは **v0.10.0 のみ**で、
+不具合のある v0.6.0〜v0.9.1 のインストーラは削除したまま（ローカルの `installer/output/` には全バージョンがある）。
+**FB-21「大きなファイルを開いた直後だけウィンドウ移動がカクつく」は原因を特定して保留中**
+（Scintilla が折り返しの計算を 10 ms ずつ空き時間に進めるため。ユーザーの指示で修正は未着手。
+`docs/site/step3/index.html` 15.9 節）。「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#。メイン ウィンドウは Windows Forms、ダイアログは WPF）、
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
@@ -114,6 +116,10 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   - ホイールで最終行まで届くこと（FB-17）と折り返しオフの横スクロール（FB-18）は Scintilla 標準で満たす。
     自前の `SmoothWheelScroller.cs` は不要になったので削除した
   - ズームはフォント サイズを倍率で計算する（Scintilla の `Zoom` は整数ポイントの増減なので % と合わない）
+  - **折り返しオンのとき、Scintilla は全行の折り返し位置を「10 ms ずつ空き時間に」計算する**（Windows 版は
+    10 ms 間隔のタイマー）。12 万行で約 4 秒かかり、その間に行うウィンドウ移動・リサイズは 1 コマごとに
+    最大 10 ms 待たされてカクつく（FB-21）。固まらない代わりのトレードオフ。直すなら `Technology` を
+    DirectWrite にして `SCI_SETLAYOUTTHREADS` を使う・移動中だけ計算を止める、など（15.9 節）
   - **既知の問題：本文が UI Automation に出ない**（`ControlType.Pane`・パターンなし）。RichEdit は
     `ControlType.Document` ＋ TextPattern/ValuePattern で読めていたので支援技術に対する回帰。
     Scintilla の `SCI_SETACCESSIBILITY` は GTK 版だけの機能で Windows では効かない。別課題として対応予定
