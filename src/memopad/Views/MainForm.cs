@@ -163,6 +163,8 @@ public sealed partial class MainForm : Form
     private const int WM_NCHITTEST = 0x0084;
     private const int WM_ENTERSIZEMOVE = 0x0231;
     private const int WM_EXITSIZEMOVE = 0x0232;
+    private const int WM_SETTINGCHANGE = 0x001A;
+    private const int SPI_SETCARETWIDTH = 0x2007;
     private const int HTCAPTION = 2;
     private const int HTLEFT = 10;
     private const int HTRIGHT = 11;
@@ -198,6 +200,12 @@ public sealed partial class MainForm : Form
 
             case WM_EXITSIZEMOVE:
                 foreach (var t in _tabs) t.Editor.Edit.PauseIdleWork = false;
+                break;
+
+            // Windows の「テキスト カーソルの太さ」が変わったら本文のキャレットにも反映する（FB-23）。
+            // この通知はトップレベルのウィンドウにしか届かないので、ここから各タブへ配る
+            case WM_SETTINGCHANGE when (int)m.WParam == SPI_SETCARETWIDTH:
+                foreach (var t in _tabs) t.Editor.Edit.ApplySystemCaretWidth();
                 break;
 
             case WM_NCCALCSIZE:

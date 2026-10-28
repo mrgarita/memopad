@@ -42,6 +42,9 @@
       <li><a href="#fb19">FB-19：大きなファイルで固まる（v0.10.0 で本文を Scintilla に変更）</a></li>
       <li><a href="#fb19-after">FB-21：開いた直後だけウィンドウ移動がカクつく（原因の特定）</a></li>
       <li><a href="#fb21">FB-21 の対策：移動・リサイズ中は折り返しの計算を止める（v0.10.1）</a></li>
+      <li><a href="#fb22">FB-22：端末を起動して最初の起動だけ遅い（v0.10.2）</a></li>
+      <li><a href="#fb23">FB-23：行頭のカーソルが見づらい（v0.10.2）</a></li>
+      <li><a href="#fb24">FB-24：メニューのアクセス キーが効かない（v0.10.2）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -139,6 +142,17 @@
   </table>
   </div>
   <p>推測のとおりだった。Scintilla は折り返し位置の計算を 10 ms ずつに区切って空き時間に進めるため、その約 4 秒の間はウィンドウの移動が計算と順番待ちになる。別プロセスからの計測で、忙しい区間（0.4〜4.2 秒）の応答時間の中央値が 9.7 ms＝ちょうど 1 回分の計算時間であること、折り返しオフではこの区間が存在しないことを確かめた（<a href="#fb19-after">15.9</a>）。そのうえで対策 4 案を入力レスポンス・起動時間と合わせて実測し、<strong>「ウィンドウの移動・リサイズ中だけ計算を止める」案を v0.10.1 で採用した</strong>（ドラッグ中の位置の更新間隔 71.4 ms → 16.7 ms。入力・起動・見た目は変化なし。<a href="#fb21">16 節</a>）。</p>
+
+  <p>11 回目のフィードバック（2026-10-28、v0.10.1 をしばらく使って）。2 件を受け、確認の途中で 1 件を見つけた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-22</td><td>性能</td><td>端末を起動して最初にアプリを起動するときだけ時間がかかる。一度起動すれば、終了して再度起動してもすぐに起動する。いくつかの端末で同じ</td><td>v0.10.2</td><td><span class="tag maybe">確認待ち</span></td></tr>
+    <tr><td>FB-23</td><td>改善</td><td>カーソル（キャレット）が画面の左端にあると見づらく、使っている途中で何度も位置を見失う。単純にカーソルの太さを変えればよいのか</td><td>v0.10.2</td><td><span class="tag maybe">確認待ち</span></td></tr>
+    <tr><td>FB-24</td><td>不具合</td><td>（確認中に発見）本文にフォーカスがあると、メニューを開いてもアクセス キー（<kbd>Alt</kbd>+<kbd>O</kbd> → <kbd>F</kbd> など）が効かず、メニューが閉じて本文に文字が入る。v0.10.0 から</td><td>v0.10.2</td><td><span class="tag maybe">確認待ち</span></td></tr>
+  </table>
+  </div>
+  <p>FB-22 は、起動時に使わない WPF 本体（約 23 MB）を読み込んでいたことと、Scintilla の DLL の電子署名を毎回検証していたことが重なっていた。どちらもやめて、起動時に読む DLL を 76.8 MB → 50.9 MB に減らした。ディスク キャッシュに載っていない状態からの起動は 902 → 737 ms（ウィンドウ表示）になった（<a href="#fb22">17 節</a>）。FB-23 は太さではなく<strong>左の余白が灰色で塗られていた</strong>のが主因で、濃い配色だと行頭のキャレットが灰色の帯の縁にまぎれていた。余白を背景色で塗り、幅もメモ帳に合わせ、Windows の「テキスト カーソルの太さ」にも従うようにした（<a href="#fb23">18 節</a>）。FB-24 は FB-22 の確認中に見つけた。IME が押した文字を本文へ直接送ってしまうためで、メニューを開いている間だけ本文の IME を切り離して直した（<a href="#fb24">19 節</a>）。IME は Meltype と Microsoft IME の両方で確かめた。</p>
 
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
@@ -1401,7 +1415,183 @@ case WM_EXITSIZEMOVE:             // 放した
     ⓑ でも 118 ms で改善しなかった。レイアウトの結果が出るまで描画を待つ必要があるためで、別の課題として扱う。
   </div>
 
-  <h2 id="notes">17. つまずいた点のメモ</h2>
+  <h2 id="fb22">17. FB-22：端末を起動して最初の起動だけ遅い（v0.10.2）</h2>
+  <h3>17.1 見立て</h3>
+  <p>2 回目以降が速いのは、1 回目に読んだ DLL が Windows のファイル キャッシュ（メモリ）に残るため。端末を起動した直後はキャッシュが空なので、
+  DLL をディスクから読み、Defender の初回の検査も受ける。MemoPad は .NET ランタイムを同梱しているので、使う DLL はすべて
+  MemoPad のフォルダーにあり、ほかのアプリと共有されない（メモ帳の部品は Windows 自身がすでに読み込んでいる）。
+  つまり<strong>起動時に触るファイルの量が、そのまま初回の時間になる</strong>。</p>
+
+  <h3>17.2 起動時に何を読んでいるか</h3>
+  <p>起動 3 秒後の MemoPad が読み込んでいる DLL を数えると、アプリのフォルダーから 48 個・76.8 MB。その中に、ダイアログを開くまで
+  要らないはずの WPF 本体と、使っていないはずの暗号化ライブラリが入っていた。診断ログ（<code>MEMOPAD_PERF=1</code>）に
+  「アセンブリの読み込みと、その呼び出し元のスタック」を記録する処理を足して、きっかけを突き止めた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>読み込まれていた DLL</th><th>大きさ</th><th>きっかけ</th></tr>
+    <tr><td>PresentationFramework.dll</td><td class="center">15.4 MB</td><td><code>AssemblyInfo.cs</code> の <code>[assembly: ThemeInfo(...)]</code>（WPF のプロジェクト テンプレートの残り物）。Windows Forms は初期化のときに exe の属性（<code>TargetFrameworkAttribute</code>）を探し、その途中でほかの属性の型も解決するため、<code>ThemeInfo</code> のある WPF 本体まで読み込まれる</td></tr>
+    <tr><td>PresentationCore.dll</td><td class="center">8.2 MB</td><td>Scintilla5.NET のパッケージが全 CPU 向けの Scintilla.dll／Lexilla.dll を <code>Content</code> として足し、WPF のビルドが Content ごとに <code>AssemblyAssociatedContentFile</code> 属性（PresentationCore の型）を exe に付ける。上と同じ経路で読み込まれる</td></tr>
+    <tr><td>System.Security.Cryptography.dll</td><td class="center">2.0 MB</td><td>Scintilla.NET が最初のエディタを作るとき、Scintilla.dll と Lexilla.dll の電子署名（Authenticode）を <code>WinVerifyTrust</code> で検証し、発行元を <code>X509Certificate2</code> で確かめている</td></tr>
+  </table>
+  </div>
+  <p>電子署名の検証は、証明書チェーンの組み立てと証明書ストアの読み込みを伴う。温まった状態でも約 0.1 秒かかっていた（診断ログで、
+  暗号化ライブラリの読み込みから検証の終わりまで 126 ms）。端末の起動直後は、この処理に関わるファイルもキャッシュに無い。</p>
+
+  <h3>17.3 直し方</h3>
+  <ul>
+    <li><strong><code>ThemeInfo</code> を消した</strong>（<code>AssemblyInfo.cs</code> ごと削除）。<code>Themes/Generic.xaml</code> も独自のコントロールも無いので、もともと不要だった。</li>
+    <li><strong>パッケージが足す Content を外した</strong>（csproj の <code>RemoveScintillaContent</code> ターゲット）。win-x64 向けに発行すると 2 つの DLL は exe と同じフォルダーにも入るので、Scintilla.NET には <code>ScintillaNativeLibrary.SatelliteDirectory</code> でそこを教える。使わない ARM64・x86 用の DLL（6.9 MB）も同梱しなくなった。</li>
+    <li><strong>署名の検証を止めた</strong>（<code>ScintillaNativeLibrary.VerifyScintillaDll／VerifyLexillaDll = false</code>）。2 つの DLL は MemoPad.exe・MemoPad.dll・.NET ランタイムと同じフォルダーにあり、そちらは検証していないので、ここだけ確かめても守りにはならない。止めるスイッチは Scintilla5.NET 7.1.0（2026-10-18 公開）で入ったので、7.0.0 → 7.1.1 に上げた（7.1.0 は DLL 名を誤って出しているので飛ばす）。</li>
+  </ul>
+  <p>7.1.1 で Scintilla 本体は 5.6.3 → 5.6.7 になる。変更履歴に Windows 版の動きを変える項目は無く、FB-21 の対策が頼っている
+  「折り返しの計算はタイマー番号 2」も変わっていないことをソースで確かめた。</p>
+
+  <h3 id="fb22-check">17.4 確かめ方：キャッシュに無い状態を作る</h3>
+  <p>端末の再起動はこちらではできないので、発行フォルダーを毎回 <code>robocopy /J</code>（バッファーを使わないコピー）で新しい場所へ写してから起動した。
+  この方法で書いたファイルはファイル キャッシュに載らず、Defender にとっても初めてのファイルになるので、「再起動直後」に近い（やや悪い側の）状態になる。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>確認</th><th>v0.10.1</th><th>v0.10.2</th></tr>
+    <tr><td>起動時に読む DLL（アプリのフォルダー）</td><td>48 個・76.8 MB</td><td><strong>43 個・50.9 MB</strong></td></tr>
+    <tr><td>キャッシュ無し：ウィンドウ表示／描画完了（5 回の中央値）</td><td>902 / 1,102 ms</td><td><strong>737 / 967 ms</strong></td></tr>
+    <tr><td>温まった状態：同（10 回の中央値）</td><td>263 / 477 ms</td><td><strong>218 / 434 ms</strong></td></tr>
+    <tr><td>10.4 MB・12 万行を開く（応答が戻るまで、3 回の中央値）</td><td>397 ms</td><td>347 ms</td></tr>
+    <tr><td>インストールされるファイル</td><td>274 個・163.3 MB</td><td>268 個・156.6 MB</td></tr>
+  </table>
+  </div>
+  <figure>
+    <svg viewBox="0 0 720 200" width="100%" style="max-width:720px;display:block;margin:0 auto" role="img" aria-label="起動してウィンドウが表示されるまでの時間。v0.10.1 と v0.10.2 の比較">
+      <style>.b{font:13px "Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.v{font:12px "Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}</style>
+      <text x="10" y="18" class="b" font-weight="700">起動してウィンドウが表示されるまで（中央値・ms。短いほど速い）</text>
+      <g transform="translate(10,34)">
+        <text x="0" y="14" class="b">キャッシュ無し　v0.10.1</text>
+        <rect x="200" y="2" width="361" height="16" fill="#c0392b"/><text x="567" y="14" class="v">902</text>
+        <text x="0" y="40" class="b">キャッシュ無し　v0.10.2</text>
+        <rect x="200" y="28" width="295" height="16" fill="#0b5cad"/><text x="501" y="40" class="v">737</text>
+        <text x="0" y="78" class="b">温まった状態　v0.10.1</text>
+        <rect x="200" y="66" width="105" height="16" fill="#c0392b"/><text x="311" y="78" class="v">263</text>
+        <text x="0" y="104" class="b">温まった状態　v0.10.2</text>
+        <rect x="200" y="92" width="87" height="16" fill="#0b5cad"/><text x="293" y="104" class="v">218</text>
+        <line x1="200" y1="120" x2="600" y2="120" stroke="#59636e"/>
+        <text x="196" y="138" class="v">0</text><text x="290" y="138" class="v">250</text><text x="390" y="138" class="v">500</text><text x="490" y="138" class="v">750</text><text x="586" y="138" class="v">1000</text>
+        <text x="200" y="158" class="v">※ キャッシュ無し＝毎回バッファーを使わずに新しい場所へコピーしてから起動（5 回）。温まった状態は 10 回</text>
+      </g>
+    </svg>
+    <figcaption>図 17-1：キャッシュ無しで 165 ms、温まった状態でも 45 ms 縮んだ</figcaption>
+  </figure>
+  <p>キャッシュ無しの時間の内訳も見た。v0.10.2 で、温まった状態は約 220 ms、「キャッシュには載っているが Defender には新しいファイル」
+  （普通にコピーして全ファイルを読んでから起動）で約 430 ms、キャッシュにも無いと約 700 ms。<strong>Defender の初回の検査とディスクの読み込みがほぼ半分ずつ</strong>で、
+  どちらも読むファイルの量に比例する。</p>
+  <div class="note">
+    <strong>単一ファイル化は逆効果だった。</strong>DLL を exe 1 つ（157 MB）にまとめる <code>PublishSingleFile</code> も試したが、
+    新しいコピーからの 1 回目が 3,456 ms、2 回目でも 1,357 ms かかった。Defender が大きな exe を丸ごと検査するためで、採用しなかった
+    （温まった状態は 221 ms で差は無い）。複合 ReadyToRun（<a href="#fb11">8 節</a>）と同じく、初回起動は「新しいコピー」で測ってから判断する。
+  </div>
+  <div class="warn">
+    <strong>端末を再起動した直後の実測は、ユーザーに確認をお願いしている。</strong>こちらの数字は近似で、再起動の直後は Windows 自身の
+    初期化と並行して読むぶん、さらに時間がかかりうる。残りの大半は .NET ランタイムと Windows Forms 本体（合わせて約 40 MB）の読み込みで、
+    これ以上縮めるには「サインイン時に先読みしておく」など別の手段が要る。
+  </div>
+
+  <h2 id="fb23">18. FB-23：行頭のカーソルが見づらい（v0.10.2）</h2>
+  <h3>18.1 原因：左の余白が灰色で塗られていた</h3>
+  <p>行頭にあるキャレット（文字入力のカーソル）を、点滅の前後で画面を連写して差分を取り、位置と太さを測った。ユーザーの配色
+  （背景 <code>#1F2B24</code>・文字 <code>#D6E4DA</code>）では、本文の左の余白（150 % 表示で 12 px）が背景色ではなく
+  <strong>明るい灰色 <code>#F0F0F0</code></strong> で塗られており、1 px のキャレットがその帯のすぐ右隣に描かれていた。
+  明るいキャレットが明るい帯の縁に接しているので、縦線があるのか帯の縁なのか見分けがつかない。</p>
+  <figure>
+    <img src="../img/step3/fb23-caret-left-edge.png" alt="左：v0.10.1。濃い緑の本文の左に灰色の帯があり、3 行目の行頭のキャレットが帯の縁に接している。右：v0.10.2。帯が無く、キャレットが縁から離れて背景の上に見える" loading="lazy">
+    <figcaption>図 18-1：3 行目（空行）の行頭にキャレットがある状態（2 倍に拡大）。左の v0.10.1 はキャレットが灰色の帯に張り付いて見分けにくい</figcaption>
+  </figure>
+  <p>余白は Scintilla の 0 番の欄（マージン）で作っている。欄の種類が「記号（Symbol）」だと行番号用のスタイルの背景色で塗られ、
+  その色は全スタイルをそろえる <code>StyleClearAll</code> の中で、わざわざシステムの灰色（<code>COLOR_3DFACE</code>）に戻される。
+  白い背景では <code>#F0F0F0</code> と白の差がほとんど目立たないので、v0.10.0 から気づかなかった。欄の種類を
+  「本文の背景色（<code>MarginType.BackColor</code>）」に変えて直した。</p>
+
+  <h3>18.2 太さ：メモ帳も 1 px</h3>
+  <p>「太さを変えればよいか」という相談について：太さはメモ帳も MemoPad も 1 px で同じだった（Windows の「テキスト カーソルの太さ」が既定の 1 のとき）。
+  見づらさの主因は 18.1 の帯なので、太さは変えずに、<strong>Windows の設定（アクセシビリティ → テキスト カーソル → テキスト カーソルの太さ）に従う</strong>ようにした。
+  Scintilla はこの設定を読まないので、v0.10.1 までは設定で太くしても MemoPad だけ 1 px のままだった。起動時に設定を読み、
+  設定が変わったときの通知（<code>WM_SETTINGCHANGE</code>）でも読み直す。起動中に 1 → 4 → 1 と変えて、キャレットが 1 → 4 → 1 px に追従することを確かめた
+  （Scintilla.NET 7.0.0 は幅を 3 px までに制限していたが、7.1.1 で Scintilla 本来の 20 px まで使える）。</p>
+
+  <h3>18.3 余白の幅もメモ帳に合わせた</h3>
+  <p>見える左端から行頭のキャレットまでを測ると、メモ帳は 26 px（論理 17.3 px）、MemoPad は 13 px（論理 8.7 px）と半分しかなかった（150 % 表示）。
+  RichEdit 時代に決めた 8 px のままだったためで、最大化すると画面の縁から 13 px の位置に 1 px の線が立つことになる。
+  ユーザーと相談して余白を 8 → 17 px（96 dpi 換算）に広げ、メモ帳と同じ 26 px にした。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>確認（150 % 表示）</th><th>v0.10.1</th><th>v0.10.2</th><th>メモ帳</th></tr>
+    <tr><td>左の余白の色</td><td><code>#F0F0F0</code>（灰色）</td><td>本文の背景色</td><td>背景色</td></tr>
+    <tr><td>見える左端から行頭のキャレットまで</td><td>13 px</td><td><strong>26 px</strong></td><td>26 px</td></tr>
+    <tr><td>キャレットの太さ（設定が 1 のとき）</td><td>1 px</td><td>1 px</td><td>1 px</td></tr>
+    <tr><td>Windows の「テキスト カーソルの太さ」</td><td>効かない</td><td><strong>従う</strong>（起動中の変更にも追従）</td><td>—</td></tr>
+  </table>
+  </div>
+
+  <h2 id="fb24">19. FB-24：メニューのアクセス キーが効かない（v0.10.2）</h2>
+  <h3>19.1 見つけた経緯と現象</h3>
+  <p>FB-22 の確認で撮影スクリプト（<code>capture-memopad.ps1</code>）を流すと、フォント・色変更などのダイアログが 1 つも開かなかった。
+  修正前の v0.10.1 でも同じだった。キー入力を再現して調べると、<kbd>Alt</kbd>+<kbd>O</kbd> で書式メニューは開くが、続けて <kbd>F</kbd> を押すと
+  メニューが閉じて本文に「f」が入る（IME がオンなら未確定の文字になる）。矢印キーと <kbd>Enter</kbd> では選べる。
+  フォーカスが検索バーの入力欄にあるときは正しく開いた。IME は Meltype と Microsoft IME のどちらでも同じだった。</p>
+
+  <h3>19.2 原因：IME の確定文字はメニューを素通りする</h3>
+  <p>Windows Forms のメニューは、開いている間もフォーカスを本文に残したまま、キー入力のメッセージ（<code>WM_KEYDOWN</code>・<code>WM_CHAR</code>）を
+  メッセージ ループの段階でメニューへ付け替えて、アクセス キーを受け取っている。本文（Scintilla）に届いたメッセージを記録すると、
+  <kbd>F</kbd> を押したときに届いていたのは <code>WM_KEYDOWN</code> ではなく、IME からの <code>WM_IME_STARTCOMPOSITION</code> →
+  <code>WM_IME_COMPOSITION</code>（確定文字「f」）→ <code>WM_IME_ENDCOMPOSITION</code> だった。IME の確定文字はフォーカスのあるウィンドウへ直接送られるので、
+  付け替えを通らない。Windows 標準のメニューはメニューの間 IME を止めるが、Windows Forms のメニューは止めない。</p>
+  <figure>
+    <svg viewBox="0 0 720 210" width="100%" style="max-width:720px;display:block;margin:0 auto" role="img" aria-label="キー入力がメニューに届く経路と、IME を通って本文に届いてしまう経路">
+      <style>.b{font:13px "Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.v{font:12px "Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}</style>
+      <defs><marker id="fb24a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#59636e"/></marker>
+            <marker id="fb24r" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#c0392b"/></marker>
+            <marker id="fb24b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#0b5cad"/></marker></defs>
+      <rect x="10" y="80" width="80" height="40" rx="6" fill="#f6f8fa" stroke="#59636e"/><text x="50" y="105" class="b" text-anchor="middle">キー F</text>
+      <!-- 上：本来の経路 -->
+      <text x="120" y="22" class="v">メニューの間は IME を切り離す（v0.10.2）／入力欄にフォーカスがあるとき</text>
+      <path d="M90 92 L150 50" stroke="#0b5cad" stroke-width="1.6" fill="none" marker-end="url(#fb24b)"/>
+      <rect x="155" y="30" width="190" height="40" rx="6" fill="#eef4fb" stroke="#0b5cad"/><text x="250" y="55" class="b" text-anchor="middle">WM_KEYDOWN / WM_CHAR</text>
+      <path d="M345 50 L385 50" stroke="#0b5cad" stroke-width="1.6" fill="none" marker-end="url(#fb24b)"/>
+      <rect x="390" y="30" width="150" height="40" rx="6" fill="#eef4fb" stroke="#0b5cad"/><text x="465" y="49" class="b" text-anchor="middle">メッセージ ループ</text><text x="465" y="64" class="v" text-anchor="middle">メニューへ付け替え</text>
+      <path d="M540 50 L580 50" stroke="#0b5cad" stroke-width="1.6" fill="none" marker-end="url(#fb24b)"/>
+      <rect x="585" y="30" width="125" height="40" rx="6" fill="#eef4fb" stroke="#0b5cad"/><text x="647" y="49" class="b" text-anchor="middle">メニュー</text><text x="647" y="64" class="v" text-anchor="middle">「フォント」を実行</text>
+      <!-- 下：v0.10.1 の経路 -->
+      <text x="120" y="200" class="v">v0.10.1：本文にフォーカスがあり、IME が有効なとき</text>
+      <path d="M90 108 L150 150" stroke="#c0392b" stroke-width="1.6" fill="none" marker-end="url(#fb24r)"/>
+      <rect x="155" y="130" width="70" height="40" rx="6" fill="#fdf0ef" stroke="#c0392b"/><text x="190" y="155" class="b" text-anchor="middle">IME</text>
+      <path d="M225 150 L265 150" stroke="#c0392b" stroke-width="1.6" fill="none" marker-end="url(#fb24r)"/>
+      <rect x="270" y="130" width="230" height="40" rx="6" fill="#fdf0ef" stroke="#c0392b"/><text x="385" y="149" class="b" text-anchor="middle">WM_IME_COMPOSITION「f」</text><text x="385" y="164" class="v" text-anchor="middle">本文へ直接送られる</text>
+      <path d="M500 150 L580 150" stroke="#c0392b" stroke-width="1.6" fill="none" marker-end="url(#fb24r)"/>
+      <rect x="585" y="130" width="125" height="40" rx="6" fill="#fdf0ef" stroke="#c0392b"/><text x="647" y="149" class="b" text-anchor="middle">本文に「f」</text><text x="647" y="164" class="v" text-anchor="middle">メニューは閉じる</text>
+    </svg>
+    <figcaption>図 19-1：IME を通った文字はメッセージ ループの付け替えを通らずに本文へ届く</figcaption>
+  </figure>
+  <p>RichEdit 時代（v0.9.x）の撮影スクリプトではダイアログを撮れていたので、本文を Scintilla にした v0.10.0 から起きていたとみられる。</p>
+
+  <h3>19.3 直し方</h3>
+  <p>メニューが開いている間（メニュー バーは <code>MenuActivate</code>〜<code>MenuDeactivate</code>、右クリック メニューなどは
+  <code>Opened</code>〜<code>Closed</code>）だけ、フォーカスのある部品から IME を切り離し（<code>ImmAssociateContext</code> に NULL）、
+  閉じたら元に戻す（<code>MainForm.Menu.cs</code> の <code>SuspendImeForMenu</code>／<code>ResumeImeAfterMenu</code>）。Windows 標準のメニューと同じ振る舞いになる。</p>
+
+  <h3>19.4 確かめ方</h3>
+  <p>本物のキー入力と同じ経路（<code>keybd_event</code>）でキーを送り、ダイアログが開くか、検索バーにフォーカスが移るかを見た。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>操作（本文にフォーカスがある状態から）</th><th>v0.10.1</th><th>v0.10.2</th></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>O</kbd> → <kbd>F</kbd>（フォント）</td><td>NG</td><td>OK</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>F</kbd> → <kbd>U</kbd>（ページ設定）</td><td>NG</td><td>OK</td></tr>
+    <tr><td><kbd>Alt</kbd>+<kbd>H</kbd> → <kbd>A</kbd>（MemoPad について）</td><td>NG</td><td>OK</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>F10</kbd>（右クリック メニュー）→ <kbd>F</kbd>（検索）</td><td>NG</td><td>OK</td></tr>
+    <tr><td>上の 4 つを IME オン／IME を閉じた状態の両方で</td><td>8 件とも NG</td><td><strong>8 件とも OK</strong></td></tr>
+    <tr><td>メニューやダイアログを閉じたあと、IME で「あ」と入力できるか</td><td>OK</td><td>OK</td></tr>
+  </table>
+  </div>
+  <p>あわせて、IME がオンだと送った英字が未確定になって「編集すると * が付く」が誤って NG になる <code>test-editing.ps1</code> を、
+  入力の前に IME を閉じるように直した。</p>
+
+  <h2 id="notes">20. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
@@ -1426,6 +1616,11 @@ case WM_EXITSIZEMOVE:             // 放した
     <li><strong>PowerShell の関数名は既存のエイリアスに負ける。</strong><code>SI</code>（Set-Item）や <code>Sc</code>（Set-Content）という名前の関数を作っても、呼ぶとエイリアスのほうが動く。検証スクリプトの関数名は長めに付ける。</li>
     <li><strong>Windows Forms の <code>RichTextBox.WordWrap</code> はスクロールバーのスタイルまで決める。</strong>true のままだと横スクロールバーも横送りも付かない。折り返しを RichEdit へ直接指示して切り替える作りでは、見落としやすい。</li>
     <li><strong>自前描画はアクセシビリティを落とす。</strong>1 枚のコントロールに描いたタブは、見た目は同じでも支援技術からは何も見えない。実体のあるコントロール（<code>Button</code> 継承）にすると標準の仕組みに乗る。</li>
+    <li><strong>アセンブリ属性 1 つで 23 MB 読み込まれる。</strong>WPF テンプレートの <code>ThemeInfo</code> や、パッケージの Content に WPF のビルドが付ける属性は、どこからも使っていなくても、Windows Forms が exe の属性を調べるだけで WPF 本体を引き込む。「使っていない DLL がなぜ読まれるか」は <code>AppDomain.AssemblyLoad</code> で呼び出し元のスタックを残すと一発で分かる。</li>
+    <li><strong>初回起動の問題は、温まった状態の計測では見えない。</strong><code>robocopy /J</code>（バッファーを使わないコピー）で新しい場所へ写すと、管理者権限も再起動も無しに「キャッシュに無い状態」を作れる。普通のコピー＋全ファイル読み込みと組み合わせると、ディスクと Defender の取り分も分けられる。</li>
+    <li><strong>配色の不具合は、利用者の配色で確かめる。</strong>左の余白の灰色は白い背景では見えず、v0.10.0 から誰も気づかなかった。撮影スクリプトは設定を退避して既定の配色で撮るので、濃い配色での見え方は別に確かめる。</li>
+    <li><strong>IME の確定文字はメッセージ ループの付け替えを通らない。</strong>Windows Forms のメニューは本文にフォーカスを残したままキー入力を横取りする作りなので、IME が有効な部品にフォーカスがあるとアクセス キーが効かない。日本語環境では「IME がオンのまま」が普通の状態なので、キー操作の確認は IME オンでも行う。</li>
+    <li><strong>保存しない <code>SystemParametersInfo</code> の変更では <code>WM_SETTINGCHANGE</code> が配られない。</strong>テキスト カーソルの太さを一時的に変えて追従を確かめようとして、通知が届かず悩んだ。利用者の設定を書き換えずに試すには、値だけ変えて通知は対象に直接送る。</li>
   </ul>
 </main>
 <footer class="site">

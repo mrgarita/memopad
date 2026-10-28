@@ -12,7 +12,10 @@ step3（フィードバック対応）を進行中。10 回目までのフィー
 不具合のある v0.6.0〜v0.9.1 のインストーラは削除したまま（ローカルの `installer/output/` には全バージョンがある）。
 **FB-21「大きなファイルを開いた直後だけウィンドウ移動がカクつく」は v0.10.1 で対応済み**
 （原因は Scintilla が折り返しの計算を 10 ms ずつ空き時間に進めること。対策 4 案を実測して
-「移動・リサイズ中だけ計算を止める」を採用。`docs/site/step3/index.html` 15.9・16 節）。「正」となるのは
+「移動・リサイズ中だけ計算を止める」を採用。`docs/site/step3/index.html` 15.9・16 節）。
+**11 回目のフィードバック（2026-10-28）の FB-22「端末を起動して最初の起動だけ遅い」、FB-23「行頭のカーソルが
+見づらい」と、確認中に見つけた FB-24「メニューのアクセス キーが効かない」は v0.10.2 で対応し、ユーザーの確認待ち**
+（17〜19 節。公開はユーザーの確認後）。「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#。メイン ウィンドウは Windows Forms、ダイアログは WPF）、
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
@@ -98,10 +101,13 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   （子が HTCLIENT と答えると親の答えが使われず、移動もリサイズもできなくなる。v0.8.0 の不具合。
   新しく縁に届くコントロールを足すときは同じ 3 行を入れる）。タイトル行のタブとボタンは `Button` を
   継承した実体のあるコントロールにする（素の `Control` に自前描画すると UI Automation から見えず、
-  支援技術と `docs\tools\test-tabclick.ps1` の確認が効かなくなる）。配色は `Services/ThemeService.cs` の
+  支援技術と `docs\tools\test-tabclick.ps1` の確認が効かなくなる）。**メニューを開いている間は、フォーカスのある
+  部品から IME を切り離す**（`MainForm.Menu.cs` の `SuspendImeForMenu`。Windows Forms のメニューは本文にフォーカスを
+  残したままキー入力を付け替えて受け取るが、IME の確定文字は本文へ直接送られて付け替えを通らず、アクセス キーが
+  効かなかった。FB-24。新しくポップアップ メニューを作るときは `NewPopupMenu` を使えば自動で入る）。配色は `Services/ThemeService.cs` の
   `ThemePalette`、メニューの見た目は `Views/FluentMenuRenderer.cs`（項目の字下げはチェック欄
   `ShowImageMargin` の有無で決まる。`ToolStripMenuItem.Padding` の左右は効かない）
-- **本文のエディタ**：**Scintilla**（NuGet の `Scintilla5.NET`。`Views/PlainTextEdit.cs` が
+- **本文のエディタ**：**Scintilla**（NuGet の `Scintilla5.NET` 7.1.1＝Scintilla 5.6.7。`Views/PlainTextEdit.cs` が
   `ScintillaNET.Scintilla` を継承）。v0.2.0〜v0.9.2 は Win32 の RichEdit だったが、**日本語と英字が
   混ざった行のレイアウトが極端に遅く**、10 MB・12 万行のファイルで 43 秒固まり、その後もリサイズのたびに
   28 秒固まるため v0.10.0 で置き換えた（FB-19）。原因は GDI への文字幅の問い合わせで、RichEdit でも
@@ -122,6 +128,11 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
     そのタイマーを通さないようにした**（`PlainTextEdit.PauseIdleWork` と `MainForm.WndProc`）。
     見えている範囲の折り返しは描画時に計算されるので表示は正しく、放すと計算は再開して最後まで終わる。
     DirectWrite ＋ `SCI_SETLAYOUTTHREADS` も試したが、文字のにじみ方が変わり読み込みが 0.2 秒増えるので不採用（16 節）
+  - **左の余白は 0 番の欄を `MarginType.BackColor`（本文の背景色）で作る**。`Symbol` 型だと `StyleClearAll` が
+    戻すシステムの灰色 #F0F0F0 で塗られ、濃い配色で行頭のキャレットが帯にまぎれた（FB-23）。幅は 17 px（96 dpi。
+    150 % で見える左端からキャレットまで 26 px＝メモ帳と同じ）。**キャレットの太さは Windows の「テキスト カーソルの
+    太さ」（`SPI_GETCARETWIDTH`）に従う**（Scintilla は読まないので `ApplySystemCaretWidth` で渡し、`MainForm` が
+    `WM_SETTINGCHANGE` で配り直す）
   - **既知の問題：折り返しの計算中（開いた直後の約 4 秒）に文字を打つと 1 文字 117〜133 ms かかる**
     （計算が終われば 15.7 ms）。レイアウト結果を待つためで、別課題として扱う
   - **既知の問題：本文が UI Automation に出ない**（`ControlType.Pane`・パターンなし）。RichEdit は
@@ -139,7 +150,17 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   （`docs/site/step3/index.html` 8〜9 節）。効いている対策は Windows Forms 化のほか、
   設定 JSON のソース ジェネレーター変換、`Services/StartupWarmup.cs` の別スレッド先読み、
   アプリ本体の `PublishReadyToRun`。複合 ReadyToRun（`PublishReadyToRunComposite`）は初回起動が
-  3 秒以上悪化するので使わない
+  3 秒以上悪化するので使わない。単一ファイル発行（`PublishSingleFile`）も Defender が 157 MB の exe を丸ごと検査して
+  初回 3.5 秒になるので使わない
+- **初回起動（端末の起動直後）**：起動時に触るファイルの量がそのまま時間になる（ディスク読み込みと Defender の初回検査が
+  ほぼ半々）。v0.10.2 で 48 個・76.8 MB → 43 個・50.9 MB に減らした（FB-22。17 節）。守ること：
+  - **アセンブリ属性に WPF の型を置かない**（WPF テンプレートの `ThemeInfo` など）。Windows Forms の初期化が exe の
+    属性を調べるだけで WPF 本体（約 23 MB）が読み込まれる
+  - **Scintilla5.NET の `runtimes\**` の Content は csproj の `RemoveScintillaContent` で外す**（WPF のビルドが Content ごとに
+    PresentationCore の属性を付けるため）。DLL の場所は `Program.Main` の `ScintillaNativeLibrary.SatelliteDirectory`
+  - **Scintilla の DLL の電子署名の検証は切る**（`VerifyScintillaDll`／`VerifyLexillaDll = false`。7.1.0 以上が必要）
+  - 起動時に読まれる DLL と呼び出し元は `MEMOPAD_PERF=1` の診断ログ（`PerfLog.TraceAssemblyLoads`）で分かる。
+    キャッシュに無い状態は、発行フォルダーを `robocopy /J` で新しい場所へ写して起動すると近似できる（再起動不要）
 - **インストーラ**：Inno Setup 6（winget で導入済み）。`installer\build-installer.ps1`
   で self-contained 発行→ `installer\output\MemoPad-setup-<version>.exe`
 - **色の機能**：「色変更」ダイアログ（`Dialogs/ColorChangeDialog`、PICO-8 の 16 色＋カラーピッカー。

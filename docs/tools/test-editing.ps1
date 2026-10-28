@@ -28,6 +28,8 @@ public static class Ed {
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowTextW(IntPtr h, StringBuilder sb, int n);
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+  [DllImport("imm32.dll")] public static extern IntPtr ImmGetDefaultIMEWnd(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
 }
 "@
 [Ed]::SetProcessDPIAware() | Out-Null
@@ -52,6 +54,8 @@ function Start-App([string]$file) {
     [uint32]$fp = 0
     [Ed]::GetWindowThreadProcessId([Ed]::GetForegroundWindow(), [ref]$fp) | Out-Null
     if ($fp -ne $p.Id) { throw '前面化できませんでした' }
+    # IME を閉じる（オンのままだと送った英字が未確定の文字になり、編集されない。WM_IME_CONTROL＋IMC_SETOPENSTATUS）
+    [Ed]::SendMessage([Ed]::ImmGetDefaultIMEWnd($h), 0x283, [IntPtr]6, [IntPtr]0) | Out-Null
     return @($p, $h)
 }
 function Title([IntPtr]$h) { $sb = New-Object System.Text.StringBuilder 256; [Ed]::GetWindowTextW($h, $sb, 256) | Out-Null; $sb.ToString() }

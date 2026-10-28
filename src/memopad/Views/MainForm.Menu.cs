@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Memopad.Models;
 using Memopad.Services;
@@ -47,6 +48,9 @@ public sealed partial class MainForm
             ShowItemToolTips = false,
             GripStyle = ToolStripGripStyle.Hidden,
         };
+        // メニューを開いている間は、本文から IME を切り離す（アクセス キーを効かせるため。SuspendImeForMenu）
+        menu.MenuActivate += (_, _) => SuspendImeForMenu();
+        menu.MenuDeactivate += (_, _) => ResumeImeAfterMenu();
 
         // ファイル
         _recentMenu = SubMenu("最近使ったファイル(&R)", new ToolStripMenuItem("(なし)") { Enabled = false });
@@ -166,10 +170,49 @@ public sealed partial class MainForm
     {
         var menu = new ContextMenuStrip { Renderer = _renderer, Font = Font, Padding = new Padding(S(4)), ImageScalingSize = new Size(S(16), S(16)), ShowImageMargin = checkable };
         menu.Opening += (_, _) => ThemeService.ApplySmallRoundedCorners(menu.Handle);
+        menu.Opened += (_, _) => SuspendImeForMenu();
+        menu.Closed += (_, _) => ResumeImeAfterMenu();
         // Closed の中で破棄すると、その後の後始末が破棄済みオブジェクトに触れて例外になる。
         // メッセージを処理し終えてから捨てる
         menu.Closed += (_, _) => BeginInvoke(() => menu.Dispose());
         return menu;
+    }
+
+    [DllImport("imm32.dll")]
+    private static extern IntPtr ImmAssociateContext(IntPtr hWnd, IntPtr hIMC);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetFocus();
+
+    private IntPtr _imeSuspendedWindow;
+    private IntPtr _imeSavedContext;
+
+    /// <summary>
+    /// メニューを開いている間だけ、フォーカスのある部品（ふつうは本文）から IME を切り離す。
+    ///
+    /// Windows Forms のメニューは、開いている間もフォーカスを本文に残し、キー入力のメッセージを
+    /// メニューへ付け替えることでアクセス キー（「フォント(F)」の F など）を受け取っている。ところが
+    /// IME が有効だと、押した文字は IME を通って確定文字（WM_IME_COMPOSITION）として本文へ直接送られ、
+    /// この付け替えを通らない。そのため本文にフォーカスがあると、メニューを開いて F を押しても
+    /// メニューが閉じて「f」が本文に入っていた（v0.10.0 で本文を Scintilla にしてから。IME の種類によらない）。
+    /// Windows 標準のメニューと同じく、メニューの間は IME を止めて、文字をメニューに届ける。
+    /// </summary>
+    private void SuspendImeForMenu()
+    {
+        if (_imeSuspendedWindow != IntPtr.Zero) return;
+        var focus = GetFocus();
+        if (focus == IntPtr.Zero) return;
+        _imeSuspendedWindow = focus;
+        _imeSavedContext = ImmAssociateContext(focus, IntPtr.Zero);
+    }
+
+    /// <summary>メニューを閉じたら、切り離した IME を元に戻す。</summary>
+    private void ResumeImeAfterMenu()
+    {
+        if (_imeSuspendedWindow == IntPtr.Zero) return;
+        ImmAssociateContext(_imeSuspendedWindow, _imeSavedContext);
+        _imeSuspendedWindow = IntPtr.Zero;
+        _imeSavedContext = IntPtr.Zero;
     }
 
     private void RebuildRecentMenu()

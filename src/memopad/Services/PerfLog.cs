@@ -19,6 +19,22 @@ public static class PerfLog
     public static double SinceProcessStart =>
         (DateTime.Now - Process.GetCurrentProcess().StartTime).TotalMilliseconds;
 
+    /// <summary>
+    /// アセンブリが読み込まれるたびに記録する（MEMOPAD_PERF=1 のときだけ）。
+    /// 起動時に不要な DLL を読んでいないかを調べるため。WPF などは呼び出し元のスタックも残す。
+    /// </summary>
+    public static void TraceAssemblyLoads()
+    {
+        if (!Enabled) return;
+        AppDomain.CurrentDomain.AssemblyLoad += (_, e) =>
+        {
+            var name = e.LoadedAssembly.GetName().Name ?? "";
+            var stack = name.StartsWith("Presentation") || name.StartsWith("WindowsBase") || name.Contains("Cryptography")
+                ? "\n" + new StackTrace(1, false) : "";
+            Write($"起動 {SinceProcessStart,7:F0} ms  [{Environment.CurrentManagedThreadId}] アセンブリ読み込み {name}{stack}");
+        };
+    }
+
     /// <summary>起動処理の段階を記録する（MEMOPAD_PERF=1 のときだけ）。</summary>
     public static void Mark(string stage)
     {

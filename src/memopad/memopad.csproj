@@ -16,7 +16,7 @@
     <!-- アイコンはユーザー提供のデザイン（クリーム色の文書に緑の罫線）。v0.8.0 で差し替え -->
     <ApplicationIcon>memopad.ico</ApplicationIcon>
     <RootNamespace>Memopad</RootNamespace>
-    <Version>0.10.1</Version>
+    <Version>0.10.2</Version>
     <Product>MemoPad</Product>
     <Description>背景色と文字色を変えられるメモ帳</Description>
     <Copyright>mrgarita</Copyright>
@@ -40,8 +40,21 @@
     <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.11" />
     <!-- 本文のエディタ。v0.10.0 で RichEdit から Scintilla に替えた（FB-19）。
          RichEdit は日本語と英字が混ざる行のレイアウトが極端に遅く、大きなファイルで画面が固まる。
-         Scintilla は同じ計算を空き時間に細切れで行うので止まらない（docs/site/step3 の 15 節） -->
-    <PackageReference Include="Scintilla5.NET" Version="7.0.0" />
+         Scintilla は同じ計算を空き時間に細切れで行うので止まらない（docs/site/step3 の 15 節）。
+         7.1.1 以上が必要：起動時の電子署名の検証を切るスイッチ（ScintillaNativeLibrary.VerifyScintillaDll）が
+         7.1.0 で入った（FB-22。7.1.0 は DLL 名を誤って出しているので使わない） -->
+    <PackageReference Include="Scintilla5.NET" Version="7.1.1" />
   </ItemGroup>
+
+  <!-- Scintilla5.NET のパッケージは、全 CPU 向けの Scintilla.dll／Lexilla.dll（runtimes\**）を Content として足す。
+       WPF のビルドは Content のファイルごとに PresentationCore の属性（AssemblyAssociatedContentFile）を exe に付け、
+       Windows Forms の初期化がそれを調べるときに PresentationCore（約 8 MB）が起動時に読み込まれてしまう（FB-22）。
+       win-x64 向けに発行すると DLL は exe と同じフォルダーにも入るので、この Content は外す
+       （探す場所は Program.Main で ScintillaNativeLibrary.SatelliteDirectory に指定している） -->
+  <Target Name="RemoveScintillaContent" BeforeTargets="AssignTargetPaths;MarkupCompilePass1">
+    <ItemGroup>
+      <Content Remove="@(Content)" Condition="$([System.String]::new('%(Content.Link)').StartsWith('runtimes\'))" />
+    </ItemGroup>
+  </Target>
 
 </Project>

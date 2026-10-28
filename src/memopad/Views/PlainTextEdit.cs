@@ -29,8 +29,18 @@ public sealed class PlainTextEdit : Scintilla
     /// <summary>Scintilla が空き時間の処理（折り返しの計算）に使うタイマーの番号。</summary>
     private const int ScintillaIdleTimerId = 2;
 
-    /// <summary>本文の左の余白（96 dpi のときの px）。メモ帳の見た目に合わせる。</summary>
-    private const int LeftPadding = 8;
+    /// <summary>
+    /// 本文の左の余白（96 dpi のときの px）。メモ帳の見た目に合わせる。
+    /// v0.10.1 までは 8 で、行頭のキャレットがウィンドウの左端から約 8.7 px と、メモ帳（約 17 px）の半分しかなく、
+    /// 最大化すると画面の縁に寄って見失いやすかった（FB-23）。150 % 表示で見える左端から 26 px＝メモ帳と同じ
+    /// </summary>
+    private const int LeftPadding = 17;
+
+    /// <summary>Windows の「テキスト カーソルの太さ」（px）を読む SystemParametersInfo の番号。</summary>
+    private const uint SPI_GETCARETWIDTH = 0x2006;
+
+    [DllImport("user32.dll")]
+    private static extern bool SystemParametersInfo(uint action, uint param, out uint value, uint winIni);
 
     [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
     private static extern int SetWindowTheme(IntPtr hWnd, string? subAppName, string? subIdList);
@@ -229,12 +239,24 @@ public sealed class PlainTextEdit : Scintilla
         ApplyLeftPadding();
     }
 
+    /// <summary>
+    /// キャレットの太さを Windows の設定（アクセシビリティ → テキスト カーソル → テキスト カーソルの太さ）に合わせる。
+    /// メモ帳はこの設定に従うが、Scintilla は読まないので自分で渡す（FB-23）。Scintilla が受け付けるのは 1〜20 px。
+    /// 設定が変わったときは <see cref="MainForm"/> が WM_SETTINGCHANGE を受けて呼び直す。
+    /// </summary>
+    public void ApplySystemCaretWidth()
+    {
+        var width = SystemParametersInfo(SPI_GETCARETWIDTH, 0, out var value, 0) ? (int)value : 1;
+        CaretWidth = Math.Clamp(width, 1, 20);
+    }
+
     protected override void OnHandleCreated(EventArgs e)
     {
         Services.PerfLog.Mark("Scintilla の HWND を生成");
         base.OnHandleCreated(e);
         ApplyScrollBarTheme();
         ApplyLeftPadding();
+        ApplySystemCaretWidth();
         RegisterFileDropTarget();
         Services.PerfLog.Mark("Scintilla の初期化を完了");
     }
@@ -310,12 +332,17 @@ public sealed class PlainTextEdit : Scintilla
         SetWindowTheme(Handle, _darkScrollBars ? "DarkMode_Explorer" : "Explorer", null);
     }
 
-    /// <summary>本文の左に余白を入れる（メモ帳の左余白に合わせる）。Scintilla の余白は 0 番の欄で作る。</summary>
+    /// <summary>
+    /// 本文の左に余白を入れる（メモ帳の左余白に合わせる）。Scintilla の余白は 0 番の欄で作る。
+    /// 欄は本文と同じ背景色（BackColor 型）で塗る。Symbol 型だと行番号のスタイルの背景色で塗られ、
+    /// それは StyleClearAll でシステムの灰色（#F0F0F0）に戻されるため、濃い配色では左端に明るい帯が出て、
+    /// 行頭のキャレットが帯の縁にまぎれて見えなくなっていた（FB-23）。
+    /// </summary>
     private void ApplyLeftPadding()
     {
         var scale = DeviceDpi / 96.0;
         for (var i = 0; i < Margins.Count; i++) Margins[i].Width = 0;
-        Margins[0].Type = MarginType.Symbol;
+        Margins[0].Type = MarginType.BackColor;
         Margins[0].Mask = 0;
         Margins[0].Sensitive = false;
         Margins[0].Width = (int)(LeftPadding * scale);
