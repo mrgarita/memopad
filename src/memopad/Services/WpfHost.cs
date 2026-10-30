@@ -25,6 +25,18 @@ public static class WpfHost
         ApplyTheme(theme);
     }
 
+    /// <summary>
+    /// オーナーのいるモニターの作業領域（タスク バーを除く範囲）の高さを、WPF の単位（1/96 インチ）で返す。
+    /// ダイアログの MaxHeight に入れておけば、画面の低い端末でもボタンが画面の外に出ない（FB-26）。
+    /// </summary>
+    public static double WorkAreaHeight(IntPtr owner)
+    {
+        // Per-Monitor V2 で動いているので作業領域は物理ピクセル。オーナー（メイン ウィンドウ）の DPI で割り戻す
+        var workArea = System.Windows.Forms.Screen.FromHandle(owner).WorkingArea;
+        int dpi = System.Windows.Forms.Control.FromHandle(owner)?.DeviceDpi ?? 96;
+        return workArea.Height * 96.0 / dpi;
+    }
+
     /// <summary>テーマ（ライト／ダーク／システム設定）を WPF 側にも反映する。WPF が未初期化なら何もしない。</summary>
     public static void ApplyTheme(string theme)
     {

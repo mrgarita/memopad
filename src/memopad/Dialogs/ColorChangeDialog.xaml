@@ -9,6 +9,7 @@
         背景色と文字色を 1 つのウィンドウで変える（step3 FB-3）。
         16 色は PICO-8 パレット。「その他の色...」は Windows 標準の色の設定ダイアログ。
         下のプレビューには現在のフォントで見本を出す。
+        AccessText を中身にしたボタンは読み上げ用の名前が空になるので、AutomationProperties.Name を明示する。
     -->
     <Window.Resources>
         <!-- 色見本のボタン。選択中は太い枠で示す -->
@@ -58,7 +59,7 @@
             <StackPanel>
                 <UniformGrid x:Name="BackgroundSwatches" Columns="4" HorizontalAlignment="Left" />
                 <DockPanel Margin="3,10,3,0">
-                    <Button DockPanel.Dock="Right" x:Name="BackgroundOtherButton" Padding="10,4" Click="BackgroundOther_Click"><AccessText Text="その他の色(_M)..." /></Button>
+                    <Button DockPanel.Dock="Right" x:Name="BackgroundOtherButton" Padding="10,4" Click="BackgroundOther_Click" AutomationProperties.Name="その他の色(M)..."><AccessText Text="その他の色(_M)..." /></Button>
                     <Border x:Name="BackgroundCurrent" Width="24" Height="24" CornerRadius="4" BorderBrush="#80808080" BorderThickness="1" VerticalAlignment="Center" />
                     <TextBlock x:Name="BackgroundHex" Margin="8,0,0,0" VerticalAlignment="Center" />
                 </DockPanel>
@@ -70,7 +71,7 @@
             <StackPanel>
                 <UniformGrid x:Name="ForegroundSwatches" Columns="4" HorizontalAlignment="Left" />
                 <DockPanel Margin="3,10,3,0">
-                    <Button DockPanel.Dock="Right" x:Name="ForegroundOtherButton" Padding="10,4" Click="ForegroundOther_Click"><AccessText Text="その他の色(_O)..." /></Button>
+                    <Button DockPanel.Dock="Right" x:Name="ForegroundOtherButton" Padding="10,4" Click="ForegroundOther_Click" AutomationProperties.Name="その他の色(O)..."><AccessText Text="その他の色(_O)..." /></Button>
                     <Border x:Name="ForegroundCurrent" Width="24" Height="24" CornerRadius="4" BorderBrush="#80808080" BorderThickness="1" VerticalAlignment="Center" />
                     <TextBlock x:Name="ForegroundHex" Margin="8,0,0,0" VerticalAlignment="Center" />
                 </DockPanel>
@@ -87,7 +88,7 @@
 
         <!-- ボタン -->
         <DockPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,16,0,0">
-            <Button DockPanel.Dock="Left" Padding="12,6" Click="Reset_Click"><AccessText Text="既定の色に戻す(_D)" /></Button>
+            <Button DockPanel.Dock="Left" Padding="12,6" Click="Reset_Click" AutomationProperties.Name="既定の色に戻す(D)"><AccessText Text="既定の色に戻す(_D)" /></Button>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="OK" MinWidth="96" Padding="12,6" IsDefault="True" Click="Ok_Click" />
                 <Button Content="キャンセル" MinWidth="96" Padding="12,6" Margin="10,0,0,0" IsCancel="True" />

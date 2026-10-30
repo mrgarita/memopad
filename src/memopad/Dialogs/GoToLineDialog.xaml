@@ -12,7 +12,8 @@
         <TextBox x:Name="LineTextBox" Margin="0,0,0,4" />
         <TextBlock x:Name="RangeText" Opacity="0.7" Margin="0,0,0,16" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button MinWidth="96" Margin="0,0,8,0" IsDefault="True" Click="GoButton_Click">
+            <!-- AccessText を中身にしたボタンは読み上げ用の名前が空になるので、Name を明示する -->
+            <Button MinWidth="96" Margin="0,0,8,0" IsDefault="True" Click="GoButton_Click" AutomationProperties.Name="移動(G)">
                 <AccessText Text="移動(_G)" />
             </Button>
             <Button Content="キャンセル" MinWidth="96" IsCancel="True" />

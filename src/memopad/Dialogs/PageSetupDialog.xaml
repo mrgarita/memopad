@@ -11,10 +11,11 @@
     <StackPanel Margin="20">
         <TextBlock Text="印刷の向き" FontWeight="SemiBold" Margin="0,0,0,6" />
         <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-            <RadioButton x:Name="PortraitRadio" Margin="0,0,20,0" IsChecked="True">
+            <!-- AccessText を中身にすると読み上げ用の名前が空になるので、Name を明示する -->
+            <RadioButton x:Name="PortraitRadio" Margin="0,0,20,0" IsChecked="True" AutomationProperties.Name="縦(O)">
                 <AccessText Text="縦(_O)" />
             </RadioButton>
-            <RadioButton x:Name="LandscapeRadio">
+            <RadioButton x:Name="LandscapeRadio" AutomationProperties.Name="横(A)">
                 <AccessText Text="横(_A)" />
             </RadioButton>
         </StackPanel>

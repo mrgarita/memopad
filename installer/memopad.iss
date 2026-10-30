@@ -17,8 +17,8 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
-; インストーラ自体のアイコンもアプリと同じにする
-SetupIconFile=..\src\memopad\memopad.ico
+; インストーラ自体のアイコンは Inno Setup 標準（箱に下向きの矢印）のままにする。
+; v0.6.0〜v0.10.2 はアプリと同じアイコンにしていたが、インストーラだと見分けにくいので戻した（FB-27）
 OutputDir=output
 OutputBaseFilename=MemoPad-setup-{#MyAppVersion}
 Compression=lzma2

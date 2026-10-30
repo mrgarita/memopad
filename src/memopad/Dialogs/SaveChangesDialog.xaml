@@ -11,11 +11,12 @@
     <StackPanel Margin="20">
         <TextBlock x:Name="MessageText" TextWrapping="Wrap" FontSize="14" Margin="0,0,0,20" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <!-- Fluent テーマの Button は文字列の "_" をアクセスキーとして扱わないので AccessText を使う -->
-            <Button x:Name="SaveButton" MinWidth="96" Margin="0,0,8,0" IsDefault="True" Click="SaveButton_Click">
+            <!-- Fluent テーマの Button は文字列の "_" をアクセスキーとして扱わないので AccessText を使う。
+                 AccessText だと読み上げ用の名前が空になるので、Name を明示する -->
+            <Button x:Name="SaveButton" MinWidth="96" Margin="0,0,8,0" IsDefault="True" Click="SaveButton_Click" AutomationProperties.Name="保存(S)">
                 <AccessText Text="保存(_S)" />
             </Button>
-            <Button x:Name="DontSaveButton" MinWidth="96" Margin="0,0,8,0" Click="DontSaveButton_Click">
+            <Button x:Name="DontSaveButton" MinWidth="96" Margin="0,0,8,0" Click="DontSaveButton_Click" AutomationProperties.Name="保存しない(N)">
                 <AccessText Text="保存しない(_N)" />
             </Button>
             <Button x:Name="CancelButton" Content="キャンセル" MinWidth="96" IsCancel="True" />

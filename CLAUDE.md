@@ -14,8 +14,13 @@ step3（フィードバック対応）を進行中。10 回目までのフィー
 （原因は Scintilla が折り返しの計算を 10 ms ずつ空き時間に進めること。対策 4 案を実測して
 「移動・リサイズ中だけ計算を止める」を採用。`docs/site/step3/index.html` 15.9・16 節）。
 **11 回目のフィードバック（2026-10-28）の FB-22「端末を起動して最初の起動だけ遅い」、FB-23「行頭のカーソルが
-見づらい」と、確認中に見つけた FB-24「メニューのアクセス キーが効かない」は v0.10.2 で対応し、ユーザーの確認待ち**
-（17〜19 節。公開はユーザーの確認後）。「正」となるのは
+見づらい」と、確認中に見つけた FB-24「メニューのアクセス キーが効かない」は v0.10.2 で対応した**（17〜19 節。
+FB-22 は 2026-10-30 に「速くなった」と確認済み、FB-23・24 は確認待ち）。**12 回目のフィードバック（2026-10-30）の
+FB-26「1920×1080 で配色パターンの画面が切れる」、FB-27「インストーラのアイコンを v0.5 までのものに戻す」と、
+確認中に見つけた FB-28「ボタンの名前が読み上げられない」は v0.10.3 で対応し、ユーザーの確認待ち**（21〜23 節）。
+v0.10.2 は公開せず、確認が済めば v0.10.3 を公開する。**FB-25「それでも初回起動にひと呼吸ある」は相談中**
+（20 節。残りの 8 割は .NET ランタイムと Windows Forms 本体。サインイン時の先読みを入れるかをユーザーに相談している）。
+「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
 仕分け表（再現する機能の確定リスト）。実装は `src/memopad/`（C#。メイン ウィンドウは Windows Forms、ダイアログは WPF）、
 インストーラは `installer/`、備忘録サイトは `docs/site/` にある。
@@ -91,7 +96,12 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
 
 - **アプリ本体**：C#（.NET 9、`net9.0-windows`）。**メイン ウィンドウは Windows Forms**
   （`Views/MainForm.cs` と `Views/TitleBar.cs` など。入口は `Program.cs`）、**ダイアログは WPF**
-  （`Dialogs/`。`Services/WpfHost.cs` が最初に開くときだけ WPF を初期化する）。v0.7.0 までは
+  （`Dialogs/`。`Services/WpfHost.cs` が最初に開くときだけ WPF を初期化する）。**ダイアログの高さは
+  1920×1080・表示スケール 150 % の作業領域（論理 672 px）に収める**（開発機は 2560×1440 で 912 px あるので
+  気づきにくい。FB-26）。中身が増えうるものは `WpfHost.WorkAreaHeight(owner)` を `MaxHeight` に入れ、一覧などの
+  一部だけをスクロールさせて OK・キャンセルを常に見せる（`ColorSchemeDialog` が例）。**アクセス キーのために
+  中身を `AccessText` にしたボタンには `AutomationProperties.Name` を付ける**（付けないと読み上げ・UI Automation で
+  名前が空になる。Fluent テーマの Button は文字列の `_` をアクセス キーにしないので `AccessText` が要る。FB-28）。v0.7.0 までは
   全体が WPF だったが、起動時間がメモ帳に届かないため v0.8.0 で作り直した（`docs/site/step3/index.html`
   8〜9 節）。Visual Studio 2022 が無い端末でも `dotnet` CLI だけでビルドできる構成
   （`memopad.sln` があるので Visual Studio でも開ける）。選定理由は `docs/site/step2/index.html` 1 節
@@ -161,8 +171,13 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   - **Scintilla の DLL の電子署名の検証は切る**（`VerifyScintillaDll`／`VerifyLexillaDll = false`。7.1.0 以上が必要）
   - 起動時に読まれる DLL と呼び出し元は `MEMOPAD_PERF=1` の診断ログ（`PerfLog.TraceAssemblyLoads`）で分かる。
     キャッシュに無い状態は、発行フォルダーを `robocopy /J` で新しい場所へ写して起動すると近似できる（再起動不要）
+  - 残りの 51.0 MB のうち 41.6 MB（82 %）は .NET ランタイムと Windows Forms 本体で、作りを変えずに削れるのは
+    Lexilla.dll と文字コード表の 2.1 MB（約 4 %）だけ（効果が小さいので見送り）。Native AOT・トリミングは Windows Forms が
+    未対応（FB-25。`docs/site/step3/index.html` 20 節）
 - **インストーラ**：Inno Setup 6（winget で導入済み）。`installer\build-installer.ps1`
-  で self-contained 発行→ `installer\output\MemoPad-setup-<version>.exe`
+  で self-contained 発行→ `installer\output\MemoPad-setup-<version>.exe`。**インストーラ自体のアイコンは
+  Inno Setup 標準**（`SetupIconFile` は指定しない。アプリと同じアイコンだとインストーラと見分けにくいため、
+  v0.6.0〜v0.10.2 の指定を v0.10.3 で外した。FB-27）
 - **色の機能**：「色変更」ダイアログ（`Dialogs/ColorChangeDialog`、PICO-8 の 16 色＋カラーピッカー。
   v0.4.0）と「配色パターン」ダイアログ（`Dialogs/ColorSchemeDialog`、`Services/ColorSchemes.cs` の
   16 パターン。v0.5.0）。どちらも結果は設定の背景色・文字色（"#RRGGBB"）に入る

@@ -45,6 +45,10 @@
       <li><a href="#fb22">FB-22：端末を起動して最初の起動だけ遅い（v0.10.2）</a></li>
       <li><a href="#fb23">FB-23：行頭のカーソルが見づらい（v0.10.2）</a></li>
       <li><a href="#fb24">FB-24：メニューのアクセス キーが効かない（v0.10.2）</a></li>
+      <li><a href="#fb25">FB-25：それでも最初の起動に「ひと呼吸」ある（相談中）</a></li>
+      <li><a href="#fb26">FB-26：配色パターンの画面が 1920×1080 で切れる（v0.10.3）</a></li>
+      <li><a href="#fb27">FB-27：インストーラのアイコンを v0.5 までのものに戻す（v0.10.3）</a></li>
+      <li><a href="#fb28">FB-28：ボタンの名前が読み上げられない（v0.10.3）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -147,12 +151,24 @@
   <div class="table-wrap">
   <table>
     <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
-    <tr><td>FB-22</td><td>性能</td><td>端末を起動して最初にアプリを起動するときだけ時間がかかる。一度起動すれば、終了して再度起動してもすぐに起動する。いくつかの端末で同じ</td><td>v0.10.2</td><td><span class="tag maybe">確認待ち</span></td></tr>
+    <tr><td>FB-22</td><td>性能</td><td>端末を起動して最初にアプリを起動するときだけ時間がかかる。一度起動すれば、終了して再度起動してもすぐに起動する。いくつかの端末で同じ</td><td>v0.10.2</td><td><span class="tag must">対応済み</span>（速くなったことを確認。残りは FB-25）</td></tr>
     <tr><td>FB-23</td><td>改善</td><td>カーソル（キャレット）が画面の左端にあると見づらく、使っている途中で何度も位置を見失う。単純にカーソルの太さを変えればよいのか</td><td>v0.10.2</td><td><span class="tag maybe">確認待ち</span></td></tr>
     <tr><td>FB-24</td><td>不具合</td><td>（確認中に発見）本文にフォーカスがあると、メニューを開いてもアクセス キー（<kbd>Alt</kbd>+<kbd>O</kbd> → <kbd>F</kbd> など）が効かず、メニューが閉じて本文に文字が入る。v0.10.0 から</td><td>v0.10.2</td><td><span class="tag maybe">確認待ち</span></td></tr>
   </table>
   </div>
   <p>FB-22 は、起動時に使わない WPF 本体（約 23 MB）を読み込んでいたことと、Scintilla の DLL の電子署名を毎回検証していたことが重なっていた。どちらもやめて、起動時に読む DLL を 76.8 MB → 50.9 MB に減らした。ディスク キャッシュに載っていない状態からの起動は 902 → 737 ms（ウィンドウ表示）になった（<a href="#fb22">17 節</a>）。FB-23 は太さではなく<strong>左の余白が灰色で塗られていた</strong>のが主因で、濃い配色だと行頭のキャレットが灰色の帯の縁にまぎれていた。余白を背景色で塗り、幅もメモ帳に合わせ、Windows の「テキスト カーソルの太さ」にも従うようにした（<a href="#fb23">18 節</a>）。FB-24 は FB-22 の確認中に見つけた。IME が押した文字を本文へ直接送ってしまうためで、メニューを開いている間だけ本文の IME を切り離して直した（<a href="#fb24">19 節</a>）。IME は Meltype と Microsoft IME の両方で確かめた。</p>
+
+  <p>12 回目のフィードバック（2026-10-30、v0.10.2 をいくつかの端末で確かめて）。FB-22 は「体感的には速くなった」との確認をもらったうえで、3 件を受けた。確認の途中で 1 件を見つけた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-25</td><td>性能</td><td>速くはなったが、クリックしてからひと呼吸おいて起動する感じは残り、メモ帳と比べると初回起動の遅さが気になる。ただし、改善で今の機能やほかの項目に悪影響が出るなら、このままでもよい（最低限は許容できる）</td><td>—</td><td><span class="tag maybe">相談中</span></td></tr>
+    <tr><td>FB-26</td><td>不具合</td><td>1920×1080 の液晶の端末では、配色パターンの画面の下が切れてボタンが押せない</td><td>v0.10.3</td><td><span class="tag maybe">確認待ち</span></td></tr>
+    <tr><td>FB-27</td><td>変更</td><td>インストーラのアイコンは、v0.5.0 までのアイコンのほうがインストーラだと分かるので元に戻したい</td><td>v0.10.3</td><td><span class="tag maybe">確認待ち</span></td></tr>
+    <tr><td>FB-28</td><td>不具合</td><td>（確認中に発見）アクセス キー付きのボタン 8 個（「その他の色(M)...」「保存しない(N)」など）の名前が、読み上げソフトや UI Automation から空に見える。v0.4.0 から</td><td>v0.10.3</td><td><span class="tag maybe">確認待ち</span></td></tr>
+  </table>
+  </div>
+  <p>FB-25 は、起動時に読む 51.0 MB のうち 41.6 MB（82 %）が .NET ランタイムと Windows Forms 本体で、アプリの作りを変えずに削れる分は 4 % ほどしか残っていなかった。残る手は「サインイン時に先読みしておく」で、サインインのたびに裏で少し仕事をさせることになるため、入れるかどうかを相談している（<a href="#fb25">20 節</a>）。FB-26 は、1920×1080・表示スケール 150 % だと画面の作業領域が論理 672 px しかないのに、配色パターンの画面が 752 px あったのが原因。カードと余白を詰めて 611 px にし、さらに低い画面ではパターンの一覧だけがスクロールするようにした（<a href="#fb26">21 節</a>）。FB-27 はインストーラにアプリのアイコンを付ける指定を外し、Inno Setup 標準のアイコンに戻した（<a href="#fb27">22 節</a>）。FB-28 は FB-26 の確認中に見つけた。アクセス キーのために使っている <code>AccessText</code> が原因で、名前を明示して直した（<a href="#fb28">23 節</a>）。</p>
 
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
@@ -1591,7 +1607,132 @@ case WM_EXITSIZEMOVE:             // 放した
   <p>あわせて、IME がオンだと送った英字が未確定になって「編集すると * が付く」が誤って NG になる <code>test-editing.ps1</code> を、
   入力の前に IME を閉じるように直した。</p>
 
-  <h2 id="notes">20. つまずいた点のメモ</h2>
+  <h2 id="fb25">20. FB-25：それでも最初の起動に「ひと呼吸」ある（相談中）</h2>
+  <h3>20.1 残っている 51 MB の内訳</h3>
+  <p>v0.10.2 の発行版を起動し、3 秒後に読み込まれている DLL のうち、アプリのフォルダーにあるものを数えた（43 個・51.0 MB）。
+  端末を起動した直後は、これをディスクから読み、Defender の初回の検査を受ける（<a href="#fb22">17 節</a>）。</p>
+  <figure>
+    <svg viewBox="0 0 720 196" width="100%" style="max-width:720px;display:block;margin:0 auto" role="img" aria-label="起動時に読む 51.0 MB の内訳。.NET ランタイム 21.7 MB、Windows Forms 19.9 MB、その他 9.4 MB">
+      <style>.b{font:13px "Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.v{font:12px "Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}.w{font:12px "Yu Gothic UI","Meiryo",sans-serif;fill:#ffffff}</style>
+      <text x="10" y="18" class="b" font-weight="700">起動時に読む DLL 51.0 MB の内訳（1 MB＝12 px）</text>
+      <!-- 10 + 51.0×12 = 622 -->
+      <rect x="10" y="34" width="261" height="34" fill="#0b5cad"/><text x="140" y="56" class="w" text-anchor="middle">.NET ランタイム 21.7 MB</text>
+      <rect x="271" y="34" width="238" height="34" fill="#3b82c4"/><text x="390" y="56" class="w" text-anchor="middle">Windows Forms 19.9 MB</text>
+      <rect x="509" y="34" width="36" height="34" fill="#c0392b"/>
+      <rect x="545" y="34" width="22" height="34" fill="#d98b2b"/>
+      <rect x="567" y="34" width="8" height="34" fill="#2e8b57"/>
+      <rect x="575" y="34" width="47" height="34" fill="#9aa4ae"/>
+      <path d="M10 76 L10 82 L509 82 L509 76" stroke="#0b5cad" fill="none"/>
+      <text x="260" y="98" class="v" text-anchor="middle">ここまで 41.6 MB（82 %）。アプリの作りを変えない限り減らせない</text>
+      <g transform="translate(10,118)">
+        <rect x="0" y="0" width="12" height="12" fill="#0b5cad"/><text x="18" y="11" class="v">CoreLib 14.6・coreclr 4.6・clrjit 1.9・起動部 0.7</text>
+        <rect x="360" y="0" width="12" height="12" fill="#3b82c4"/><text x="378" y="11" class="v">本体 13.1・Primitives 3.8・描画など 2.9</text>
+        <rect x="0" y="22" width="12" height="12" fill="#c0392b"/><text x="18" y="33" class="v">Scintilla 3.0（うち Lexilla 1.3）</text>
+        <rect x="360" y="22" width="12" height="12" fill="#d98b2b"/><text x="378" y="33" class="v">設定の JSON 1.8</text>
+        <rect x="0" y="44" width="12" height="12" fill="#2e8b57"/><text x="18" y="55" class="v">MemoPad 本体 0.6</text>
+        <rect x="360" y="44" width="12" height="12" fill="#9aa4ae"/><text x="378" y="55" class="v">その他 3.9（文字コード表 0.8 など）</text>
+      </g>
+    </svg>
+    <figcaption>図 20-1：.NET ランタイムと Windows Forms 本体で 8 割を占める</figcaption>
+  </figure>
+
+  <h3>20.2 作りを変えずに削れるのは 4 % ほど</h3>
+  <p>最初の表示までに使っていないのは、Lexilla.dll（構文の色分け用。プレーン テキストでは使わない。1.3 MB）と、Shift_JIS などの文字コード表（ファイルを開くまで要らない。0.8 MB）くらいだった。
+  合わせて 2.1 MB で全体の約 4 %、時間にすると 30 ms 程度の見込みで、「ひと呼吸」の体感は変わらない。手を入れる危険に見合わないので見送った。
+  大きく減らすには配り方そのものを変えるしかなく、どれも別の悪影響がある。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>配り方を変える案</th><th>悪影響</th></tr>
+    <tr><td>Native AOT（機械語に事前変換して .NET ランタイムを持たない）</td><td>Windows Forms は .NET 9 では対応していない</td></tr>
+    <tr><td>トリミング（使わないコードを DLL から削る）</td><td>Windows Forms は対応していない。動いても、実行時にしか分からない欠落が起こりうる</td></tr>
+    <tr><td>.NET ランタイムを同梱せず、Windows にインストールされたものを使う</td><td>利用者に .NET デスクトップ ランタイムを別に入れてもらう必要がある。再起動直後はそれもキャッシュに無いので、効果も限られる</td></tr>
+    <tr><td>単一ファイル化・複合 ReadyToRun</td><td>試したが初回はむしろ遅くなった（<a href="#fb22-check">17.4</a>・<a href="#fb11">8 節</a>）</td></tr>
+  </table>
+  </div>
+
+  <h3>20.3 残る手：サインイン時に先読みしておく</h3>
+  <p>2 回目以降の起動が速い（ウィンドウ表示まで約 220 ms）のは、1 回目に読んだ DLL がキャッシュに残り、Defender の検査も済んでいるから。
+  そこで、Windows にサインインしたときに MemoPad を画面に出さずに起動し、DLL を読むだけ読んで終了させておけば、利用者が最初に起動するときも 2 回目と同じ状態になる。
+  Microsoft Edge の「スタートアップ ブースト」や Office の起動ブーストと同じ考え方で、Edge や Office と違って常駐はしない。</p>
+  <ul>
+    <li><strong>見込める効果</strong>：再起動後の最初の起動が、2 回目以降と同程度（ウィンドウ表示まで約 0.2 秒）になる。</li>
+    <li><strong>引き換えになるもの</strong>：サインインの直後に、裏で約 1 秒・51 MB の読み込みが走る（優先度を下げて行う）。タスク マネージャーの「スタートアップ アプリ」に MemoPad が載る。
+    メモリが足りなくなってキャッシュから追い出されたあとや、Defender の定義の更新後は、効果が薄れることがある。</li>
+  </ul>
+  <p>サインインのたびに裏で仕事をさせることになるので、ユーザーに入れるかどうかを相談している（入れる場合も、インストーラで選べる項目にする予定）。</p>
+
+  <h2 id="fb26">21. FB-26：配色パターンの画面が 1920×1080 で切れる（v0.10.3）</h2>
+  <h3>21.1 原因：作業領域は「解像度 ÷ 表示スケール − タスク バー」</h3>
+  <p>受け取ったスクリーンショットではタスク バーの高さが 72 px あり、1920×1080 の端末は表示スケール 150 % で使われている。アプリから見た画面は 1280×720（論理 px）で、
+  タスク バーの 48 px を除くと、ウィンドウを置ける高さ（作業領域）は <strong>672 px</strong> しかない。配色パターンの画面は 16 個のカードを 4 列×4 段に並べていて、高さが
+  <strong>752 px</strong> あった。画面より 80 px 高いので、上端が画面の上にそろえられ、下の説明文の途中から OK・キャンセルまでがタスク バーの裏に隠れた
+  （同じ 1920×1080 でも 125 % なら作業領域は 816 px あり、収まっていた）。
+  開発に使っている端末は 2560×1440・150 %（作業領域 912 px）で、収まっていたので気づかなかった。</p>
+  <p>ほかのダイアログも同じ方法（UI Automation でウィンドウの大きさを読み、1.5 で割る）で測った。作業領域を超えていたのは配色パターンだけだった。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>ダイアログ</th><th>高さ（論理 px）</th><th>作業領域 672 px に</th></tr>
+    <tr><td>配色パターン</td><td>752 → <strong>611</strong></td><td>収まらない → <strong>収まる</strong></td></tr>
+    <tr><td>フォント</td><td class="center">520</td><td>収まる</td></tr>
+    <tr><td>色変更</td><td class="center">502</td><td>収まる</td></tr>
+    <tr><td>ページ設定</td><td class="center">471</td><td>収まる</td></tr>
+    <tr><td>MemoPad について</td><td class="center">290</td><td>収まる</td></tr>
+    <tr><td>行に移動</td><td class="center">204</td><td>収まる</td></tr>
+    <tr><td>保存の確認</td><td class="center">148</td><td>収まる</td></tr>
+  </table>
+  </div>
+
+  <h3>21.2 直し方：詰めて収め、それでも入らない画面ではスクロール</h3>
+  <ul>
+    <li><strong>詰める</strong>：カードの高さを 84 → 70 px にし、名前・見本文・色コードを上下中央に置いた。カードの間隔、枠の内側の余白、プレビューの最小の高さも詰め、
+    「OK を押すと…」の説明文はボタンの上から左へ移した。見せる内容は変えていない。これで 752 → 611 px になり、672 px の作業領域に 61 px の余裕ができた。</li>
+    <li><strong>それでも入らない画面への備え</strong>：開くときに、メイン ウィンドウのあるモニターの作業領域の高さを調べ、画面の上限（<code>MaxHeight</code>）にする
+    （<code>WpfHost.WorkAreaHeight</code>）。パターンの一覧はスクロールできる領域に入れてあり、上限に当たると一覧だけが縮んでスクロール バーが出る。プレビューと OK・キャンセルは常に見える。
+    プレビューには高さの上限（160 px）を付け、大きなフォントでも一覧を押しのけないようにした。</li>
+  </ul>
+  <figure>
+    <img src="../img/step3/fb26-color-scheme-fit.png" alt="左：修正前の配色パターン画面。赤い破線（作業領域の下端）より下に説明文と OK・キャンセルがはみ出している。中央：修正後。破線より上に収まっている。右：高さ 480 で試した例。パターンの一覧にスクロール バーが出て、OK・キャンセルは見えている" loading="lazy">
+    <figcaption>図 21-1：赤い破線が 1920×1080・150 % の作業領域の下端。修正前（左）は OK・キャンセルが画面の外に出ていた</figcaption>
+  </figure>
+
+  <h3 id="fb26-check">21.3 確かめ方</h3>
+  <p>手元の画面は作業領域が 912 px あるので、高さの上限を一時的に 480 px に下げたビルドで、一覧がスクロールし OK・キャンセルが見えることを確かめた（図 21-1 の右）。
+  発行版（v0.10.3）では高さ 611 px で、「夜」を選んで OK を押すと背景色・文字色が変わることも撮影スクリプトで確かめた。
+  1920×1080 の端末での見え方は、ユーザーに確認をお願いしている。</p>
+
+  <h2 id="fb27">22. FB-27：インストーラのアイコンを v0.5 までのものに戻す（v0.10.3）</h2>
+  <p>v0.5.2 までのインストーラは、Inno Setup 標準のアイコン（箱に下向きの矢印）だった。v0.6.0 でアプリのアイコンを新しくしたときに、
+  インストーラ定義（<code>installer/memopad.iss</code>）の <code>SetupIconFile</code> でインストーラにも同じアイコンを付けた。
+  アプリと同じ文書の絵では、ダウンロードしたファイルがインストーラなのかアプリ本体なのか見分けにくい。<code>SetupIconFile</code> の指定を外して標準に戻した。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>版</th><th>インストーラのアイコン</th></tr>
+    <tr><td>v0.1.0〜v0.5.2</td><td>Inno Setup 標準（箱に下向きの矢印）</td></tr>
+    <tr><td>v0.6.0〜v0.10.2</td><td>アプリと同じ（クリーム色の文書に緑の罫線）</td></tr>
+    <tr><td><strong>v0.10.3</strong></td><td><strong>Inno Setup 標準に戻した</strong>（アプリ本体・スタート メニュー・アンインストールの一覧のアイコンは今までどおりアプリのもの）</td></tr>
+  </table>
+  </div>
+  <p>作ったインストーラからアイコンを取り出し、v0.5.2 のものと同じ絵になっていることを確かめた。</p>
+
+  <h2 id="fb28">23. FB-28：ボタンの名前が読み上げられない（v0.10.3）</h2>
+  <p>FB-26 の確認で撮影スクリプトを流すと、「色変更」の画面の「その他の色(M)...」ボタンが見つからなかった。UI Automation でボタンの名前を一覧すると、名前が空だった。
+  Fluent テーマのボタンは <code>Content="保存しない(_N)"</code> のような文字列の <code>_</code> をアクセス キーとして扱わないので、
+  アクセス キーの要るボタンは中身を <code>AccessText</code> にしている。この書き方だと、ボタンの名前（読み上げソフトが読む文字）が空になる。
+  中身が普通の文字列の「OK」「キャンセル」は名前が付いていた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>ダイアログ</th><th>名前が空だったボタン</th></tr>
+    <tr><td>色変更</td><td>その他の色(M)...・その他の色(O)...・既定の色に戻す(D)</td></tr>
+    <tr><td>保存の確認</td><td>保存(S)・保存しない(N)</td></tr>
+    <tr><td>ページ設定</td><td>縦(O)・横(A)（ラジオ ボタン）</td></tr>
+    <tr><td>行に移動</td><td>移動(G)</td></tr>
+  </table>
+  </div>
+  <p>8 個に <code>AutomationProperties.Name</code> で見たままの名前を付けた。全ダイアログのボタンの名前を一覧し直し、名前の無いものが残っていないことを確かめた
+  （「行に移動」の入力欄にある消去ボタンだけは Fluent テーマが用意する部品で、記号の名前が付いている）。
+  見た目と操作は変わらない。読み上げソフトで「ボタン」としか読まれなかったものが、ボタンの名前で読まれるようになる。</p>
+
+  <h2 id="notes">24. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
@@ -1621,6 +1762,8 @@ case WM_EXITSIZEMOVE:             // 放した
     <li><strong>配色の不具合は、利用者の配色で確かめる。</strong>左の余白の灰色は白い背景では見えず、v0.10.0 から誰も気づかなかった。撮影スクリプトは設定を退避して既定の配色で撮るので、濃い配色での見え方は別に確かめる。</li>
     <li><strong>IME の確定文字はメッセージ ループの付け替えを通らない。</strong>Windows Forms のメニューは本文にフォーカスを残したままキー入力を横取りする作りなので、IME が有効な部品にフォーカスがあるとアクセス キーが効かない。日本語環境では「IME がオンのまま」が普通の状態なので、キー操作の確認は IME オンでも行う。</li>
     <li><strong>保存しない <code>SystemParametersInfo</code> の変更では <code>WM_SETTINGCHANGE</code> が配られない。</strong>テキスト カーソルの太さを一時的に変えて追従を確かめようとして、通知が届かず悩んだ。利用者の設定を書き換えずに試すには、値だけ変えて通知は対象に直接送る。</li>
+    <li><strong>画面の大きさは「解像度 ÷ 表示スケール − タスク バー」で考える。</strong>1920×1080 でも 150 % なら、ウィンドウを置ける高さは論理 672 px しかない。開発機の画面に収まっていても安心できない。ダイアログは作業領域の高さを上限にし、はみ出す分は一覧などの一部だけをスクロールさせて、ボタンは常に見えるようにする。</li>
+    <li><strong>WPF の <code>AccessText</code> を中身にしたボタンは、名前が空になる。</strong>見た目では分からず、読み上げソフトや UI Automation でしか気づけない。アクセス キーのために <code>AccessText</code> を使うときは <code>AutomationProperties.Name</code> も付ける。撮影スクリプトが要素を名前で探していたおかげで見つかった。</li>
   </ul>
 </main>
 <footer class="site">

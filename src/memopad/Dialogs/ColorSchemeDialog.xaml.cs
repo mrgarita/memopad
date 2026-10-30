@@ -20,6 +20,8 @@ public partial class ColorSchemeDialog : Window
     {
         InitializeComponent();
         new System.Windows.Interop.WindowInteropHelper(this).Owner = owner;
+        // 作業領域より高くしない。入りきらない分はパターンの一覧がスクロールする（FB-26）
+        MaxHeight = WpfHost.WorkAreaHeight(owner);
         _settings = settings;
         _selected = ColorSchemes.Find(settings.BackgroundColor, settings.ForegroundColor);
 
@@ -46,13 +48,14 @@ public partial class ColorSchemeDialog : Window
     /// <summary>パターン 1 つ分のカード：名前（アクセント色）と見本文（文字色）を背景色の上に置く。</summary>
     private Button MakeCard(ColorScheme scheme)
     {
-        var panel = new StackPanel();
+        // 中身は上下中央に置く（選択して枠が太くなっても、中身の位置が変わらない）
+        var panel = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         panel.Children.Add(new TextBlock
         {
             Text = scheme.Name,
             FontWeight = FontWeights.Bold,
             Foreground = new SolidColorBrush(scheme.Accent),
-            Margin = new Thickness(0, 0, 0, 4),
+            Margin = new Thickness(0, 0, 0, 2),
         });
         panel.Children.Add(new TextBlock
         {
