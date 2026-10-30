@@ -49,6 +49,7 @@
       <li><a href="#fb26">FB-26：配色パターンの画面が 1920×1080 で切れる（v0.10.3）</a></li>
       <li><a href="#fb27">FB-27：インストーラのアイコンを v0.5 までのものに戻す（v0.10.3）</a></li>
       <li><a href="#fb28">FB-28：ボタンの名前が読み上げられない（v0.10.3）</a></li>
+      <li><a href="#fb29">FB-29：「プログラムから開く」の候補を .txt 以外にも広げる（v0.10.4）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -169,6 +170,15 @@
   </table>
   </div>
   <p>FB-25 は、起動時に読む 51.0 MB のうち 41.6 MB（82 %）が .NET ランタイムと Windows Forms 本体で、アプリの作りを変えずに削れる分は 4 % ほどしか残っていなかった。残る手は「サインイン時に先読みしておく」だが、サインインのたびに裏で仕事をさせることになる。ユーザーと相談し、今のままにした（<a href="#fb25">20 節</a>）。FB-26 は、1920×1080・表示スケール 150 % だと画面の作業領域が論理 672 px しかないのに、配色パターンの画面が 752 px あったのが原因。カードと余白を詰めて 611 px にし、さらに低い画面ではパターンの一覧だけがスクロールするようにした（<a href="#fb26">21 節</a>）。FB-27 はインストーラにアプリのアイコンを付ける指定を外し、Inno Setup 標準のアイコンに戻した（<a href="#fb27">22 節</a>）。FB-28 は FB-26 の確認中に見つけた。アクセス キーのために使っている <code>AccessText</code> が原因で、名前を明示して直した（<a href="#fb28">23 節</a>）。</p>
+
+  <p>13 回目のフィードバック（2026-10-30、v0.10.3 を確かめている途中の質問から）。インストーラの「「プログラムから開く」の候補に MemoPad を追加する」は .txt だけが対象かと聞かれ、.txt だけだと答えたところ、ほかの拡張子にも広げたいとの要望を受けた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-29</td><td>変更</td><td>「プログラムから開く」の候補に、.txt 以外（.log .ini .csv .md .c .cpp .py .js .ts .json .cs .php .html .css .xhtml と拡張子なし、ほかにプログラマがテキスト形式で使いそうな拡張子）も入れたい</td><td>v0.10.4</td><td><span class="tag maybe">確認待ち</span></td></tr>
+  </table>
+  </div>
+  <p>FB-29 は、インストーラが候補に入れる拡張子を 1 種類から 83 種類（拡張子なしを含む）に増やした。既定のアプリは変えない（<a href="#fb29">24 節</a>）。v0.10.4 は FB-26〜28 の修正もそのまま含む。</p>
 
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
@@ -1734,7 +1744,90 @@ case WM_EXITSIZEMOVE:             // 放した
   （「行に移動」の入力欄にある消去ボタンだけは Fluent テーマが用意する部品で、記号の名前が付いている）。
   見た目と操作は変わらない。読み上げソフトで「ボタン」としか読まれなかったものが、ボタンの名前で読まれるようになる。</p>
 
-  <h2 id="notes">24. つまずいた点のメモ</h2>
+  <h2 id="fb29">24. FB-29：「プログラムから開く」の候補を .txt 以外にも広げる（v0.10.4）</h2>
+  <p>インストーラの「追加タスクの選択」には、v0.1.0 から「「プログラムから開く」の候補に MemoPad を追加する」がある（既定でオン）。
+  ところが候補に入れていたのは .txt だけで、.log や .py などを MemoPad で開くには、「別のアプリを選択」→「PC でアプリを選択する」で MemoPad.exe を探す必要があった。
+  一度選べば Windows が覚えるので、この端末でも .md・.gitignore・.html・.php・.py には以前に手で選んだ MemoPad が残っていた。</p>
+
+  <h3>24.1 仕組み：候補に入れるだけで、既定のアプリは変えない</h3>
+  <p>チェックを入れると、インストーラはレジストリの <code>Software\Classes</code> に 2 種類のキーを書く（ユーザー単位のインストールなら HKCU、全ユーザー向けなら HKLM）。
+  1 つは MemoPad をアプリとして登録するキーで、表示名と開くときのコマンドを持つ。もう 1 つが拡張子ごとの <code>OpenWithList</code> で、ここに MemoPad.exe があると、その拡張子の右クリックの「プログラムから開く」に MemoPad が並ぶ。
+  ダブルクリックで開くアプリ（拡張子の既定値と、利用者が「常にこのアプリを使う」で選んだ <code>UserChoice</code>）には触らない。</p>
+  <figure>
+    <svg viewBox="0 0 720 240" width="100%" style="max-width:720px;display:block;margin:0 auto" role="img" aria-label="インストーラが書くレジストリのキーと、右クリックの「プログラムから開く」に MemoPad が並ぶ関係">
+      <!-- 英字を Segoe UI にするのは、Yu Gothic UI だと \ が ¥ で表示されるため -->
+      <style>.f29b{font:13px "Segoe UI","Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.f29v{font:12px "Segoe UI","Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}.f29k{font:bold 13px "Segoe UI","Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}</style>
+      <defs><marker id="fb29b" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#0b5cad"/></marker></defs>
+      <!-- インストーラが書くキー -->
+      <rect x="10" y="14" width="330" height="70" rx="6" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="22" y="36" class="f29k">Applications\MemoPad.exe</text>
+      <text x="22" y="56" class="f29v">FriendlyAppName ＝ MemoPad（表示名）</text>
+      <text x="22" y="74" class="f29v">shell\open\command ＝ "…\MemoPad.exe" "%1"</text>
+      <rect x="10" y="96" width="330" height="70" rx="6" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="22" y="118" class="f29k">.txt .log .md .py .cs … .（拡張子なし）</text>
+      <text x="22" y="138" class="f29b">└ OpenWithList\MemoPad.exe</text>
+      <text x="22" y="156" class="f29v">v0.10.3 までは .txt だけ → v0.10.4 で 83 種類</text>
+      <!-- 触らないもの -->
+      <rect x="10" y="180" width="330" height="50" rx="6" fill="#f6f8fa" stroke="#8c959f" stroke-dasharray="5 4"/>
+      <text x="22" y="200" class="f29b">既定のアプリ（ダブルクリックで開くアプリ）</text>
+      <text x="22" y="218" class="f29v">各拡張子の既定値・UserChoice には触らない</text>
+      <!-- 矢印 -->
+      <path d="M340 49 C 400 49, 410 112, 466 116" stroke="#0b5cad" stroke-width="1.6" fill="none" marker-end="url(#fb29b)"/>
+      <path d="M340 131 C 400 131, 410 122, 466 122" stroke="#0b5cad" stroke-width="1.6" fill="none" marker-end="url(#fb29b)"/>
+      <text x="350" y="40" class="f29v">表示名・開き方</text>
+      <text x="350" y="152" class="f29v">どの拡張子で出すか</text>
+      <!-- 右クリック メニュー -->
+      <text x="472" y="30" class="f29v">右クリック →「プログラムから開く」</text>
+      <rect x="470" y="40" width="230" height="146" rx="6" fill="#ffffff" stroke="#8c959f"/>
+      <text x="486" y="66" class="f29b">メモ帳</text>
+      <text x="486" y="94" class="f29b">Visual Studio Code</text>
+      <rect x="476" y="104" width="218" height="28" rx="4" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="486" y="123" class="f29k">MemoPad</text>
+      <line x1="480" y1="144" x2="690" y2="144" stroke="#d0d7de"/>
+      <text x="486" y="170" class="f29b">別のアプリを選択</text>
+    </svg>
+    <figcaption>図 24-1：右の一覧に MemoPad が並ぶかは拡張子ごとの <code>OpenWithList</code> で決まる。ダブルクリックで開くアプリは変えない</figcaption>
+  </figure>
+
+  <h3>24.2 入れた拡張子（83 種類）</h3>
+  <p>太字はユーザーが挙げたもの。ほかは、プログラムを書くときにテキストとして開くことが多いものを足した。.bat や .ps1 のように実行できる形式も、候補に並べるだけでダブルクリックの動作（実行）は変わらない。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>分類</th><th>拡張子</th></tr>
+    <tr><td>テキスト・文書</td><td>.txt（v0.1 から） <strong>.log</strong> <strong>.md</strong> .markdown .rst .tex .diff .patch</td></tr>
+    <tr><td>設定</td><td><strong>.ini</strong> .cfg .conf .config .inf .properties .toml .yaml .yml .env .reg .editorconfig .gitignore .gitattributes</td></tr>
+    <tr><td>データ</td><td><strong>.csv</strong> .tsv <strong>.json</strong> .jsonc .xml .xsl .xslt .sql .svg</td></tr>
+    <tr><td>Web</td><td><strong>.html</strong> .htm <strong>.xhtml</strong> <strong>.css</strong> .scss .less <strong>.js</strong> .mjs .cjs .jsx <strong>.ts</strong> .tsx .vue <strong>.php</strong></td></tr>
+    <tr><td>C 系・コンパイル言語</td><td><strong>.c</strong> .h <strong>.cpp</strong> .hpp .cc .cxx <strong>.cs</strong> .java .kt .go .rs .swift .vb .bas</td></tr>
+    <tr><td>スクリプト</td><td><strong>.py</strong> .rb .pl .lua .sh .bash .ps1 .psm1 .psd1 .bat .cmd .vbs</td></tr>
+    <tr><td>ビルド・プロジェクト</td><td>.sln .csproj .vbproj .vcxproj .props .targets .xaml .manifest .iss .cmake .gradle</td></tr>
+    <tr><td><strong>拡張子なし</strong></td><td>Makefile・Dockerfile・LICENSE・README など（レジストリでは <code>.</code> という名前のキー）</td></tr>
+  </table>
+  </div>
+  <p>インストーラ定義（<code>installer/memopad.iss</code>）では、拡張子を <code>#dim OpenWithExts[83]</code> の 1 か所に並べ、Inno Setup の前処理（<code>#sub</code>／<code>#for</code>）で拡張子ごとの行を出している。
+  増やすときは配列に足して要素数を直すだけでよい。アンインストールでは、MemoPad.exe のキーを消したあと、空になった <code>OpenWithList</code> と拡張子のキーも消す（<code>uninsdeletekeyifempty</code>）。
+  ほかのアプリが同じキーに書いた内容があれば残る。チェックボックスの名前（<code>txtassoc</code>）は .txt だけだった頃のままにした。変えると、更新のインストールで前回の選択が引き継がれなくなるため。</p>
+  <figure>
+    <img src="../img/step3/fb29-installer-tasks.png" alt="MemoPad バージョン 0.10.4 セットアップの「追加タスクの選択」ページ。「関連付け（.txt・.log・.md・ソース コードなど。既定のアプリは変えません）:」の下に、チェック済みの「「プログラムから開く」の候補に MemoPad を追加する(O)」がある" loading="lazy">
+    <figcaption>図 24-2：インストーラの「追加タスクの選択」。見出しに対象と「既定のアプリは変えない」ことを書いた</figcaption>
+  </figure>
+
+  <h3>24.3 確かめたこと</h3>
+  <p>「プログラムから開く」の画面をスクリプトから開くと、この端末ではすぐに閉じてしまった。そこで、Explorer が右クリックの一覧を作るのと同じ API（<code>SHAssocEnumHandlers</code>、ファイル単位では
+  <code>IShellItem</code> の <code>BHID_EnumAssocHandlers</code>）で候補を取り出して確かめた。この端末にユーザー単位で上書きインストール → アンインストール → 入れ直しの順に試した。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>確かめたこと</th><th>結果</th></tr>
+    <tr><td>候補に MemoPad が並ぶ拡張子</td><td>入れる前 6／83（.txt と、以前に手で選んだ 5 種類）→ 入れた後 <strong>83／83</strong></td></tr>
+    <tr><td>実際のファイル（Makefile・Dockerfile・LICENSE・.gitignore・.env・sample.log・app.config・main.rs）</td><td>すべて候補に MemoPad が並ぶ</td></tr>
+    <tr><td>種類の名前・既定のアプリ・ダブルクリックで実行されるコマンド</td><td>83 種類とも<strong>変化なし</strong></td></tr>
+    <tr><td>アンインストール</td><td>MemoPad が作ったキーはすべて消え、空のキーも残らない。もとからあったキー（VS Code の <code>OpenWithProgids</code> など）はそのまま</td></tr>
+    <tr><td>入れ直し</td><td>1 回目のインストール直後と、レジストリ・関連付けとも一致</td></tr>
+  </table>
+  </div>
+  <p>なお、「常にこのアプリを使う」で MemoPad を既定にしていた拡張子（この端末では .txt と .php）は、アンインストールすると MemoPad.exe が無くなるので既定から外れ、入れ直すと戻った。これは v0.10.3 以前も同じ動きで、今回の変更とは関係ない。</p>
+
+  <h2 id="notes">25. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
@@ -1766,6 +1859,8 @@ case WM_EXITSIZEMOVE:             // 放した
     <li><strong>保存しない <code>SystemParametersInfo</code> の変更では <code>WM_SETTINGCHANGE</code> が配られない。</strong>テキスト カーソルの太さを一時的に変えて追従を確かめようとして、通知が届かず悩んだ。利用者の設定を書き換えずに試すには、値だけ変えて通知は対象に直接送る。</li>
     <li><strong>画面の大きさは「解像度 ÷ 表示スケール − タスク バー」で考える。</strong>1920×1080 でも 150 % なら、ウィンドウを置ける高さは論理 672 px しかない。開発機の画面に収まっていても安心できない。ダイアログは作業領域の高さを上限にし、はみ出す分は一覧などの一部だけをスクロールさせて、ボタンは常に見えるようにする。</li>
     <li><strong>WPF の <code>AccessText</code> を中身にしたボタンは、名前が空になる。</strong>見た目では分からず、読み上げソフトや UI Automation でしか気づけない。アクセス キーのために <code>AccessText</code> を使うときは <code>AutomationProperties.Name</code> も付ける。撮影スクリプトが要素を名前で探していたおかげで見つかった。</li>
+    <li><strong>拡張子のないファイルは「<code>.</code>」という名前のキーで扱われる。</strong><code>Software\Classes\.\OpenWithList</code> に入れると、Makefile や LICENSE の「プログラムから開く」にも出る。レジストリの API は「.」を特別扱いしないので、普通のキーとして作れる。</li>
+    <li><strong>「プログラムから開く」の候補は、画面を開かずに API で確かめられる。</strong><code>SHAssocEnumHandlers</code>（拡張子単位）や <code>BHID_EnumAssocHandlers</code>（ファイル単位）は、Explorer の右クリックと同じ一覧を返す。<code>OpenAs_RunDLL</code> で画面を出す方法は、スクリプトから起動するとすぐ閉じて使えなかった。</li>
   </ul>
 </main>
 <footer class="site">

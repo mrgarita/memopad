@@ -35,7 +35,8 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "デスクトップにショートカットを作成する(&D)"; GroupDescription: "追加のショートカット:"; Flags: unchecked
-Name: "txtassoc"; Description: "「プログラムから開く」の候補に MemoPad を追加する(&O)"; GroupDescription: "関連付け:"
+; 名前の txtassoc は .txt だけだった頃のもの。変えると更新時に前回の選択を引き継がないのでそのままにする
+Name: "txtassoc"; Description: "「プログラムから開く」の候補に MemoPad を追加する(&O)"; GroupDescription: "関連付け（.txt・.log・.md・ソース コードなど。既定のアプリは変えません）:"
 
 [Files]
 ; Scintilla のパッケージは arm64／x86 版のネイティブ DLL も持ち込むが、
@@ -49,11 +50,32 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\{#MyAppName} をアンインストール"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
+; 「プログラムから開く」の候補に入れる拡張子（FB-29。v0.10.3 までは .txt だけ）。
+; 既定のアプリは変えない。"." は拡張子のないファイル（Makefile、Dockerfile、LICENSE など）
+#dim OpenWithExts[83] { \
+  ".txt", ".log", ".md", ".markdown", ".rst", ".tex", ".diff", ".patch", \
+  ".ini", ".cfg", ".conf", ".config", ".inf", ".properties", ".toml", ".yaml", ".yml", ".env", ".reg", \
+  ".editorconfig", ".gitignore", ".gitattributes", \
+  ".csv", ".tsv", ".json", ".jsonc", ".xml", ".xsl", ".xslt", ".sql", ".svg", \
+  ".html", ".htm", ".xhtml", ".css", ".scss", ".less", ".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx", ".vue", ".php", \
+  ".c", ".h", ".cpp", ".hpp", ".cc", ".cxx", ".cs", ".java", ".kt", ".go", ".rs", ".swift", ".vb", ".bas", \
+  ".py", ".rb", ".pl", ".lua", ".sh", ".bash", ".ps1", ".psm1", ".psd1", ".bat", ".cmd", ".vbs", \
+  ".sln", ".csproj", ".vbproj", ".vcxproj", ".props", ".targets", ".xaml", ".manifest", ".iss", ".cmake", ".gradle", \
+  "." }
+#define I
+; 拡張子ごとに .ext\OpenWithList\MemoPad.exe を作る。アンインストールは逆順に進むので、
+; MemoPad.exe のキーを消したあと、空になった OpenWithList と .ext も消える（もともと中身があれば残る）
+#sub EmitOpenWith
+Root: HKA; Subkey: "Software\Classes\{#OpenWithExts[I]}"; Flags: uninsdeletekeyifempty; Tasks: txtassoc
+Root: HKA; Subkey: "Software\Classes\{#OpenWithExts[I]}\OpenWithList"; Flags: uninsdeletekeyifempty; Tasks: txtassoc
+Root: HKA; Subkey: "Software\Classes\{#OpenWithExts[I]}\OpenWithList\{#MyAppExeName}"; ValueType: none; Flags: uninsdeletekey; Tasks: txtassoc
+#endsub
+
 [Registry]
-; 「プログラムから開く」に出す（既定のアプリは変えない）
+; MemoPad をアプリとして登録する（「プログラムから開く」で選んだときの表示名と、開くときのコマンド）
 Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "{#MyAppName}"; Flags: uninsdeletekey; Tasks: txtassoc
 Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Flags: uninsdeletekey; Tasks: txtassoc
-Root: HKA; Subkey: "Software\Classes\.txt\OpenWithList\{#MyAppExeName}"; ValueType: none; Flags: uninsdeletekey; Tasks: txtassoc
+#for {I = 0; I < DimOf(OpenWithExts); I++} EmitOpenWith
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{#MyAppName} を起動する"; Flags: nowait postinstall skipifsilent
