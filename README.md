@@ -41,7 +41,7 @@ Windows 標準の「メモ帳」の使い勝手はそのままに、**背景色�
 
 ## Code signing policy
 
-無料のコード署名（SignPath Foundation）を申請する準備をしています。
+無料のコード署名（SignPath Foundation）を申請し、審査を待っています（2026-10-31 申請）。
 
 > Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
 
