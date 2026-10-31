@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath の Artifact Configuration（slug：installer）の控え。SignPath の画面に同じ内容を登録して使う。
+  GitHub Actions（.github/workflows/build.yml）がアップロードする zip には、Inno Setup で作ったインストーラ 1 つだけが入っている。
+  インストーラの製品名・製品バージョンは installer/memopad.iss の VersionInfoProductName／VersionInfoProductVersion。
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="MemoPad-setup-*.exe" product-name="MemoPad" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

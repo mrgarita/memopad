@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code signing policy — MemoPad</title>
+<meta name="description" content="MemoPad のコード署名ポリシー（Code signing policy）。署名するファイル、ビルドの方法、署名を承認する人、プライバシーについて。">
+<link rel="icon" href="./assets/favicon.ico">
+<link rel="stylesheet" href="./site/assets/style.css">
+<style>
+  .en { border-left: 4px solid var(--accent); background: #fff; padding: 10px 14px; margin: 10px 0; }
+  .en p, .en ul { margin: 4px 0; }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="./index.html">MemoPad</a>
+    <nav>
+      <a href="./index.html#download">ダウンロード</a>
+      <a href="./site/index.html">制作の備忘録</a>
+      <a href="https://github.com/mrgarita/memopad">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <h1>Code signing policy（コード署名ポリシー）</h1>
+  <p class="lead">MemoPad の Windows 向けファイルへのコード署名について、署名するもの・ビルドのしかた・署名を承認する人・プライバシーをまとめます。
+  英語の枠内は、署名を提供する SignPath Foundation の条件に合わせた原文です。</p>
+
+  <div class="en">
+    <p>Free code signing provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org">SignPath Foundation</a>.</p>
+  </div>
+  <p>MemoPad のインストーラと本体は、<a href="https://signpath.io">SignPath.io</a> が無料で提供するコード署名で、<a href="https://signpath.org">SignPath Foundation</a> の証明書を使って署名します。</p>
+  <div class="note">
+    <strong>現在の状況（2026-10-31）</strong><br>
+    SignPath Foundation に申請する準備中です。v0.10.5 までのインストーラは署名していないため、初回の実行時に Windows SmartScreen の警告が出ることがあります（「詳細情報」→「実行」で続行できます）。
+    署名を始めたら、ここに最初の版を記載します。
+  </div>
+
+  <h2>署名するファイル</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th>ファイル</th><th>署名</th></tr>
+    <tr><td>インストーラ <code>MemoPad-setup-&lt;版&gt;.exe</code></td><td>MemoPad として署名する</td></tr>
+    <tr><td>本体 <code>MemoPad.exe</code>・<code>MemoPad.dll</code></td><td>MemoPad として署名する</td></tr>
+    <tr><td>.NET ランタイムのファイル</td><td>作者（Microsoft）の署名のまま。MemoPad としては署名しない</td></tr>
+    <tr><td>本文のエディタ部品（<code>Scintilla.dll</code>・<code>Lexilla.dll</code>・<code>ScintillaNET.dll</code>）</td><td>ほかの作者のものなので、MemoPad としては署名しない</td></tr>
+    <tr><td>アンインストーラ <code>unins000.exe</code></td><td>Inno Setup がインストール時に作るもので、署名しない</td></tr>
+  </table>
+  </div>
+  <p>署名するファイルは、製品名が「MemoPad」、製品バージョンがその版の番号（例：0.10.5）であることを、署名のたびに確かめます。</p>
+
+  <h2>ビルドと署名の手順</h2>
+  <ul>
+    <li>配布するファイルは、公開リポジトリ（<a href="https://github.com/mrgarita/memopad">github.com/mrgarita/memopad</a>）のソースから、GitHub がホストする Windows ランナーで自動的にビルドします（<a href="https://github.com/mrgarita/memopad/blob/main/.github/workflows/build.yml">.github/workflows/build.yml</a>）。</li>
+    <li>署名の依頼は、リリースのたびに承認者が SignPath の画面で内容を確かめ、手で承認します。</li>
+    <li>できたインストーラは実機で動作を確かめてから、<a href="https://github.com/mrgarita/memopad/releases">GitHub Releases</a> で公開します。</li>
+  </ul>
+
+  <h2>役割と担当者</h2>
+  <div class="en">
+    <ul>
+      <li>Committers and reviewers: <a href="https://github.com/mrgarita">mrgarita</a> (repository owner)</li>
+      <li>Approvers: <a href="https://github.com/mrgarita">mrgarita</a></li>
+    </ul>
+  </div>
+  <ul>
+    <li><strong>コミッター・レビュアー</strong>：ソースを変更できる人。コミッター以外からの変更（プル リクエスト）は、レビュアーが内容を確かめてから取り込みます。</li>
+    <li><strong>承認者</strong>：署名の依頼を承認する人。</li>
+    <li>担当者は全員、GitHub と SignPath に 2 段階認証でサインインします。</li>
+  </ul>
+
+  <h2>プライバシー</h2>
+  <div class="en">
+    <p>This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.</p>
+  </div>
+  <p>MemoPad は、利用者が指示しない限り、ほかのコンピューターやネットワークに情報を送りません。設定は利用者の PC の <code>%APPDATA%\MemoPad\settings.json</code> にだけ保存します。
+  同梱している .NET ランタイムと Scintilla も、MemoPad の中で通信は行いません。</p>
+
+  <h2>インストールとアンインストール</h2>
+  <ul>
+    <li>インストーラは管理者権限なしで、利用者ごとにインストールできます。</li>
+    <li>「プログラムから開く」の候補への追加と、右クリック メニューの「MemoPad で開く」は、インストールの途中の「追加タスクの選択」で内容を示し、外すこともできます。既定のアプリ（ダブルクリックで開くアプリ）は変えません。</li>
+    <li>アンインストールは、Windows の「設定」→「アプリ」→「インストールされているアプリ」の MemoPad から行えます。インストーラが作ったファイルとレジストリのキーを削除します（利用者の設定ファイルは残ります）。</li>
+  </ul>
+</main>
+<footer class="site">
+  <div class="inner">MemoPad — <a href="https://github.com/mrgarita/memopad/blob/main/LICENSE">MIT License</a>。Windows およびメモ帳は Microsoft の製品です。</div>
+</footer>
+</body>
+</html>

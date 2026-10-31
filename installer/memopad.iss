@@ -14,6 +14,10 @@ AppId={{6C1C7C0E-6D7B-4E0F-9C2B-4B4B1E2F5A10}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+; インストーラ自体の版情報（製品名・製品バージョンはアプリと同じ値にする。SignPath Foundation の署名の条件）
+VersionInfoVersion={#MyAppVersion}
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}

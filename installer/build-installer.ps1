@@ -12,12 +12,18 @@
 .PARAMETER Version
   インストーラに埋め込むバージョン。省略時は csproj の <Version> を使う。
 
+.PARAMETER Stage
+  All（既定）＝発行してインストーラを作る。Publish＝発行だけ。Installer＝発行済みの installer\publish からインストーラだけ作る。
+  GitHub Actions（.github\workflows\build.yml）では、発行した MemoPad.exe・MemoPad.dll に署名してから
+  インストーラを作るために、Publish と Installer に分けて呼ぶ。
+
 .EXAMPLE
   .\installer\build-installer.ps1
 #>
 [CmdletBinding()]
 param(
-    [string]$Version
+    [string]$Version,
+    [ValidateSet('All', 'Publish', 'Installer')] [string]$Stage = 'All'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -30,10 +36,14 @@ if (-not $Version) {
     if (-not $Version) { $Version = '0.1.0' }
 }
 
-Write-Host "== 発行（self-contained win-x64） version=$Version" -ForegroundColor Cyan
-if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
-dotnet publish $csproj -c Release -r win-x64 --self-contained true -o $publishDir -p:PublishSingleFile=false -p:Version=$Version -nologo
-if ($LASTEXITCODE -ne 0) { throw 'dotnet publish に失敗しました' }
+if ($Stage -ne 'Installer') {
+    Write-Host "== 発行（self-contained win-x64） version=$Version" -ForegroundColor Cyan
+    if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
+    dotnet publish $csproj -c Release -r win-x64 --self-contained true -o $publishDir -p:PublishSingleFile=false -p:Version=$Version -nologo
+    if ($LASTEXITCODE -ne 0) { throw 'dotnet publish に失敗しました' }
+}
+if ($Stage -eq 'Publish') { return }
+if (-not (Test-Path (Join-Path $publishDir 'MemoPad.exe'))) { throw "発行済みのファイルがありません（$publishDir）。先に -Stage Publish で発行してください。" }
 
 Write-Host '== Inno Setup でインストーラを作成' -ForegroundColor Cyan
 $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source

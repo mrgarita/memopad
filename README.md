@@ -39,6 +39,20 @@ Windows 標準の「メモ帳」の使い勝手はそのままに、**背景色�
   「セキュリティ：このファイルは他のコンピューターから取得したものです…」の **「許可する」** に
   チェック → OK。以後は警告なしで実行できます
 
+## Code signing policy
+
+無料のコード署名（SignPath Foundation）を申請する準備をしています。
+
+> Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- 署名するもの：インストーラ `MemoPad-setup-<バージョン>.exe` と本体 `MemoPad.exe`・`MemoPad.dll`（.NET ランタイムや Scintilla など、ほかの作者のファイルには署名しない）
+- ビルド：公開しているこのリポジトリのソースから、GitHub Actions（[`.github/workflows/build.yml`](.github/workflows/build.yml)）で自動的に作る
+- Committers and reviewers: [mrgarita](https://github.com/mrgarita)
+- Approvers: [mrgarita](https://github.com/mrgarita)
+- プライバシー：This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it.（MemoPad は、利用者が指示しない限り、ほかのコンピューターに情報を送りません）
+
+詳しくは [Code signing policy のページ](https://mrgarita.github.io/memopad/code-signing-policy.html)を参照してください。
+
 ## 動作環境
 
 Windows 10 / 11（64 ビット）。インストーラに .NET ランタイムを同梱しているので、追加のインストールは不要です。設定は `%APPDATA%\MemoPad\settings.json` に保存されます。
@@ -64,6 +78,8 @@ dotnet build src\memopad\memopad.csproj
 |---|---|
 | `src/memopad/` | アプリ本体（C#／.NET 9。メイン ウィンドウは Windows Forms、ダイアログは WPF、本文は Scintilla） |
 | `installer/` | Inno Setup のスクリプトとビルド スクリプト |
+| `.github/workflows/build.yml` | GitHub Actions でインストーラを作るワークフロー（コード署名の手順を含む） |
+| `.signpath/` | SignPath に登録するコード署名の設定（Artifact Configuration）の控え |
 | `docs/index.html` | 紹介ページ（GitHub Pages） |
 | `docs/site/` | 制作の備忘録（step1〜step3） |
 | `docs/tools/` | スクリーンショット撮影・動作確認用の PowerShell スクリプト |

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath の Artifact Configuration（slug：app）の控え。SignPath の画面に同じ内容を登録して使う。
+  GitHub Actions（.github/workflows/build.yml）がアップロードする zip には MemoPad.exe と MemoPad.dll だけが入っている。
+  製品名と製品バージョンが一致しないファイルには署名しない（SignPath Foundation の条件）。
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file-set product-name="MemoPad" product-version="${version}">
+      <include path="MemoPad.exe" />
+      <include path="MemoPad.dll" />
+      <for-each>
+        <authenticode-sign />
+      </for-each>
+    </pe-file-set>
+  </zip-file>
+</artifact-configuration>

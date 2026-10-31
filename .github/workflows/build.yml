@@ -1,0 +1,134 @@
+# MemoPad をビルドしてインストーラを作る（GitHub がホストする Windows ランナーで実行）。
+#
+# SignPath Foundation の無料コード署名は「公開リポジトリのソースから、自動化された手順でビルドしたもの」だけに
+# 署名する。そのため配布するインストーラはこのワークフローで作る（手元の installer\build-installer.ps1 と同じ手順）。
+#
+# 署名は、リポジトリの変数 SIGNPATH_ORGANIZATION_ID を設定するまで行わない（審査が通るまでは署名なしで作る）。
+# 署名するときに使う設定（GitHub の Settings → Secrets and variables → Actions）：
+#   変数     SIGNPATH_ORGANIZATION_ID、SIGNPATH_PROJECT_SLUG、SIGNPATH_SIGNING_POLICY_SLUG
+#   シークレット SIGNPATH_API_TOKEN
+# SignPath に登録する Artifact Configuration の控えは .signpath\ にある（slug は app と installer）。
+#
+# インストーラの公開（GitHub Releases）は自動では行わない。できたインストーラを実機で確かめてから手で公開する。
+name: ビルド
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 150
+    env:
+      SIGNING_ENABLED: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: 版番号を読む
+        id: version
+        shell: pwsh
+        run: |
+          $v = ([xml](Get-Content src/memopad/memopad.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if (-not $v) { throw 'csproj に <Version> がありません' }
+          # タグで起動したときは、タグと csproj の版が一致しているかを確かめる
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$v") { throw "タグ $env:GITHUB_REF_NAME と csproj の版 $v が一致しません" }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "版：$v"
+
+      - name: 発行（self-contained win-x64）
+        shell: pwsh
+        run: ./installer/build-installer.ps1 -Version ${{ steps.version.outputs.version }} -Stage Publish
+
+      # --- 本体（MemoPad.exe と MemoPad.dll）に署名する。ほかの DLL（.NET ランタイム・Scintilla）は作者が別なので署名しない
+      - name: 署名する本体をアップロード
+        id: upload-app
+        if: env.SIGNING_ENABLED == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-unsigned
+          path: |
+            installer/publish/MemoPad.exe
+            installer/publish/MemoPad.dll
+          if-no-files-found: error
+
+      - name: 本体に署名（SignPath）
+        if: env.SIGNING_ENABLED == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: app
+          github-artifact-id: ${{ steps.upload-app.outputs.artifact-id }}
+          wait-for-completion: true
+          # 署名は 1 回ごとに SignPath の画面で手で承認する（Foundation の条件）ので、待ち時間を長めにとる
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: installer/publish
+          parameters: |
+            version: ${{ toJSON(steps.version.outputs.version) }}
+
+      - name: Inno Setup を用意
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Get-Command ISCC.exe -ErrorAction SilentlyContinue) -and -not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup を入れられませんでした' }
+          }
+
+      - name: インストーラを作成
+        shell: pwsh
+        run: ./installer/build-installer.ps1 -Version ${{ steps.version.outputs.version }} -Stage Installer
+
+      # --- インストーラに署名する
+      - name: 署名するインストーラをアップロード
+        id: upload-installer
+        if: env.SIGNING_ENABLED == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-unsigned
+          path: installer/output/MemoPad-setup-${{ steps.version.outputs.version }}.exe
+          if-no-files-found: error
+
+      - name: インストーラに署名（SignPath）
+        if: env.SIGNING_ENABLED == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.upload-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: installer/output
+          parameters: |
+            version: ${{ toJSON(steps.version.outputs.version) }}
+
+      - name: 結果を記録（SHA-256 と署名の有無）
+        shell: pwsh
+        run: |
+          $f = "installer/output/MemoPad-setup-${{ steps.version.outputs.version }}.exe"
+          $hash = (Get-FileHash $f -Algorithm SHA256).Hash
+          $sig = (Get-AuthenticodeSignature $f).Status
+          "| ファイル | SHA-256 | 署名 |`n|---|---|---|`n| $(Split-Path $f -Leaf) | ``$hash`` | $sig |" >> $env:GITHUB_STEP_SUMMARY
+          Write-Host "$f  SHA-256=$hash  署名=$sig"
+
+      - name: インストーラを保存
+        uses: actions/upload-artifact@v7
+        with:
+          name: MemoPad-setup-${{ steps.version.outputs.version }}
+          path: installer/output/MemoPad-setup-${{ steps.version.outputs.version }}.exe
+          if-no-files-found: error

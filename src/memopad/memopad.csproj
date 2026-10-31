@@ -20,6 +20,9 @@
     <Product>MemoPad</Product>
     <Description>背景色と文字色を変えられるメモ帳</Description>
     <Copyright>mrgarita</Copyright>
+    <!-- 製品バージョン（InformationalVersion）にコミット番号（+c80201d… など）を付けない。
+         SignPath Foundation のコード署名は、署名するファイルの製品バージョンがすべて同じ値であることを求める -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <!-- WPF0001：.NET 9 の Fluent テーマ（ThemeMode）は実験的 API 扱いのため警告を抑止する -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
     <SatelliteResourceLanguages>ja</SatelliteResourceLanguages>

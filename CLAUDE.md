@@ -193,6 +193,13 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   Windows 11 ではこの方式の項目は「その他のオプションを確認」の中にしか出ない。最初の階層に出すには、ID を持つパッケージ
   （スパース パッケージ）＋ `IExplorerCommand` の DLL ＋ Windows が信頼する証明書での署名が要る（VS Code も同じ方式。26 節）。
   自作の証明書を利用者の PC の信頼ストアへ入れる方法は一般向けの配布には使わない
+- **GitHub Actions とコード署名（準備中）**：`.github/workflows/build.yml`（`workflow_dispatch` と `v*` タグで起動）が
+  `build-installer.ps1 -Stage Publish` → 本体（`MemoPad.exe`・`MemoPad.dll`）に署名 → `-Stage Installer` → インストーラに署名、の順で作る。
+  署名は SignPath Foundation（無料・OSS 向け）に申請予定で、リポジトリの変数 `SIGNPATH_ORGANIZATION_ID` を入れるまで署名の手順は飛ばす。
+  SignPath に登録する Artifact Configuration の控えは `.signpath/`（slug は `app` と `installer`）。条件に合わせて守ること：
+  **署名するファイルの製品名は MemoPad、製品バージョンは版番号だけ**（csproj の `IncludeSourceRevisionInInformationalVersion=false`、
+  iss の `VersionInfo*`）、**ほかの作者のファイル（.NET ランタイム・Scintilla）には署名しない**、**「Code signing policy」
+  （`docs/code-signing-policy.html`）を紹介ページ・README・リリースの説明から参照する**。リリースの公開は自動化しない（実機確認後に手で）
 - **色の機能**：「色変更」ダイアログ（`Dialogs/ColorChangeDialog`、PICO-8 の 16 色＋カラーピッカー。
   v0.4.0）と「配色パターン」ダイアログ（`Dialogs/ColorSchemeDialog`、`Services/ColorSchemes.cs` の
   16 パターン。v0.5.0）。どちらも結果は設定の背景色・文字色（"#RRGGBB"）に入る

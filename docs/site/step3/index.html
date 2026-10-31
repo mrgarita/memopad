@@ -51,7 +51,7 @@
       <li><a href="#fb28">FB-28：ボタンの名前が読み上げられない（v0.10.3）</a></li>
       <li><a href="#fb29">FB-29：「プログラムから開く」の候補を .txt 以外にも広げる（v0.10.4）</a></li>
       <li><a href="#fb30">FB-30：Ctrl+Z で取り消す単位がおかしい（v0.10.5）</a></li>
-      <li><a href="#fb32">FB-31・32：右クリックの「MemoPad で開く」と .bat（v0.10.5）</a></li>
+      <li><a href="#fb32">FB-31・32：右クリックの「MemoPad で開く」と .bat（v0.10.5）、SignPath への申請準備</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -2005,6 +2005,24 @@ case WM_EXITSIZEMOVE:             // 放した
   </table>
   </div>
 
+  <h3 id="signpath">26.6 SignPath Foundation への申請準備</h3>
+  <p>SignPath Foundation は、オープンソースのプロジェクトに無料でコード署名の証明書を提供している。条件（<a href="https://signpath.org/terms">signpath.org/terms</a>）のうち、MemoPad で手当てが要ったものと、用意したものは次のとおり。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>条件</th><th>MemoPad の状態・用意したもの</th></tr>
+    <tr><td>OSI 承認のライセンス、公開リポジトリ、マルウェアでないこと</td><td>MIT ライセンス、GitHub の公開リポジトリ。通信する機能は無い</td></tr>
+    <tr><td>すでにリリースしていて、機能をダウンロード ページに書いていること</td><td>GitHub Releases でインストーラを配布し、紹介ページと README に機能を書いている</td></tr>
+    <tr><td>ソースから自動化された手順でビルドすること（GitHub がホストするランナー）</td><td>GitHub Actions のワークフロー <code>.github/workflows/build.yml</code> を作った。発行 → 本体に署名 → インストーラを作成 → インストーラに署名、の順。署名の手順は、リポジトリに SignPath の設定（変数とシークレット）を入れるまで飛ばす</td></tr>
+    <tr><td>署名するファイルの製品名・製品バージョンをそろえること</td><td>exe と dll の製品バージョンに付いていたコミット番号（<code>0.10.5+c80201d…</code>）を外し、インストーラにも版情報を入れた。3 つとも製品名 MemoPad・製品バージョンは版番号だけになる</td></tr>
+    <tr><td>自分たちのファイルだけに署名すること</td><td>署名するのはインストーラと <code>MemoPad.exe</code>・<code>MemoPad.dll</code> だけ。.NET ランタイムと Scintilla には署名しない。SignPath に登録する設定の控えを <code>.signpath/</code> に置いた</td></tr>
+    <tr><td>トップ・ダウンロード ページに「Code signing policy」を載せること（帰属の文、役割、プライバシー）</td><td><a href="../../code-signing-policy.html">Code signing policy のページ</a>を作り、紹介ページ・README・リリースの説明からリンクした</td></tr>
+    <tr><td>担当者全員が 2 段階認証を使うこと</td><td>GitHub の 2 段階認証はユーザーが確かめる（API からは見えなかった）</td></tr>
+    <tr><td>インストーラにはアンインストールの手段があり、システムの変更は事前に示すこと</td><td>Inno Setup のアンインストーラ。関連付けと右クリック メニューは「追加タスクの選択」で内容を示し、外せる</td></tr>
+  </table>
+  </div>
+  <p>申請はユーザーのアカウントで行う。審査が通ったら、SignPath 側でプロジェクトと署名ポリシーを作り、GitHub の連携と、リポジトリの変数・シークレットを設定すると、ワークフローの署名の手順が動き出す。
+  なお、Inno Setup はインストーラの版情報の文字列を固定長で書き込むので、製品名が「MemoPad」の後ろに空白の詰まった 60 文字になる。SignPath の製品名の照合で空白が問題にならないかは、設定のときに実物で確かめる。</p>
+
   <h2 id="notes">27. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
@@ -2043,6 +2061,7 @@ case WM_EXITSIZEMOVE:             // 放した
     <li><strong>Scintilla の「元に戻す」は、続けて打った文字を 1 つにまとめる。</strong>区切る専用の API は無いが、空の <code>BeginUndoAction</code>／<code>EndUndoAction</code> を 1 組呼ぶと、直前の操作に「まとめない」印が付く。文字が入る前（<code>WM_CHAR</code> や IME の確定を受けた時点）に呼ぶ。</li>
     <li><strong>IME で変換中に押した Ctrl+Z は、本文ではなく IME に届く。</strong>Meltype では 1 回目で確定だけが起きた。元に戻す動きを確かめるときは、確定してから押す場合と分けて試す。</li>
     <li><strong>Windows 11 の右クリックの最初の階層は、パッケージの項目だけ。</strong>レジストリの <code>shell</code> に書いた項目は「その他のオプションを確認」の中に入る。VS Code も最初の階層に出すために、署名付きのスパース パッケージを別に登録している。</li>
+    <li><strong>.NET の製品バージョンには、既定でコミット番号が付く。</strong>.NET 8 以降の SDK は、Git のリポジトリでビルドすると <code>InformationalVersion</code> に <code>+&lt;コミット番号&gt;</code> を足す。ファイルのプロパティの「製品バージョン」が <code>0.10.5+c80201d…</code> になり、署名の条件「製品バージョンをそろえる」に合わなかった。<code>IncludeSourceRevisionInInformationalVersion</code> を false にして外す。</li>
     <li><strong>PowerShell はレジストリのパスの <code>*</code> もワイルドカードとして扱う。</strong><code>Test-Path 'HKCU:\Software\Classes\*\shell'</code> は、すべての種類の <code>shell</code> キーに一致してしまう。<code>*</code> というキーそのものを調べるときは <code>-LiteralPath</code> を使う。</li>
   </ul>
 </main>
