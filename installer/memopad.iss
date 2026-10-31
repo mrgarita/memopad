@@ -37,6 +37,7 @@ Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 Name: "desktopicon"; Description: "デスクトップにショートカットを作成する(&D)"; GroupDescription: "追加のショートカット:"; Flags: unchecked
 ; 名前の txtassoc は .txt だけだった頃のもの。変えると更新時に前回の選択を引き継がないのでそのままにする
 Name: "txtassoc"; Description: "「プログラムから開く」の候補に MemoPad を追加する(&O)"; GroupDescription: "関連付け（.txt・.log・.md・ソース コードなど。既定のアプリは変えません）:"
+Name: "contextmenu"; Description: "右クリック メニューに「MemoPad で開く」を追加する(&M)"; GroupDescription: "関連付け（.txt・.log・.md・ソース コードなど。既定のアプリは変えません）:"
 
 [Files]
 ; Scintilla のパッケージは arm64／x86 版のネイティブ DLL も持ち込むが、
@@ -76,6 +77,16 @@ Root: HKA; Subkey: "Software\Classes\{#OpenWithExts[I]}\OpenWithList\{#MyAppExeN
 Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "{#MyAppName}"; Flags: uninsdeletekey; Tasks: txtassoc
 Root: HKA; Subkey: "Software\Classes\Applications\{#MyAppExeName}\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Flags: uninsdeletekey; Tasks: txtassoc
 #for {I = 0; I < DimOf(OpenWithExts); I++} EmitOpenWith
+; 右クリック メニューの「MemoPad で開く」（FB-32）。すべてのファイルに出す（VS Code の「Code で開く」と同じ範囲）。
+; .bat などは Windows が「プログラムから開く」自体を出さないので、MemoPad で開く手段はこれになる（FB-31）。
+; Windows 11 では、この方式の項目は「その他のオプションを確認」（Shift+F10）の中に出る。
+; 最初の階層に出すには、信頼された証明書で署名したパッケージが要る（docs/site/step3/index.html の 26 節）
+; ユーザー単位のインストールでは * と *\shell をここで初めて作ることが多いので、空になったら消す（アンインストールは逆順）
+Root: HKA; Subkey: "Software\Classes\*"; Flags: uninsdeletekeyifempty; Tasks: contextmenu
+Root: HKA; Subkey: "Software\Classes\*\shell"; Flags: uninsdeletekeyifempty; Tasks: contextmenu
+Root: HKA; Subkey: "Software\Classes\*\shell\MemoPad"; ValueType: string; ValueName: ""; ValueData: "MemoPad で開く"; Flags: uninsdeletekey; Tasks: contextmenu
+Root: HKA; Subkey: "Software\Classes\*\shell\MemoPad"; ValueType: string; ValueName: "Icon"; ValueData: """{app}\{#MyAppExeName}"",0"; Tasks: contextmenu
+Root: HKA; Subkey: "Software\Classes\*\shell\MemoPad\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: contextmenu
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{#MyAppName} を起動する"; Flags: nowait postinstall skipifsilent

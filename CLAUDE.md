@@ -20,7 +20,9 @@ FB-26「1920×1080 で配色パターンの画面が切れる」、FB-27「イ�
 確認中に見つけた FB-28「ボタンの名前が読み上げられない」は v0.10.3 で対応した**（21〜23 節）。**13 回目（2026-10-30）の
 FB-29「「プログラムから開く」の候補を .txt 以外にも広げる」は v0.10.4 で対応した**（24 節）。**2026-10-31 に FB-23・24・26〜29 の
 確認（OK）を得て v0.10.4 を GitHub Releases に公開した**（v0.10.2・v0.10.3 は公開しない）。**14 回目（2026-10-31）の FB-30「Ctrl+Z の
-取り消しの単位がおかしい」、FB-31「.bat も「プログラムから開く」に」、FB-32「右クリックの最初のメニューに「MemoPad で開く」」は対応中**。**FB-25「それでも初回起動にひと呼吸ある」は相談のうえ見送り**
+取り消しの単位がおかしい」、FB-31「.bat も「プログラムから開く」に」、FB-32「右クリックの最初のメニューに「MemoPad で開く」」は
+v0.10.5 で対応し、ユーザーの確認待ち**（25〜26 節）。FB-32 の「最初の階層に出す」は、相談のうえ SignPath Foundation（無料のコード署名）に
+申請して、通ったらスパース パッケージで対応する。**FB-25「それでも初回起動にひと呼吸ある」は相談のうえ見送り**
 （20 節。残りの 8 割は .NET ランタイムと Windows Forms 本体。サインイン時の先読みはサインイン時の負担になるので入れない。v0.10.2 の初回起動を最低限許容できる速さとする）。
 「正」となるのは
 `project.txt`（目的・仕様・進行 step）と、`docs/site/step1/index.html` 10 節の
@@ -125,6 +127,9 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   28 秒固まるため v0.10.0 で置き換えた（FB-19）。原因は GDI への文字幅の問い合わせで、RichEdit でも
   Win32 の Edit でも Windows App SDK の WinUI でも避けられない。Scintilla は同じ計算を空き時間に
   細切れで行うので画面が止まらない（最長の無応答 34 ms。詳細は `docs/site/step3/index.html` 15 節）。
+  - **元に戻す（Ctrl+Z）の単位はメモ帳と同じ**（単語とその後ろの空白ごと、日本語は IME の確定ごと。FB-30）。Scintilla は
+    続けて打った文字を 1 つにまとめるので、`PlainTextEdit.WndProc` が文字の入る前（`WM_CHAR`・Enter/Tab の `WM_KEYDOWN`・
+    `WM_IME_COMPOSITION` の確定）に、空の `BeginUndoAction`／`EndUndoAction` で区切る（`SeparateUndoBeforeInput`）
   - **改行はエディタ内部で LF に統一する**（`EolMode = Eol.Lf`、読み込み時に `EditorView` が変換。
     保存時に `TextFileService` がファイルの改行コードへ戻す）
   - **「編集済み」は Scintilla の保存ポイント**（`SetSavePoint` と `SavePointLeft`／`SavePointReached`）で
@@ -183,7 +188,11 @@ Windows 標準添付のエディタ「メモ帳」（notepad.exe）の機能は�
   `#dim OpenWithExts[83]` に並べ**、ISPP の `#for` で拡張子ごとに `Software\Classes\<ext>\OpenWithList\MemoPad.exe` を出す（FB-29。
   v0.10.3 までは .txt だけ）。増やすときは配列に足して要素数を直す。`"."` は拡張子なし。**既定のアプリ（拡張子の既定値・UserChoice）は
   変えない**。タスク名 `txtassoc` は更新時に前回の選択を引き継ぐためそのままにする。候補に出るかは `SHAssocEnumHandlers` で確かめられる
-  （`docs/site/step3/index.html` 24 節）
+  （`docs/site/step3/index.html` 24 節）。ただし **.bat は Windows が右クリックに「プログラムから開く」自体を出さない**（FB-31）。
+  **右クリックの「MemoPad で開く」は `Software\Classes\*\shell\MemoPad`**（タスク `contextmenu`。すべてのファイル。FB-32）。
+  Windows 11 ではこの方式の項目は「その他のオプションを確認」の中にしか出ない。最初の階層に出すには、ID を持つパッケージ
+  （スパース パッケージ）＋ `IExplorerCommand` の DLL ＋ Windows が信頼する証明書での署名が要る（VS Code も同じ方式。26 節）。
+  自作の証明書を利用者の PC の信頼ストアへ入れる方法は一般向けの配布には使わない
 - **色の機能**：「色変更」ダイアログ（`Dialogs/ColorChangeDialog`、PICO-8 の 16 色＋カラーピッカー。
   v0.4.0）と「配色パターン」ダイアログ（`Dialogs/ColorSchemeDialog`、`Services/ColorSchemes.cs` の
   16 パターン。v0.5.0）。どちらも結果は設定の背景色・文字色（"#RRGGBB"）に入る

@@ -25,6 +25,12 @@ public sealed class PlainTextEdit : Scintilla
     private const int WM_GETOBJECT = 0x003D;
     private const int OBJID_CLIENT = -4;
     private const int WM_TIMER = 0x0113;
+    private const int WM_KEYDOWN = 0x0100;
+    private const int WM_CHAR = 0x0102;
+    private const int WM_IME_COMPOSITION = 0x010F;
+    private const int GCS_RESULTSTR = 0x0800;
+    private const int VK_TAB = 0x09;
+    private const int VK_RETURN = 0x0D;
 
     /// <summary>Scintilla が空き時間の処理（折り返しの計算）に使うタイマーの番号。</summary>
     private const int ScintillaIdleTimerId = 2;
@@ -55,6 +61,15 @@ public sealed class PlainTextEdit : Scintilla
     private static extern IntPtr LresultFromObject(ref Guid riid, IntPtr wParam,
         [MarshalAs(UnmanagedType.Interface)] object pAcc);
 
+    [DllImport("imm32.dll")]
+    private static extern IntPtr ImmGetContext(IntPtr hWnd);
+
+    [DllImport("imm32.dll")]
+    private static extern bool ImmReleaseContext(IntPtr hWnd, IntPtr hIMC);
+
+    [DllImport("imm32.dll", CharSet = CharSet.Unicode)]
+    private static extern int ImmGetCompositionStringW(IntPtr hIMC, int index, char[]? buffer, int bufferBytes);
+
     private bool _wordWrap = true;
     private bool _darkScrollBars;
     private int _zoomPercent = 100;
@@ -62,6 +77,9 @@ public sealed class PlainTextEdit : Scintilla
     private FileDropTarget? _dropTarget;
     private int _lastSelStart = -1;
     private int _lastSelEnd = -1;
+
+    /// <summary>次に入力された文字の前で、元に戻す単位を区切る（日本語を確定した直後に立てる。FB-30）。</summary>
+    private bool _breakUndoBeforeNextInput;
 
     public PlainTextEdit()
     {
@@ -307,8 +325,80 @@ public sealed class PlainTextEdit : Scintilla
             case WM_CONTEXTMENU:
                 ContextMenuRequested?.Invoke();
                 return;
+            // 元に戻す（Ctrl+Z）の単位をメモ帳に合わせる（FB-30）。区切りは文字が入る前に入れる
+            case WM_CHAR when (int)m.WParam >= 0x20 && (int)m.WParam != 0x7F:
+                SeparateUndoBeforeInput((char)(int)m.WParam);
+                break;
+            case WM_KEYDOWN when (int)m.WParam == VK_RETURN:
+                SeparateUndoBeforeInput('\n');
+                break;
+            case WM_KEYDOWN when (int)m.WParam == VK_TAB:
+                SeparateUndoBeforeInput('\t');
+                break;
+            case WM_IME_COMPOSITION when ((long)m.LParam & GCS_RESULTSTR) != 0:
+                var separateAfter = SeparateUndoBeforeImeResult();
+                base.WndProc(ref m);
+                if (separateAfter) _breakUndoBeforeNextInput = true;
+                return;
         }
         base.WndProc(ref m);
+    }
+
+    /// <summary>
+    /// これから入る文字の前で、元に戻す単位を区切るかを決める（FB-30）。
+    ///
+    /// Scintilla は、続けて打った文字を 1 つの単位にまとめるので、長い文でも Ctrl+Z 1 回で全部消えていた。
+    /// メモ帳は「単語とその後ろの空白」ごとに取り消す（空白・改行の次に空白以外の文字を打つと、新しい単位になる）ので、
+    /// そこで区切る。区切りは、空の BeginUndoAction／EndUndoAction で「直前の操作とはまとめない」印を付けて作る。
+    /// 選択範囲を置き換える入力と上書きモードは、Scintilla が自分で 1 文字ずつ区切るので何もしない。
+    /// </summary>
+    private void SeparateUndoBeforeInput(char c)
+    {
+        var separate = _breakUndoBeforeNextInput;
+        _breakUndoBeforeNextInput = false;
+        if (ReadOnly || Overtype || SelectionStart != SelectionEnd) return;
+        if (!separate && !char.IsWhiteSpace(c))
+        {
+            var pos = CurrentPosition;
+            separate = pos > 0 && char.IsWhiteSpace((char)GetCharAt(pos - 1));
+        }
+        if (!separate) return;
+        BeginUndoAction();
+        EndUndoAction();
+    }
+
+    /// <summary>
+    /// IME の確定の前で、元に戻す単位を区切るかを決める（FB-30）。日本語などを含む確定は、メモ帳と同じく
+    /// 確定ごとに 1 つの単位にする（戻り値 true＝確定のあとでも区切る）。半角英数だけの確定は、キーで打った文字と同じ扱いにする
+    /// （1 文字ずつ確定を送る IME でも、単語ごとにまとまるように）。
+    /// </summary>
+    private bool SeparateUndoBeforeImeResult()
+    {
+        var text = GetImeResultString();
+        if (text.Length == 0) return false;
+        var perCommit = text.Any(ch => ch >= 0x80);
+        if (perCommit) _breakUndoBeforeNextInput = true;
+        SeparateUndoBeforeInput(text[0]);
+        return perCommit;
+    }
+
+    /// <summary>IME が確定した文字列（WM_IME_COMPOSITION の GCS_RESULTSTR）。読むだけなので Scintilla の処理には影響しない。</summary>
+    private string GetImeResultString()
+    {
+        var context = ImmGetContext(Handle);
+        if (context == IntPtr.Zero) return "";
+        try
+        {
+            var bytes = ImmGetCompositionStringW(context, GCS_RESULTSTR, null, 0);
+            if (bytes <= 0) return "";
+            var buffer = new char[bytes / sizeof(char)];
+            ImmGetCompositionStringW(context, GCS_RESULTSTR, buffer, bytes);
+            return new string(buffer);
+        }
+        finally
+        {
+            ImmReleaseContext(Handle, context);
+        }
     }
 
     /// <summary>

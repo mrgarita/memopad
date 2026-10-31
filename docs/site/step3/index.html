@@ -50,6 +50,8 @@
       <li><a href="#fb27">FB-27：インストーラのアイコンを v0.5 までのものに戻す（v0.10.3）</a></li>
       <li><a href="#fb28">FB-28：ボタンの名前が読み上げられない（v0.10.3）</a></li>
       <li><a href="#fb29">FB-29：「プログラムから開く」の候補を .txt 以外にも広げる（v0.10.4）</a></li>
+      <li><a href="#fb30">FB-30：Ctrl+Z で取り消す単位がおかしい（v0.10.5）</a></li>
+      <li><a href="#fb32">FB-31・32：右クリックの「MemoPad で開く」と .bat（v0.10.5）</a></li>
       <li><a href="#notes">つまずいた点のメモ</a></li>
     </ol>
   </div>
@@ -179,6 +181,17 @@
   </table>
   </div>
   <p>FB-29 は、インストーラが候補に入れる拡張子を 1 種類から 83 種類（拡張子なしを含む）に増やした。既定のアプリは変えない（<a href="#fb29">24 節</a>）。v0.10.4 は FB-26〜28 の修正もそのまま含む。</p>
+
+  <p>14 回目のフィードバック（2026-10-31、v0.10.4 の確認と合わせて）。FB-23・24・26〜29 は確認が済み、v0.10.4 を公開した。そのうえで次の 3 件を受けた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>番号</th><th>種類</th><th>内容</th><th>対応版</th><th>状態</th></tr>
+    <tr><td>FB-30</td><td>不具合</td><td>Ctrl+Z の取り消しがおかしい。既存のファイルでは 1 文字ずつ取り消されるのに、新規のファイルでは入力したものが全部消える</td><td>v0.10.5</td><td><span class="tag maybe">確認待ち</span></td></tr>
+    <tr><td>FB-31</td><td>変更</td><td>.bat も「プログラムから開く」で MemoPad を選べるようにしたい</td><td>v0.10.5</td><td><span class="tag maybe">確認待ち</span></td></tr>
+    <tr><td>FB-32</td><td>変更</td><td>ファイルを右クリックしたとき、メモ帳の「メモ帳で編集」や VS Code の「Code で開く」のように、最初のメニューに「MemoPad で開く」があると使いやすい</td><td>v0.10.5</td><td><span class="tag maybe">確認待ち</span>（最初の階層に出すのは署名の申請後）</td></tr>
+  </table>
+  </div>
+  <p>FB-30 は、Scintilla が続けて打った文字を 1 つの単位にまとめるためで、メモ帳と同じく「単語とその後ろの空白」ごと、日本語は確定ごとに区切るようにした（<a href="#fb30">25 節</a>）。FB-31 は、.bat は v0.10.4 で候補に入れていたが、Windows が .bat の右クリックに「プログラムから開く」自体を出さなかった。FB-32 の「MemoPad で開く」で開けるようにした。Windows 11 で最初の階層に出すには信頼された証明書での署名が要るので、まず「その他のオプションを確認」の中に出し、並行して無料のコード署名（SignPath Foundation）を申請することにした（<a href="#fb32">26 節</a>）。</p>
 
   <p>FB-9 は <code>src/memopad/memopad.ico</code> を差し替え（アイコンを描いていた <code>docs/tools/make-icon.ps1</code> は不要になったので削除）、インストーラにも <code>SetupIconFile</code> で同じアイコンを付けた。タイトル行の左端のアイコンは exe から取り出しているので自動で変わる。FB-10 はリポジトリ直下に README.md、<code>docs/index.html</code> に紹介ページを置き、GitHub Pages で main ブランチの <code>/docs</code> を公開した（紹介ページ：<a href="https://mrgarita.github.io/memopad/">mrgarita.github.io/memopad</a>、備忘録はその下の <code>site/</code>）。インストーラは GitHub Releases に置く。</p>
 
@@ -1827,7 +1840,172 @@ case WM_EXITSIZEMOVE:             // 放した
   </div>
   <p>なお、「常にこのアプリを使う」で MemoPad を既定にしていた拡張子（この端末では .txt と .php）は、アンインストールすると MemoPad.exe が無くなるので既定から外れ、入れ直すと戻った。これは v0.10.3 以前も同じ動きで、今回の変更とは関係ない。</p>
 
-  <h2 id="notes">25. つまずいた点のメモ</h2>
+  <h2 id="fb30">25. FB-30：Ctrl+Z で取り消す単位がおかしい（v0.10.5）</h2>
+  <p>「既存のファイルでは 1 文字ずつ取り消されるのに、新規のファイルでは入力したものが全部消える」との報告。既存のファイルでは日本語を入力していた。
+  v0.10.4 で、入力のしかたを変えながら「入力 → Ctrl+Z を 1 回ずつ押す → そのたびに本文を取り出す」を自動で繰り返して調べた（本文は UI Automation から読めないので、<kbd>Ctrl</kbd>+<kbd>A</kbd> → <kbd>Ctrl</kbd>+<kbd>C</kbd> で取り出した）。</p>
+
+  <h3>25.1 調べたこと：どの入力でも「全部まとめて 1 回」だった</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>入力（v0.10.4）</th><th>新規のタブ</th><th>既存のファイル</th></tr>
+    <tr><td>英字「abc def ghi」（IME オフ、1 文字 60 ms 間隔）</td><td>1 回で全部消える</td><td>1 回で全部消える</td></tr>
+    <tr><td>英字「abcd」（IME オフ、1 文字 700 ms 間隔）</td><td>—</td><td>1 回で全部消える</td></tr>
+    <tr><td>日本語「日本語」「です」を 2 回に分けて確定（Meltype）</td><td>1 回で全部消える</td><td>1 回で全部消える</td></tr>
+    <tr><td>日本語を<strong>確定する前に</strong> Ctrl+Z</td><td>—</td><td>1 回目は確定だけ（Ctrl+Z を IME が受け取る）、2 回目で確定した全体が消える</td></tr>
+  </table>
+  </div>
+  <p>新規と既存で違いは出ず、どの入力でも「続けて入力した分が 1 回の Ctrl+Z で全部消える」だった。報告の「1 文字ずつ」は再現できなかった。
+  1 文字ずつになるのは、<kbd>Insert</kbd> キーで上書きモードにしたとき（Scintilla が 1 文字ごとに区切る。上書きモードはタブごとに切り替わる）だけ見つかった。
+  いずれにしても、メモ帳とは単位が違う。メモ帳で同じように試すと、<strong>「単語とその後ろの空白」ごと</strong>に取り消され（空白の次に文字を打つと新しい単位になり、「.」では区切らない）、<strong>日本語は確定ごと</strong>だった。
+  ユーザーと相談し、取り消す単位をメモ帳と同じにすることにした。単位が決まっていれば、入力のしかたによらず同じ動きになる。</p>
+
+  <h3>25.2 原因：Scintilla は続けて打った文字を 1 つにまとめる</h3>
+  <p>Scintilla は、編集を 1 回ずつ「元に戻す履歴」に積むとき、直前の操作と同じ種類（挿入なら挿入）で位置が続いていれば、前の操作と 1 つの単位にまとめる。
+  単語の切れ目でも IME の確定でも区切らないので、カーソルを動かさずに打ち続けた分はすべて 1 つになっていた。区切られるのは、カーソルを動かして別の場所に打ったとき、削除をはさんだとき、貼り付けなどの別の操作をしたときだけ。</p>
+
+  <h3>25.3 対策：文字が入る前に、メモ帳の切れ目で区切る</h3>
+  <p>Scintilla には「ここから先は前の操作とまとめない」と直接指示する API は無いが、空の <code>BeginUndoAction</code>／<code>EndUndoAction</code> を 1 組呼ぶと、直前の操作に「まとめない」印が付く。
+  <code>PlainTextEdit</code> の <code>WndProc</code> で、文字が本文に入る前のメッセージ（<code>WM_CHAR</code>、<kbd>Enter</kbd>・<kbd>Tab</kbd> の <code>WM_KEYDOWN</code>、IME の確定 <code>WM_IME_COMPOSITION</code>）を受け、次のときにこの印を付ける。</p>
+  <ul>
+    <li>空白以外の文字を打つとき、カーソルの直前が空白・タブ・改行なら（単語の始まり）</li>
+    <li>日本語などを含む IME の確定の前と、その次の入力の前（確定ごとに 1 つの単位）。確定した文字列は <code>ImmGetCompositionString</code> で読むだけで、Scintilla の処理には触らない</li>
+    <li>半角英数だけの確定は、キーで打った文字と同じ扱いにする（1 文字ずつ確定を送る IME でも、単語ごとにまとまるように）</li>
+  </ul>
+  <p>選択範囲を置き換える入力と上書きモードは、Scintilla が自分で区切るので何もしない。貼り付け・切り取り・削除の単位も今までどおり。</p>
+  <figure>
+    <svg viewBox="0 0 720 250" width="100%" style="max-width:720px;display:block;margin:0 auto" role="img" aria-label="Ctrl+Z で取り消される単位。v0.10.4 までは続けて打った分が 1 つ、v0.10.5 は単語と後ろの空白ごと、日本語は確定ごと">
+      <style>.f30t{font:15px Consolas,"Cascadia Mono","MS Gothic",monospace;fill:#1f2328}.f30l{font:13px "Segoe UI","Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.f30v{font:12px "Segoe UI","Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}.f30n{font:bold 11px "Segoe UI",sans-serif;fill:#ffffff}</style>
+      <text x="10" y="22" class="f30v">英字「abc def␣␣ghi.jkl」を続けて打ったあと（␣ は空白）</text>
+      <text x="10" y="58" class="f30l">v0.10.4 まで</text>
+      <rect x="190" y="38" width="152" height="30" rx="5" fill="#f6f8fa" stroke="#8c959f"/>
+      <text x="200" y="58" class="f30t">abc␣def␣␣ghi.jkl</text>
+      <circle cx="340" cy="38" r="9" fill="#8c959f"/><text x="336.5" y="42" class="f30n">1</text>
+      <text x="372" y="58" class="f30v">Ctrl+Z 1 回で全部消える</text>
+      <text x="10" y="104" class="f30l">v0.10.5（メモ帳と同じ）</text>
+      <rect x="190" y="84" width="54" height="30" rx="5" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="200" y="104" class="f30t">abc␣</text>
+      <circle cx="242" cy="84" r="9" fill="#0b5cad"/><text x="238.5" y="88" class="f30n">3</text>
+      <rect x="250" y="84" width="62" height="30" rx="5" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="260" y="104" class="f30t">def␣␣</text>
+      <circle cx="310" cy="84" r="9" fill="#0b5cad"/><text x="306.5" y="88" class="f30n">2</text>
+      <rect x="318" y="84" width="78" height="30" rx="5" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="328" y="104" class="f30t">ghi.jkl</text>
+      <circle cx="394" cy="84" r="9" fill="#0b5cad"/><text x="390.5" y="88" class="f30n">1</text>
+      <text x="420" y="104" class="f30v">単語＋後ろの空白ごと（「.」では区切らない）</text>
+      <line x1="10" y1="132" x2="710" y2="132" stroke="#d0d7de"/>
+      <text x="10" y="156" class="f30v">日本語を「日本語」「です」の 2 回に分けて確定したあと</text>
+      <text x="10" y="192" class="f30l">v0.10.4 まで</text>
+      <rect x="190" y="172" width="98" height="30" rx="5" fill="#f6f8fa" stroke="#8c959f"/>
+      <text x="200" y="192" class="f30t">日本語です</text>
+      <circle cx="286" cy="172" r="9" fill="#8c959f"/><text x="282.5" y="176" class="f30n">1</text>
+      <text x="372" y="192" class="f30v">Ctrl+Z 1 回で全部消える</text>
+      <text x="10" y="236" class="f30l">v0.10.5（メモ帳と同じ）</text>
+      <rect x="190" y="216" width="66" height="30" rx="5" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="200" y="236" class="f30t">日本語</text>
+      <circle cx="254" cy="216" r="9" fill="#0b5cad"/><text x="250.5" y="220" class="f30n">2</text>
+      <rect x="262" y="216" width="52" height="30" rx="5" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="272" y="236" class="f30t">です</text>
+      <circle cx="312" cy="216" r="9" fill="#0b5cad"/><text x="308.5" y="220" class="f30n">1</text>
+      <text x="420" y="236" class="f30v">確定ごと</text>
+    </svg>
+    <figcaption>図 25-1：Ctrl+Z 1 回で取り消される単位。丸の数字は取り消される順番</figcaption>
+  </figure>
+
+  <h3>25.4 確かめたこと</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>入力（v0.10.5）</th><th>Ctrl+Z を 1 回ずつ押したときに消える順</th></tr>
+    <tr><td>英字「abc def␣␣ghi.jkl」（新規・既存とも）</td><td>「ghi.jkl」→「def␣␣」→「abc␣」</td></tr>
+    <tr><td>英字「abc」Enter「def」Enter Enter「ghi」</td><td>「ghi」→「def」と改行 2 つ →「abc」と改行</td></tr>
+    <tr><td>日本語「日本語」「です」を 2 回に分けて確定（Meltype）</td><td>「です」→「日本語」</td></tr>
+  </table>
+  </div>
+  <p>新規のタブと既存のファイルで同じ動きになった。既存の編集テスト（<code>docs\tools\test-editing.ps1</code>。多段階の元に戻す・やり直し、未保存の印、改行コードと日本語の保存）も 10 件すべて OK。</p>
+
+  <h2 id="fb32">26. FB-31・32：右クリックの「MemoPad で開く」と .bat（v0.10.5）</h2>
+  <p>FB-31 は「.bat も『プログラムから開く』に」、FB-32 は「右クリックの最初のメニューに『MemoPad で開く』を」という要望。ユーザーのスクリーンショットでは、.bat の右クリックの最初の階層に「Code で開く」「メモ帳で編集」が並び、「プログラムから開く」は無かった。</p>
+
+  <h3>26.1 .bat には「プログラムから開く」自体が出ない</h3>
+  <p>.bat は v0.10.4 で候補（<code>.bat\OpenWithList\MemoPad.exe</code>）に入れていて、<code>SHAssocEnumHandlers</code> でも MemoPad が候補に並んでいた。ところが、Windows は .bat の右クリックに「プログラムから開く」の項目そのものを出さない。
+  候補に入れても選ぶ場所が無いので、FB-31 は FB-32 の「MemoPad で開く」でまとめて対応することにした。</p>
+
+  <h3>26.2 Windows 11 の右クリック メニューは 2 階層</h3>
+  <p>Windows 11 の右クリック メニューの最初の階層に、ほかのアプリが項目を足せるのは、<strong>パッケージ（ID を持つアプリ）が登録した項目だけ</strong>。項目の中身は <code>IExplorerCommand</code> を実装した DLL で、パッケージのマニフェストの <code>windows.fileExplorerContextMenus</code> で登録する。
+  メモ帳は Microsoft Store のアプリなので、もともとパッケージを持っている。VS Code はインストール先に「外部の場所を使うパッケージ」（スパース パッケージ）を置き、その中で「Code で開く」を登録している（この端末の VS Code のマニフェストで確かめた。署名は Microsoft）。
+  これまでのようにレジストリの <code>shell</code> の下に書く項目は、「その他のオプションを確認」（<kbd>Shift</kbd>+<kbd>F10</kbd>）で開く従来のメニューの中にしか出ない。この端末に入っている、ほかのエディタの「〜で開く」も従来の方式で、最初の階層には出ていなかった。</p>
+  <figure>
+    <svg viewBox="0 0 720 300" width="100%" style="max-width:720px;display:block;margin:0 auto" role="img" aria-label="Windows 11 の右クリック メニュー。最初の階層にはパッケージの項目、その他のオプションの中には従来のレジストリの項目が出る">
+      <style>.f32b{font:13px "Segoe UI","Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}.f32v{font:12px "Segoe UI","Yu Gothic UI","Meiryo",sans-serif;fill:#59636e}.f32k{font:bold 13px "Segoe UI","Yu Gothic UI","Meiryo",sans-serif;fill:#1f2328}</style>
+      <defs><marker id="fb32a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#0b5cad"/></marker></defs>
+      <text x="10" y="22" class="f32v">右クリック（最初の階層）</text>
+      <rect x="10" y="30" width="300" height="214" rx="6" fill="#ffffff" stroke="#8c959f"/>
+      <text x="26" y="56" class="f32b">開く</text>
+      <text x="26" y="80" class="f32b">プログラムから開く（.bat には出ない）</text>
+      <text x="26" y="104" class="f32v">…</text>
+      <line x1="16" y1="116" x2="304" y2="116" stroke="#d0d7de"/>
+      <text x="26" y="140" class="f32b">Code で開く</text>
+      <text x="26" y="164" class="f32b">メモ帳で編集</text>
+      <text x="168" y="140" class="f32v">← パッケージの項目</text>
+      <rect x="16" y="176" width="288" height="26" rx="4" fill="#f6f8fa" stroke="#8c959f" stroke-dasharray="5 4"/>
+      <text x="26" y="194" class="f32v">MemoPad で開く（署名の申請が通ったら）</text>
+      <line x1="16" y1="212" x2="304" y2="212" stroke="#d0d7de"/>
+      <text x="26" y="234" class="f32b">その他のオプションを確認</text>
+      <path d="M232 230 C 300 230, 330 120, 398 112" stroke="#0b5cad" stroke-width="1.6" fill="none" marker-end="url(#fb32a)"/>
+      <text x="410" y="22" class="f32v">その他のオプション（従来のメニュー。Shift+F10）</text>
+      <rect x="410" y="30" width="300" height="214" rx="6" fill="#ffffff" stroke="#8c959f"/>
+      <text x="426" y="56" class="f32b">開く</text>
+      <text x="426" y="80" class="f32b">編集</text>
+      <text x="426" y="104" class="f32v">…</text>
+      <rect x="416" y="118" width="288" height="28" rx="4" fill="#eef4fb" stroke="#0b5cad"/>
+      <text x="426" y="137" class="f32k">MemoPad で開く</text>
+      <text x="560" y="137" class="f32v">← v0.10.5</text>
+      <text x="426" y="170" class="f32b">ほかのエディタの「〜で開く」</text>
+      <text x="426" y="194" class="f32v">レジストリの *\shell に書いた項目</text>
+      <text x="426" y="218" class="f32v">（Windows 10 では最初の階層に出る）</text>
+      <text x="10" y="272" class="f32v">最初の階層に出す条件：ID を持つパッケージ ＋ IExplorerCommand の DLL ＋ Windows が信頼する証明書での署名</text>
+      <text x="10" y="292" class="f32v">メモ帳は Store アプリ、VS Code は Microsoft の署名付きのスパース パッケージで満たしている</text>
+    </svg>
+    <figcaption>図 26-1：Windows 11 の右クリック メニューと、項目が出る場所</figcaption>
+  </figure>
+
+  <h3>26.3 最初の階層に出すための署名をどうするか</h3>
+  <p>パッケージは、Windows が信頼する証明書で署名していないと登録できない。コストをかけずに済ませる方法を比べた。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>方法</th><th>出る場所</th><th>費用・手間</th><th>判断</th></tr>
+    <tr><td>A. レジストリの <code>*\shell</code> に書く（従来の方式）</td><td>「その他のオプションを確認」の中（Windows 10 は最初の階層）</td><td>無料・すぐできる</td><td><strong>v0.10.5 で採用</strong></td></tr>
+    <tr><td>B. SignPath Foundation の無料コード署名（オープンソース向け）</td><td>最初の階層</td><td>無料。審査があり、期間は読めず、通るとも限らない。ビルドを GitHub Actions に移す必要がある。発行元は「SignPath Foundation」と表示される。インストーラにも署名できるので SmartScreen の警告も出にくくなる</td><td><strong>並行して申請する</strong></td></tr>
+    <tr><td>C. 自作の証明書を、インストール時に PC の「信頼する発行元」へ入れる</td><td>最初の階層</td><td>無料。ただしインストールに管理者権限が要り、利用者の PC に信頼する証明書を増やすことになる</td><td>一般向けの配布には使わない</td></tr>
+    <tr><td>D. 有料の署名サービス・証明書</td><td>最初の階層</td><td>月額または年額の費用</td><td>コスト 0 の方針で除外</td></tr>
+  </table>
+  </div>
+  <p>ユーザーと相談し、v0.10.5 では A で「その他のオプションを確認」の中に出しておき、並行して B を申請することにした。審査が通ったら、<code>IExplorerCommand</code> の DLL とスパース パッケージを作って最初の階層に出す。</p>
+
+  <h3>26.4 実装：すべてのファイルに「MemoPad で開く」</h3>
+  <p>インストーラの「追加タスクの選択」に「右クリック メニューに「MemoPad で開く」を追加する」を足した（既定でオン。タスク名 <code>contextmenu</code>）。チェックすると、<code>Software\Classes\*\shell\MemoPad</code> に表示名・アイコン・開くときのコマンドを書く。
+  <code>*</code> はすべてのファイルを表すので、VS Code の「Code で開く」と同じく、どのファイルの右クリックにも出る。既定のアプリやダブルクリックの動作（.bat なら実行）は変えない。</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>キー</th><th>値</th></tr>
+    <tr><td><code>*\shell\MemoPad</code></td><td>（既定）＝ MemoPad で開く、Icon ＝ "…\MemoPad.exe",0</td></tr>
+    <tr><td><code>*\shell\MemoPad\command</code></td><td>（既定）＝ "…\MemoPad.exe" "%1"</td></tr>
+  </table>
+  </div>
+  <p>ユーザー単位のインストールでは、HKCU の <code>Software\Classes\*</code> と <code>*\shell</code> をここで初めて作ることがある。アンインストールでは、MemoPad のキーを消したあと、空になったこの 2 つも消す（ほかのアプリのキーがあれば残す）。</p>
+
+  <h3>26.5 確かめたこと</h3>
+  <div class="table-wrap">
+  <table>
+    <tr><th>確かめたこと</th><th>結果</th></tr>
+    <tr><td>従来のメニューの項目（Shell.Application の <code>Verbs()</code>。.txt・.bat・.cmd・.py・.reg・.ini）</td><td>6 種類すべてに「MemoPad で開く」が出る</td></tr>
+    <tr><td>.bat を「MemoPad で開く」で開く</td><td>MemoPad に「t.bat - MemoPad」として開き、バッチは<strong>実行されない</strong></td></tr>
+    <tr><td>v0.10.4 からの上書きインストール（タスクの指定なし）</td><td>新しいタスクは既定どおりオンになり、キーが作られる</td></tr>
+    <tr><td>アンインストール</td><td><code>*\shell\MemoPad</code> と、空になった <code>*\shell</code> が消える。<code>*</code> はほかのアプリのキー（<code>OpenWithProgids</code>・<code>shellex</code>）があるので残る</td></tr>
+    <tr><td>入れ直し</td><td>キーが元どおりに作られる</td></tr>
+  </table>
+  </div>
+
+  <h2 id="notes">27. つまずいた点のメモ</h2>
   <ul>
     <li><strong>体感の遅さは、まず数値にする。</strong>アプリ内部のログだけ見ると「速い」と結論しかねなかった。画面のピクセルが変わるまでを別プロセスから測って初めて、メモ帳との差（19 ms 対 50 ms）が見えた。</li>
     <li><strong>PowerShell 5.1 は <code>$null</code> を文字列引数に渡すと空文字になる。</strong><code>FindWindow($null, "title")</code> がクラス名 "" で検索して失敗した。<code>[NullString]::Value</code> を渡す。</li>
@@ -1861,6 +2039,11 @@ case WM_EXITSIZEMOVE:             // 放した
     <li><strong>WPF の <code>AccessText</code> を中身にしたボタンは、名前が空になる。</strong>見た目では分からず、読み上げソフトや UI Automation でしか気づけない。アクセス キーのために <code>AccessText</code> を使うときは <code>AutomationProperties.Name</code> も付ける。撮影スクリプトが要素を名前で探していたおかげで見つかった。</li>
     <li><strong>拡張子のないファイルは「<code>.</code>」という名前のキーで扱われる。</strong><code>Software\Classes\.\OpenWithList</code> に入れると、Makefile や LICENSE の「プログラムから開く」にも出る。レジストリの API は「.」を特別扱いしないので、普通のキーとして作れる。</li>
     <li><strong>「プログラムから開く」の候補は、画面を開かずに API で確かめられる。</strong><code>SHAssocEnumHandlers</code>（拡張子単位）や <code>BHID_EnumAssocHandlers</code>（ファイル単位）は、Explorer の右クリックと同じ一覧を返す。<code>OpenAs_RunDLL</code> で画面を出す方法は、スクリプトから起動するとすぐ閉じて使えなかった。</li>
+    <li><strong>ただし「候補に並ぶ」と「メニューに出る」は別。</strong>.bat は API では MemoPad が候補に並んでいたが、Windows が右クリックに「プログラムから開く」自体を出さなかった（FB-31）。最後は実際の右クリックで確かめる。</li>
+    <li><strong>Scintilla の「元に戻す」は、続けて打った文字を 1 つにまとめる。</strong>区切る専用の API は無いが、空の <code>BeginUndoAction</code>／<code>EndUndoAction</code> を 1 組呼ぶと、直前の操作に「まとめない」印が付く。文字が入る前（<code>WM_CHAR</code> や IME の確定を受けた時点）に呼ぶ。</li>
+    <li><strong>IME で変換中に押した Ctrl+Z は、本文ではなく IME に届く。</strong>Meltype では 1 回目で確定だけが起きた。元に戻す動きを確かめるときは、確定してから押す場合と分けて試す。</li>
+    <li><strong>Windows 11 の右クリックの最初の階層は、パッケージの項目だけ。</strong>レジストリの <code>shell</code> に書いた項目は「その他のオプションを確認」の中に入る。VS Code も最初の階層に出すために、署名付きのスパース パッケージを別に登録している。</li>
+    <li><strong>PowerShell はレジストリのパスの <code>*</code> もワイルドカードとして扱う。</strong><code>Test-Path 'HKCU:\Software\Classes\*\shell'</code> は、すべての種類の <code>shell</code> キーに一致してしまう。<code>*</code> というキーそのものを調べるときは <code>-LiteralPath</code> を使う。</li>
   </ul>
 </main>
 <footer class="site">
